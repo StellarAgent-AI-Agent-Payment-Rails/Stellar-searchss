@@ -1,4 +1,4 @@
-import { useState, useMemo }                   from 'react'
+import { useState, useMemo, useCallback }       from 'react'
 import { motion, AnimatePresence }             from 'framer-motion'
 import { AnimatedBackground, Navbar, LiveTicker, Footer } from './components/layout'
 import { GroqAssistant }                       from './components/ai'
@@ -16,10 +16,18 @@ export default function App() {
     connect, disconnect, refresh,
   } = useFreighterWallet()
 
+  const handlePaymentSuccess = useCallback(async (receipt: { txHash: string; paidAmount: string | null }) => {
+    await refresh({
+      targetTxHash: receipt.txHash,
+      expectedPreviousBalance: wallet.usdcBalance,
+    })
+  }, [refresh, wallet.usdcBalance])
+
   // Lifted so the floating GroqAssistant can read the last completed search
   // and pre-populate context (issue #57).
   const { session, search, reset } = useSearch(
-    wallet.connected ? wallet.publicKey : null
+    wallet.connected ? wallet.publicKey : null,
+    { onPaymentSuccess: handlePaymentSuccess }
   )
 
   const lastSearch = useMemo(

@@ -110,9 +110,23 @@ export function SearchBar({
       {/* Meta row */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 mt-2 px-1">
         <p className="font-display text-xs text-white/20">
-          {walletConnected
-            ? `Balance: ${usdcBalance} USDC · ~${Math.floor(parseFloat(usdcBalance) / parseFloat(AMOUNT_USDC)).toLocaleString()} queries left`
-            : 'Connect Freighter wallet to search'}
+          {walletConnected ? (
+            <>
+              Balance:{' '}
+              <motion.span
+                key={usdcBalance}
+                initial={{ color: '#00f5ff' }}
+                animate={{ color: 'rgba(255, 255, 255, 0.4)' }}
+                transition={{ duration: 0.8 }}
+                className="font-mono text-white/40"
+              >
+                {usdcBalance} USDC
+              </motion.span>{' '}
+              · ~{Math.floor(parseFloat(usdcBalance) / parseFloat(AMOUNT_USDC)).toLocaleString()} queries left
+            </>
+          ) : (
+            'Connect Freighter wallet to search'
+          )}
         </p>
         <p className="font-display text-xs text-white/20 uppercase tracking-widest">
           Serper.dev · x402 · Stellar {IS_MAINNET ? 'Mainnet' : 'Testnet'}

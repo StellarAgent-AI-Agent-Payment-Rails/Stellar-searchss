@@ -79,9 +79,15 @@ export function WalletPanel({
         <div className={`w-2 h-2 rounded-full animate-pulse ${isWrongNetwork ? 'bg-red-500' : 'bg-neon-green'}`} />
         <span>{truncateAddress(wallet.publicKey!)}</span>
         <span className="text-white/30">·</span>
-        <span className={isWrongNetwork ? 'text-red-300' : 'text-neon-amber'}>
+        <motion.span
+          key={wallet.usdcBalance}
+          initial={{ opacity: 0.6, scale: 0.96 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.3 }}
+          className={isWrongNetwork ? 'text-red-300' : 'text-neon-amber'}
+        >
           {isWrongNetwork ? 'WRONG NETWORK' : `${wallet.usdcBalance} USDC`}
-        </span>
+        </motion.span>
         <ChevronDown className={`w-3 h-3 transition-transform ${open ? 'rotate-180' : ''}`} />
       </motion.button>
 
@@ -140,7 +146,15 @@ export function WalletPanel({
               <div className="grid grid-cols-2 gap-2">
                 <div className="py-2 px-3 rounded-lg bg-white/5">
                   <p className="font-display text-white/30" style={{ fontSize: '9px' }}>USDC BALANCE</p>
-                  <p className="font-display text-lg text-neon-amber mt-0.5">{wallet.usdcBalance}</p>
+                  <motion.p
+                    key={wallet.usdcBalance}
+                    initial={{ scale: 1.08, color: '#00f5ff' }}
+                    animate={{ scale: 1, color: '#ffb800' }}
+                    transition={{ duration: 0.4 }}
+                    className="font-display text-lg text-neon-amber mt-0.5"
+                  >
+                    {wallet.usdcBalance}
+                  </motion.p>
                   <p className="font-display text-white/25 mt-0.5" style={{ fontSize: '9px' }}>
                     ~{Math.floor(parseFloat(wallet.usdcBalance) / parseFloat(AMOUNT_USDC)).toLocaleString()} queries
                   </p>

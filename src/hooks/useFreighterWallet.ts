@@ -4,7 +4,7 @@
  * Fetches live balances from Stellar Horizon
  */
 
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback, useEffect, useRef } from 'react'
 import {
   isConnected,
   requestAccess,
@@ -14,6 +14,14 @@ import {
 import { Horizon } from '@stellar/stellar-sdk'
 import { HORIZON_URL, USDC_ISSUER } from '../lib/stellar'
 
+export interface RefreshOptions {
+  targetTxHash?: string
+  txHash?: string
+  expectedPreviousBalance?: string
+  maxAttempts?: number
+  delayMs?: number
+}
+
 export interface WalletState {
   publicKey: string | null
   connected: boolean
@@ -22,6 +30,7 @@ export interface WalletState {
   usdcBalance: string
   loading: boolean
   error: string | null
+  isRefreshing?: boolean
 }
 
 export interface StellarTransaction {
@@ -50,6 +59,7 @@ export function useFreighterWallet() {
   })
   const [transactions, setTransactions] = useState<StellarTransaction[]>([])
   const [txLoading, setTxLoading] = useState(false)
+  const pollSessionRef = useRef(0)
 
   // Fetch real balances from Horizon
   const fetchBalances = useCallback(async (publicKey: string) => {
@@ -77,11 +87,13 @@ export function useFreighterWallet() {
         usdcBalance: usdc,
         error: null,
       }))
+      return { xlm, usdc }
     } catch (err: any) {
       setWallet(prev => ({
         ...prev,
         error: err.message || 'Failed to load account',
       }))
+      return null
     }
   }, [])
 
@@ -114,8 +126,10 @@ export function useFreighterWallet() {
         }))
 
       setTransactions(txs)
+      return txs
     } catch (_) {
       setTransactions([])
+      return []
     } finally {
       setTxLoading(false)
     }
@@ -169,6 +183,7 @@ export function useFreighterWallet() {
   }, [fetchBalances, fetchTransactions])
 
   const disconnect = useCallback(() => {
+    pollSessionRef.current++
     setWallet({
       publicKey: null,
       connected: false,
@@ -177,14 +192,51 @@ export function useFreighterWallet() {
       usdcBalance: '0',
       loading: false,
       error: null,
+      isRefreshing: false,
     })
     setTransactions([])
   }, [])
 
-  const refresh = useCallback(async () => {
-    if (wallet.publicKey) {
+  const refresh = useCallback(async (options?: RefreshOptions) => {
+    if (!wallet.publicKey) return
+
+    const targetHash = options?.targetTxHash || options?.txHash
+    const previousBalance = options?.expectedPreviousBalance
+    const shouldPoll = Boolean(targetHash || previousBalance !== undefined)
+
+    if (!shouldPoll) {
       await fetchBalances(wallet.publicKey)
       await fetchTransactions(wallet.publicKey)
+      return
+    }
+
+    const sessionId = ++pollSessionRef.current
+    const maxAttempts = options?.maxAttempts ?? 5
+    const delayMs = options?.delayMs ?? 1500
+
+    setWallet(prev => ({ ...prev, isRefreshing: true }))
+
+    try {
+      for (let attempt = 0; attempt < maxAttempts; attempt++) {
+        await new Promise(resolve => setTimeout(resolve, delayMs))
+        if (pollSessionRef.current !== sessionId) return
+
+        const balances = await fetchBalances(wallet.publicKey)
+        const txs = await fetchTransactions(wallet.publicKey)
+
+        if (pollSessionRef.current !== sessionId) return
+
+        const balanceChanged = previousBalance !== undefined && balances !== null && balances.usdc !== previousBalance
+        const txFound = targetHash !== undefined && txs.some(t => t.hash === targetHash)
+
+        if (balanceChanged || txFound) {
+          break
+        }
+      }
+    } finally {
+      if (pollSessionRef.current === sessionId) {
+        setWallet(prev => ({ ...prev, isRefreshing: false }))
+      }
     }
   }, [wallet.publicKey, fetchBalances, fetchTransactions])
 
@@ -212,6 +264,9 @@ export function useFreighterWallet() {
       }
     }
     check()
+    return () => {
+      pollSessionRef.current++
+    }
   }, [fetchBalances, fetchTransactions])
 
   return {
