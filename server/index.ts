@@ -28,6 +28,13 @@ import {
   AMOUNT_USDC, 
   AMOUNT_STROOPS 
 } from '../src/lib/constants'
+import {
+  buildErrorResponse,
+  buildUpstreamUnavailableResponse,
+  describeError,
+  generateRequestId,
+  resolveRequestId,
+} from '../src/lib/apiError'
 
 dotenv.config()
 
@@ -55,10 +62,31 @@ if (!GROQ_API_KEY)      console.warn('⚠  GROQ_API_KEY not set')
 
 // ─── Groq ─────────────────────────────────────────────────────────────────
 const groq = new Groq({ apiKey: GROQ_API_KEY })
+const GROQ_CHAT_MODEL = 'llama-3.3-70b-versatile'
 
 // ─── Middleware ───────────────────────────────────────────────────────────
 app.use(cors(buildCorsOptions()))
 app.use(express.json())
+
+// ─── Correlation ID ───────────────────────────────────────────────────────
+// Every request gets a safe, non-identifying token. It is echoed in the
+// `X-Request-Id` response header and in any error body, and it is what ties a
+// client-visible failure to its entry in the server log.
+app.use((req: Request, res: Response, next) => {
+  const requestId = resolveRequestId(req.headers['x-request-id'])
+  res.locals.requestId = requestId
+  res.setHeader('X-Request-Id', requestId)
+  next()
+})
+
+/** Read the correlation ID for the in-flight request, minting one if absent. */
+function requestIdFor(res: Response): string {
+  if (typeof res.locals.requestId === 'string') return res.locals.requestId
+  const requestId = generateRequestId()
+  res.locals.requestId = requestId
+  res.setHeader('X-Request-Id', requestId)
+  return requestId
+}
 
 // ─── x402 payment guard on /search ───────────────────────────────────────
 // paymentMiddlewareFromConfig is the recommended API per official Stellar docs.
@@ -176,9 +204,18 @@ app.get('/search', async (req: Request, res: Response) => {
     })
 
     if (!serperRes.ok) {
-      const err = await serperRes.text()
-      console.error('[serper]', serperRes.status, err)
-      return res.status(502).json({ error: `Serper.dev API error: ${serperRes.status}` })
+      const requestId = requestIdFor(res)
+      const body = await serperRes.text()
+      const failure = buildUpstreamUnavailableResponse({
+        error: new Error(`Serper.dev responded ${serperRes.status}: ${body}`),
+        requestId,
+        operation: 'serper.search',
+        provider: 'serper',
+        publicMessage: 'Search is temporarily unavailable. Please try again shortly.',
+        meta: { status: serperRes.status, responseBody: body.slice(0, 2000) },
+        logger,
+      })
+      return res.status(failure.status).json(failure.body)
     }
 
     const data = await serperRes.json()
@@ -208,7 +245,7 @@ app.get('/search', async (req: Request, res: Response) => {
       try {
         const topSnippets = results.slice(0, 3).map((r: any) => r.description).join(' | ')
         const suggCompletion = await groq.chat.completions.create({
-          model: 'llama-3.3-70b-versatile',
+          model: GROQ_CHAT_MODEL,
           messages: [
             {
               role: 'system',
@@ -225,8 +262,16 @@ app.get('/search', async (req: Request, res: Response) => {
         const raw = suggCompletion.choices[0]?.message?.content || '[]'
         const match = raw.match(/\[[\s\S]*\]/)
         if (match) suggestions = JSON.parse(match[0]).slice(0, 3)
-      } catch (err: any) {
-        console.warn('[suggestions] Groq error:', err.message)
+      } catch (err: unknown) {
+        // Suggestions are an optional enhancement — a Groq failure must not
+        // fail the search. Log it server-side, return no suggestions.
+        const requestId = requestIdFor(res)
+        logger.warn(`[groq] suggestions failed (requestId=${requestId})`, {
+          requestId,
+          provider: 'groq',
+          operation: 'groq.chat.completions.suggestions',
+          detail: describeError(err),
+        })
       }
     }
 
@@ -241,9 +286,18 @@ app.get('/search', async (req: Request, res: Response) => {
       latencyMs,
       suggestions,
     })
-  } catch (err: any) {
-    console.error('[search error]', err.message)
-    return res.status(500).json({ error: 'Search failed. Check server logs.' })
+  } catch (err: unknown) {
+    const failure = buildErrorResponse({
+      error: err,
+      requestId: requestIdFor(res),
+      operation: 'search',
+      provider: 'internal',
+      publicMessage: 'Search failed. Please try again later.',
+      code: 'search_failed',
+      status: 500,
+      logger,
+    })
+    return res.status(failure.status).json(failure.body)
   }
 })
 
@@ -271,9 +325,18 @@ app.get('/images', async (req: Request, res: Response) => {
     })
 
     if (!serperRes.ok) {
-      const err = await serperRes.text()
-      console.error('[serper images]', serperRes.status, err)
-      return res.status(502).json({ error: `Serper.dev API error: ${serperRes.status}` })
+      const requestId = requestIdFor(res)
+      const body = await serperRes.text()
+      const failure = buildUpstreamUnavailableResponse({
+        error: new Error(`Serper.dev responded ${serperRes.status}: ${body}`),
+        requestId,
+        operation: 'serper.images',
+        provider: 'serper',
+        publicMessage: 'Image search is temporarily unavailable. Please try again shortly.',
+        meta: { status: serperRes.status, responseBody: body.slice(0, 2000) },
+        logger,
+      })
+      return res.status(failure.status).json(failure.body)
     }
 
     const data = await serperRes.json()
@@ -307,9 +370,18 @@ app.get('/images', async (req: Request, res: Response) => {
       txHash,
       latencyMs,
     })
-  } catch (err: any) {
-    console.error('[images error]', err.message)
-    return res.status(500).json({ error: 'Image search failed. Check server logs.' })
+  } catch (err: unknown) {
+    const failure = buildErrorResponse({
+      error: err,
+      requestId: requestIdFor(res),
+      operation: 'images',
+      provider: 'internal',
+      publicMessage: 'Image search failed. Please try again later.',
+      code: 'image_search_failed',
+      status: 500,
+      logger,
+    })
+    return res.status(failure.status).json(failure.body)
   }
 })
 
@@ -350,9 +422,18 @@ app.get('/news', async (req: Request, res: Response) => {
     })
 
     if (!serperRes.ok) {
-      const err = await serperRes.text()
-      console.error('[serper news]', serperRes.status, err)
-      return res.status(502).json({ error: `Serper.dev API error: ${serperRes.status}` })
+      const requestId = requestIdFor(res)
+      const body = await serperRes.text()
+      const failure = buildUpstreamUnavailableResponse({
+        error: new Error(`Serper.dev responded ${serperRes.status}: ${body}`),
+        requestId,
+        operation: 'serper.news',
+        provider: 'serper',
+        publicMessage: 'News search is temporarily unavailable. Please try again shortly.',
+        meta: { status: serperRes.status, responseBody: body.slice(0, 2000) },
+        logger,
+      })
+      return res.status(failure.status).json(failure.body)
     }
 
     const data = await serperRes.json()
@@ -385,9 +466,18 @@ app.get('/news', async (req: Request, res: Response) => {
       txHash,
       latencyMs,
     })
-  } catch (err: any) {
-    console.error('[news error]', err.message)
-    return res.status(500).json({ error: 'News search failed. Check server logs.' })
+  } catch (err: unknown) {
+    const failure = buildErrorResponse({
+      error: err,
+      requestId: requestIdFor(res),
+      operation: 'news',
+      provider: 'internal',
+      publicMessage: 'News search failed. Please try again later.',
+      code: 'news_search_failed',
+      status: 500,
+      logger,
+    })
+    return res.status(failure.status).json(failure.body)
   }
 })
 
@@ -420,7 +510,7 @@ app.post('/ai/chat', async (req: Request, res: Response) => {
   if (!wantsStream) {
     try {
       const completion = await groq.chat.completions.create({
-        model: 'llama-3.3-70b-versatile',
+        model: GROQ_CHAT_MODEL,
         messages: groqMessages,
         max_tokens:  512,
         temperature: 0.7,
@@ -428,9 +518,21 @@ app.post('/ai/chat', async (req: Request, res: Response) => {
 
       const content = completion.choices[0]?.message?.content || 'No response.'
       return res.json({ content, model: completion.model })
-    } catch (err: any) {
-      console.error('[groq error]', err.message)
-      return res.status(500).json({ error: `Groq AI error: ${err.message}` })
+    } catch (err: unknown) {
+      // Upstream Groq SDK errors are logged in full server-side; the client
+      // gets a generic message plus the requestId for correlation.
+      const failure = buildErrorResponse({
+        error: err,
+        requestId: requestIdFor(res),
+        operation: 'groq.chat.completions',
+        provider: 'groq',
+        publicMessage: 'The AI assistant is temporarily unavailable. Please try again shortly.',
+        code: 'ai_unavailable',
+        status: 500,
+        meta: { model: GROQ_CHAT_MODEL, mode: 'json' },
+        logger,
+      })
+      return res.status(failure.status).json(failure.body)
     }
   }
 
@@ -442,19 +544,27 @@ app.post('/ai/chat', async (req: Request, res: Response) => {
   res.setHeader('X-Accel-Buffering', 'no')
   res.flushHeaders?.()
 
-  const sendEvent = (event: string, data: Record<string, unknown>) => {
+  const sendEvent = (event: string, data: unknown) => {
     res.write(`event: ${event}\n`)
     res.write(`data: ${JSON.stringify(data)}\n\n`)
   }
 
   // Abort the Groq stream if the client disconnects mid-response.
+  //
+  // Listen on `res`, not `req`: once `express.json()` has consumed the body the
+  // request stream ends and `req` emits 'close' immediately, which would abort
+  // every stream before the first token. The response's 'close' event is the
+  // signal that the socket actually went away.
   const controller = new AbortController()
-  req.on('close', () => controller.abort())
+  let streamFinished = false
+  res.on('close', () => {
+    if (!streamFinished) controller.abort()
+  })
 
   try {
     const stream = await groq.chat.completions.create(
       {
-        model: 'llama-3.3-70b-versatile',
+        model: GROQ_CHAT_MODEL,
         messages: groqMessages,
         max_tokens:  512,
         temperature: 0.7,
@@ -467,12 +577,25 @@ app.post('/ai/chat', async (req: Request, res: Response) => {
       const delta = chunk.choices[0]?.delta?.content
       if (delta) sendEvent('delta', { content: delta })
     }
-    sendEvent('done', { model: 'llama-3.3-70b-versatile' })
+    sendEvent('done', { model: GROQ_CHAT_MODEL })
+    streamFinished = true
     res.end()
-  } catch (err: any) {
+  } catch (err: unknown) {
+    // A genuine client disconnect: nothing to report and nowhere to report it.
     if (controller.signal.aborted) return res.end()
-    console.error('[groq stream error]', err.message)
-    sendEvent('error', { error: `Groq AI error: ${err.message}` })
+    // Same sanitization as the JSON path: details stay server-side.
+    const failure = buildErrorResponse({
+      error: err,
+      requestId: requestIdFor(res),
+      operation: 'groq.chat.completions.stream',
+      provider: 'groq',
+      publicMessage: 'The AI assistant is temporarily unavailable. Please try again shortly.',
+      code: 'ai_unavailable',
+      status: 500,
+      meta: { model: GROQ_CHAT_MODEL, mode: 'stream' },
+      logger,
+    })
+    sendEvent('error', failure.body)
     res.end()
   }
 })

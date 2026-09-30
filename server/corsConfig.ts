@@ -16,6 +16,9 @@ const CORS_ALLOWED_HEADERS = [
 const CORS_EXPOSED_HEADERS = [
   'PAYMENT-REQUIRED',
   'X-Payment-Response',
+  // Exposed so browser clients can read the correlation ID off a failed
+  // request and quote it in a bug report.
+  'X-Request-Id',
 ] as const
 
 const CORS_METHODS = ['GET', 'POST', 'OPTIONS'] as const

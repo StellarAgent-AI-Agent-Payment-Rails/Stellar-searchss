@@ -5,6 +5,11 @@ import {
   AMOUNT_STROOPS,
   AMOUNT_USDC
 } from '../src/lib/constants'
+import {
+  buildErrorResponse,
+  buildUpstreamUnavailableResponse,
+  resolveRequestId,
+} from '../src/lib/apiError'
 
 // ─── Config ───────────────────────────────────────────────────────────────
 const RECEIVING_ADDRESS = process.env.STELLAR_RECEIVING_ADDRESS!
@@ -27,10 +32,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   res.setHeader('Access-Control-Expose-Headers', [
     'PAYMENT-REQUIRED',
     'X-Payment-Response',
+    'X-Request-Id',
   ].join(', '))
 
   if (req.method === 'OPTIONS') return res.status(200).end()
   if (req.method !== 'GET')    return res.status(405).json({ error: 'Method not allowed' })
+
+  // Correlation token echoed to the client and attached to server-side logs.
+  const requestId = resolveRequestId(req.headers['x-request-id'])
+  res.setHeader('X-Request-Id', requestId)
 
   const { q, count = '5', freshness } = req.query as Record<string, string>
 
@@ -114,8 +124,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     if (!serperRes.ok) {
       const errText = await serperRes.text()
-      console.error('[serper]', serperRes.status, errText)
-      return res.status(502).json({ error: `Serper.dev API error: ${serperRes.status}` })
+      const failure = buildUpstreamUnavailableResponse({
+        error: new Error(`Serper.dev responded ${serperRes.status}: ${errText}`),
+        requestId,
+        operation: 'serper.search',
+        provider: 'serper',
+        publicMessage: 'Search is temporarily unavailable. Please try again shortly.',
+        meta: { status: serperRes.status, responseBody: errText.slice(0, 2000) },
+      })
+      return res.status(failure.status).json(failure.body)
     }
 
     const data      = await serperRes.json()
@@ -145,8 +162,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       latencyMs,
     })
 
-  } catch (err: any) {
-    console.error('[search error]', err.message)
-    return res.status(500).json({ error: 'Search failed.' })
+  } catch (err: unknown) {
+    const failure = buildErrorResponse({
+      error: err,
+      requestId,
+      operation: 'search',
+      provider: 'internal',
+      publicMessage: 'Search failed. Please try again later.',
+      code: 'search_failed',
+      status: 500,
+    })
+    return res.status(failure.status).json(failure.body)
   }
 }
