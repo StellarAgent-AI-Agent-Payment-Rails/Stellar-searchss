@@ -259,6 +259,7 @@ export function validateQuery(
   }
   // Strip null bytes and ASCII control characters (C0 + DEL) to prevent
   // log injection and odd Serper behavior.
+  // eslint-disable-next-line no-control-regex
   const cleanQ = q.replace(/[\x00-\x1F\x7F]/g, '').trim()
   if (!cleanQ) {
     return { ok: false, error: 'Query contains no valid characters.' }
@@ -285,6 +286,7 @@ function parseSuggestions(raw: string): string[] {
   const cleaned: string[] = []
   for (const item of parsed) {
     if (typeof item !== 'string') return []
+    // eslint-disable-next-line no-control-regex
     const trimmed = item.replace(/[\x00-\x1F\x7F]/g, '').trim()
     if (!trimmed) return []
     cleaned.push(trimmed.slice(0, MAX_SUGGESTION_LENGTH))
@@ -767,6 +769,7 @@ app.post('/summarize-url', freeRouteLimiter, async (req: Request, res: Response)
     if (typeof instruction !== 'string' || instruction.length > MAX_INSTRUCTION_LENGTH) {
       return res.status(400).json({ error: `instruction must be a string of at most ${MAX_INSTRUCTION_LENGTH} characters` })
     }
+    // eslint-disable-next-line no-control-regex
     const clean = instruction.replace(/[\x00-\x1F\x7F]/g, ' ').trim()
     if (clean) task = clean
   }

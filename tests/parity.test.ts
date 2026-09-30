@@ -1,4 +1,4 @@
-import { describe, test, beforeAll as before, afterAll as after } from 'vitest';
+import { describe, test, before, after } from 'node:test';
 import assert from 'node:assert';
 import http, { Server } from 'node:http';
 import type { AddressInfo } from 'node:net';

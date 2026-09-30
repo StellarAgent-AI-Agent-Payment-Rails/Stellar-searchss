@@ -70,7 +70,7 @@ export function Navbar({
               onFocus={() => onPrefetch?.(id)}
               aria-current={page === id ? "page" : undefined}
               className="relative flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-display text-xs tracking-wider transition-colors"
-              style={{ color: page === id ? '#00f5ff' : 'rgba(255,255,255,0.3)' }}
+              style={{ color: page === id ? '#00f5ff' : 'rgba(255,255,255,0.6)' }}
             >
               <Icon className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">{label}</span>
@@ -95,7 +95,7 @@ export function Navbar({
             href="https://github.com/stellar/x402-stellar"
             target="_blank"
             rel="noopener noreferrer"
-            className="p-2 rounded-lg text-white/25 hover:text-white/55 hover:bg-white/5 transition-all"
+            className="p-2 rounded-lg text-white/60 hover:text-white/80 hover:bg-white/5 transition-all"
           >
             <Github className="w-4 h-4" />
           </a>
@@ -103,7 +103,7 @@ export function Navbar({
             href="https://developers.stellar.org/docs/build/agentic-payments/x402"
             target="_blank"
             rel="noopener noreferrer"
-            className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-display text-xs text-white/25 hover:text-white/50 transition-all"
+            className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-display text-xs text-white/60 hover:text-white/80 transition-all"
             style={{ border: '1px solid rgba(255,255,255,0.08)' }}
           >
             x402 DOCS <ExternalLink className="w-3 h-3" />

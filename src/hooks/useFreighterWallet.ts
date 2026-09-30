@@ -12,7 +12,8 @@ import {
   getNetwork,
 } from '@stellar/freighter-api'
 import { Horizon } from '@stellar/stellar-sdk'
-import { HORIZON_URL, USDK_ISSUER } from '../lib/stellar'
+import { toast } from 'sonner'
+import { HORIZON_URL, USDC_ISSUER } from '../lib/stellar'
 
 export interface WalletState {
   publicKey: string | null
@@ -62,9 +63,6 @@ export interface Receipt {
 export const RECEIPTS_STORAGE_KEY = 'stellar-receipts'
 
 export const DEFAULT_TX_PAGE_SIZE = 15
-const horizon = new Horizon.Server(NORIZON_URL)
-
-const horizon = new Horizon.Server(HORIZON_URL)
 
 function loadReceipts(): Receipt[] {
   try {
@@ -213,7 +211,7 @@ const [receipts, setReceipts] = useState<Receipt[]>(loadReceipts)
           balance.asset_type === 'credit_alphanum12'
         ) {
           const credit = balance as any
-          if (credit.asset_code === 'USDC' && credit.asset_issuer === USDK_ISSUER) {
+          if (credit.asset_code === 'USDC' && credit.asset_issuer === USDC_ISSUER) {
             hasUsddTrustline = true
             usdc = parseFloat(credit.balance).toFixed(6)
           }
@@ -288,10 +286,6 @@ console.error('Failed to load account from Horizon:', err)
             timestamp: op.created_at,
             memo: op.transaction?.memo,
           }))
-
-        const txs = ops.records
-          .filter((op: any) => op.type === 'payment' || op.type === 'create_account')
-          .map(mapOperation)
 
         setTransactions(txs)
         setTxCursor(ops.records.length > 0 ? ops.records[ops.records.length - 1].paging_token : null)
@@ -445,13 +439,12 @@ setSearchSession(null)
   }, [])
 
   const refresh = useCallback(async () => {
-if (!wallet.publicKey) return
+    if (!wallet.publicKey) return
     setWallet(prev => ({ ...prev, refreshing: true }))
     try {
       await fetchWalletData(wallet.publicKey)
     } finally {
       setWallet(prev => ({ ...prev, refreshing: false }))
-    }
     }
   }, [wallet.publicKey, fetchWalletData])
 

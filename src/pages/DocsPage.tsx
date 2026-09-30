@@ -1,12 +1,10 @@
 import { motion } from 'framer-motion'
-import { ExternalLink, GitBranch, Globe, Shield, Zap, Code2, Server } from 'lucide-react'
+import { CheckCircle2, Coins, Droplets, ExternalLink, GitBranch, Globe, KeyRound, Shield, Wallet, Zap, Code2, Server } from 'lucide-react'
 import {
   IS_MAINNET, STELLAR_NETWORK, AMOUNT_USDC, STELLAR_EXPERT_URL, HORIZON_URL,
-  USDC_ISSUER, USDC_CONTRACT, explorerAssetUrl, explorerContractUrl,
+  USDC_ISSUER, USDC_CONTRACT, USDC_ISSUER_TESTNET, explorerAssetUrl, explorerContractUrl,
 } from '../lib/stellar'
 import { CopyableAddress } from '../components/ui'
-import { CheckCircle2, Coins, Droplets, ExternalLink, GitBranch, Globe, KeyRound, Shield, Wallet, Zap, Code2, Server } from 'lucide-react'
-import { IS_MAINNET, STELLAR_NETWORK, AMOUNT_USDC, STELLAR_EXPERT_URL, HORIZON_URL, USDC_ISSUER_TESTNET } from '../lib/stellar'
 import { FUNDING_URLS } from '../lib/funding'
 
 const getSteps = () => [
@@ -96,9 +94,9 @@ export function DocsPage() {
 
       {/* Header */}
       <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
-        <span className="font-display text-xs text-neon-cyan/50 tracking-widest">DOCUMENTATION</span>
+        <span className="font-display text-xs text-neon-cyan/70 tracking-widest">DOCUMENTATION</span>
         <h1 className="font-display text-3xl sm:text-4xl text-white">HOW IT WORKS</h1>
-        <p className="text-white/45 text-lg max-w-2xl leading-relaxed">
+        <p className="text-white/60 text-lg max-w-2xl leading-relaxed">
           StellarSearch is a pay-per-query search API for autonomous AI agents. It uses the real x402 protocol
           on Stellar — no mock data, no fake payments. Every search costs {AMOUNT_USDC} USDC settled on-chain.
         </p>
@@ -113,7 +111,7 @@ export function DocsPage() {
               href={href}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg font-display text-xs tracking-wider text-white/40 hover:text-neon-cyan transition-all"
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg font-display text-xs tracking-wider text-white/60 hover:text-neon-cyan transition-all"
               style={{ border: '1px solid rgba(255,255,255,0.08)' }}
             >
               {label} <ExternalLink className="w-3 h-3" />
@@ -125,7 +123,7 @@ export function DocsPage() {
       {/* x402 payment flow */}
       <section className="space-y-5">
         <div>
-          <span className="font-display text-xs text-neon-cyan/35 tracking-widest">THE x402 PROTOCOL</span>
+          <span className="font-display text-xs text-neon-cyan/70 tracking-widest">THE x402 PROTOCOL</span>
           <h2 className="font-display text-2xl text-white mt-1">Payment flow</h2>
         </div>
         <div className="space-y-3">
@@ -151,10 +149,10 @@ export function DocsPage() {
                 </div>
                 <div className="flex-1 pb-2">
                   <div className="flex items-center gap-2 mb-1.5">
-                    <span className="font-display text-xs text-white/20">{step.num}</span>
+                    <span className="font-display text-xs text-white/60">{step.num}</span>
                     <h3 className="font-display text-sm text-white">{step.title}</h3>
                   </div>
-                  <p className="text-white/45 text-sm leading-relaxed mb-3">{step.desc}</p>
+                  <p className="text-white/60 text-sm leading-relaxed mb-3">{step.desc}</p>
                   <div className="py-2 px-3 rounded-lg bg-black/30 border border-white/5">
                     <code className="font-mono text-xs break-all" style={{ color: 'rgba(0,245,255,0.6)' }}>
                       {step.code}
@@ -170,9 +168,9 @@ export function DocsPage() {
       {/* Get testnet USDC — funding guide (issue #94) */}
       <section id="get-testnet-usdc" className="space-y-5 scroll-mt-20">
         <div>
-          <span className="font-display text-xs text-neon-cyan/35 tracking-widest">WALLET SETUP</span>
+          <span className="font-display text-xs text-neon-cyan/60 tracking-widest">WALLET SETUP</span>
           <h2 className="font-display text-2xl text-white mt-1">Get testnet USDC</h2>
-          <p className="text-white/45 text-sm max-w-2xl mt-2 leading-relaxed">
+          <p className="text-white/60 text-sm max-w-2xl mt-2 leading-relaxed">
             Every search costs {AMOUNT_USDC} USDC. New wallets start at zero — these four steps take you from
             an empty account to one that can pay for searches. Complete them in order: the faucet only works
             after the trustline exists.
@@ -201,10 +199,10 @@ export function DocsPage() {
                 </div>
                 <div className="flex-1 pb-2">
                   <div className="flex items-center gap-2 mb-1.5">
-                    <span className="font-display text-xs text-white/20">{step.num}</span>
+                    <span className="font-display text-xs text-white/60">{step.num}</span>
                     <h3 className="font-display text-sm text-white">{step.title}</h3>
                   </div>
-                  <p className="text-white/45 text-sm leading-relaxed mb-3">{step.desc}</p>
+                  <p className="text-white/60 text-sm leading-relaxed mb-3">{step.desc}</p>
                   <div className="space-y-1.5 mb-3">
                     {step.links.map(({ label, href }) => (
                       <a
@@ -244,7 +242,7 @@ export function DocsPage() {
             </div>
             <div className="space-y-2 min-w-0">
               <h3 className="font-display text-sm text-neon-cyan">TRUST EXACTLY THIS ISSUER</h3>
-              <p className="text-white/45 text-sm leading-relaxed">
+              <p className="text-white/60 text-sm leading-relaxed">
                 If you add a trustline to the wrong issuer, faucet USDC will never arrive. The testnet USDC
                 issuer used by this app (and by the faucet) is:
               </p>
@@ -270,7 +268,7 @@ export function DocsPage() {
       {/* Real stack */}
       <section className="space-y-5">
         <div>
-          <span className="font-display text-xs text-neon-cyan/35 tracking-widest">REAL STACK — NO MOCKS</span>
+          <span className="font-display text-xs text-neon-cyan/70 tracking-widest">REAL STACK — NO MOCKS</span>
           <h2 className="font-display text-2xl text-white mt-1">Technology used</h2>
         </div>
         <div className="rounded-2xl overflow-hidden" style={{ border: '1px solid rgba(255,255,255,0.07)' }}>
@@ -286,14 +284,14 @@ export function DocsPage() {
                 background: 'rgba(6,13,20,0.5)',
               }}
             >
-              <span className="font-display text-white/25 tracking-wider w-44 flex-shrink-0 uppercase" style={{ fontSize: '10px' }}>
+              <span className="font-display text-white/60 tracking-wider w-44 flex-shrink-0 uppercase" style={{ fontSize: '10px' }}>
                 {label}
               </span>
               <a
                 href={href}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-2 text-sm text-white/55 hover:text-neon-cyan transition-colors"
+                className="flex items-center gap-2 text-sm text-white/60 hover:text-neon-cyan transition-colors"
               >
                 {value}
                 <ExternalLink className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
@@ -306,9 +304,9 @@ export function DocsPage() {
       {/* Active network assets — verify the exact USDC before signing */}
       <section className="space-y-5">
         <div>
-          <span className="font-display text-xs text-neon-cyan/35 tracking-widest">VERIFY WHAT YOU SPEND</span>
+          <span className="font-display text-xs text-neon-cyan/60 tracking-widest">VERIFY WHAT YOU SPEND</span>
           <h2 className="font-display text-2xl text-white mt-1">Active {networkLabel.toLowerCase()} assets</h2>
-          <p className="text-white/45 text-sm leading-relaxed max-w-2xl">
+          <p className="text-white/60 text-sm leading-relaxed max-w-2xl">
             Payments settle in USDC on Stellar {networkLabel.toLowerCase()}. Confirm the exact issuer and Soroban
             contract this deployment is configured with — copy them or open them on Stellar Expert before you sign.
           </p>
@@ -332,13 +330,15 @@ export function DocsPage() {
             />
           </div>
         </div>
+      </section>
+
       {/* Search privacy */}
       <section className="space-y-3" aria-labelledby="search-privacy-heading">
         <div>
-          <span className="font-display text-xs text-neon-cyan/35 tracking-widest">LOCAL DATA</span>
+          <span className="font-display text-xs text-neon-cyan/60 tracking-widest">LOCAL DATA</span>
           <h2 id="search-privacy-heading" className="font-display text-2xl text-white mt-1">Search history and privacy</h2>
         </div>
-        <p className="text-white/45 text-sm leading-relaxed">
+        <p className="text-white/60 text-sm leading-relaxed">
           Successful paid searches keep a local receipt in this browser, including the transaction hash, amount, time, and network. Search query text is not stored unless you opt in using the “Save search query text in this browser” control in the Dashboard. Turning the setting off removes query text from existing receipts; you can also clear all local receipts there. Receipts are kept only in this browser’s localStorage and are limited to the 50 most recent searches.
         </p>
       </section>
@@ -359,7 +359,7 @@ export function DocsPage() {
           </div>
           <div className="space-y-2">
             <h3 className="font-display text-sm text-neon-cyan">STELLAR HACKATHON 2026 · AGENTS ON STELLAR</h3>
-            <p className="text-white/45 text-sm leading-relaxed">
+            <p className="text-white/60 text-sm leading-relaxed">
               Built for the Agents on Stellar hackathon (March 30 – April 13, 2026). Addresses the explicit
               demand signal: pay-per-query web search instead of monthly subscriptions. Uses real x402 protocol,
               real Stellar testnet transactions, real search results, and real Groq AI — zero mock data.

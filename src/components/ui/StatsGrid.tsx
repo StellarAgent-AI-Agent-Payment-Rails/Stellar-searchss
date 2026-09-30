@@ -80,7 +80,7 @@ export function StatsGrid() {
           <p className="font-display text-lg font-bold" style={{ color }}>
             {fmt(stats[key as keyof Omit<ServerStats, 'status'>])}
           </p>
-          <p className="font-display text-white/30 mt-0.5 tracking-wider uppercase"
+          <p className="font-display text-white/60 mt-0.5 tracking-wider uppercase"
             style={{ fontSize: '9px' }}>
             {label}
           </p>
@@ -91,7 +91,7 @@ export function StatsGrid() {
 
       <div className="col-span-2 lg:col-span-4 flex items-center justify-end gap-2 mt-1">
         <div className={`w-1.5 h-1.5 rounded-full ${stats.status === 'online' ? 'bg-neon-green animate-pulse' : 'bg-red-500'}`} />
-        <span className="font-display text-xs text-white/25">
+        <span className="font-display text-xs text-white/60">
           SERVER {stats.status === 'online' ? 'ONLINE' : stats.status === 'invalid' ? 'INVALID HEALTH RESPONSE' : 'OFFLINE — run: npm run server'}
         </span>
       </div>
