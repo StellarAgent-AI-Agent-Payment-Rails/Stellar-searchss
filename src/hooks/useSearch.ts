@@ -14,10 +14,11 @@ import { useState, useCallback }              from 'react'
 import { toast }                               from 'sonner'
 import { x402Client, x402HTTPClient }          from '@x402/fetch'
 import { ExactStellarScheme }                  from '@x402/stellar/exact/client'
-import { signAuthEntry, getNetworkDetails }    from '@stellar/freighter-api'
 import { Networks }                            from '@stellar/stellar-sdk'
 import { Buffer }                              from 'buffer'
 import { HORIZON_URL, IS_MAINNET, EXPECTED_WALLET_NETWORK, explorerTxUrl } from '../lib/stellar'
+import type { WalletSigner }                   from '../lib/walletSigner'
+import { getActiveSigner }                     from '../lib/walletSigner'
 
 const SERVER_URL = (import.meta as any).env?.VITE_SERVER_URL ?? (
   typeof window !== 'undefined' && window.location.origin.includes('vercel.app') 
@@ -63,8 +64,7 @@ export interface SearchSession {
   durationMs?: number
   suggestions: string[]
 }
-
-export function useSearch(walletAddress: string | null = null) {
+export function useSearch(walletAddress: string | null = null, signer: WalletSigner | null = null) {
   const [session, setSession] = useState<SearchSession>({
     query: '', results: [], txHash: null, paidAmount: null, status: 'idle', suggestions: [],
   })
@@ -81,7 +81,7 @@ export function useSearch(walletAddress: string | null = null) {
       setSession(prev => ({ ...prev, step }))
 
     try {
-      if (!walletAddress) throw new Error('Connect your Freighter wallet first.')
+      if (!walletAddress) throw new Error('Connect a Stellar wallet first.')
 
       console.log('🔍 Starting search with wallet:', walletAddress)
 
@@ -89,44 +89,52 @@ export function useSearch(walletAddress: string | null = null) {
       const net = await getNetworkDetails()
       if (net.error)              throw new Error(net.error.message)
       if (net.network !== EXPECTED_WALLET_NETWORK) {
-        throw new Error(`Switch Freighter to ${EXPECTED_WALLET_NETWORK}. Currently: ${net.network}`)
+        throw new Error(`Switch your wallet to ${EXPECTED_WALLET_NETWORK}. Currently: ${net.network}`)
       }
       console.log('✅ Network verified:', net.network)
 
       // Step 2 — build the signer
       const passphrase = IS_MAINNET ? Networks.PUBLIC : Networks.TESTNET
-      const signer = {
-        address: walletAddress,
+      const activeSigner = signer ?? getActiveSigner()
+      if (!activeSigner) {
+        throw new Error('No wallet signer available. Connect a wallet that supports signAuthEntry.')
+      }
+      if (!activeSigner.supportsSignAuthEntry) {
+        throw new Error(
+          `${activeSigner.name} does not support signAuthEntry and cannot be used for paid searches. ` +
+          `Please connect a wallet that supports auth-entry signing (e.g. Freighter, xBull, Albedo, Ledger).`
+        )
+      }
+      const x402Signer = {
+        address: activeSigner.address,
         signAuthEntry: async (
           xdr: string,
           opts?: { networkPassphrase?: string }
         ): Promise<{ signedAuthEntry: string; signerAddress: string }> => {
-          console.log('🔑 Calling Freighter signAuthEntry...')
+          console.log(`🔑 Calling ${activeSigner.name} signAuthEntry...`)
 
-          const result = await signAuthEntry(xdr, {
+          const raw = await activeSigner.signAuthEntry(xdr, {
             networkPassphrase: opts?.networkPassphrase ?? passphrase,
           })
 
-          if (result.error) throw new Error(result.error.message)
-          if (!result.signedAuthEntry) throw new Error('Freighter returned no signedAuthEntry')
+          if (!raw) throw new Error(`${activeSigner.name} returned no signedAuthEntry`)
 
-          console.log('✅ Freighter signed. Type:', typeof result.signedAuthEntry)
+          console.log(`✅ ${activeSigner.name} signed. Type:`, typeof raw)
 
-          const raw = result.signedAuthEntry
           const signedAuthEntry = typeof raw === 'string'
             ? raw
             : Buffer.from(raw as unknown as Uint8Array).toString('base64')
 
           console.log('✅ signedAuthEntry base64 length:', signedAuthEntry.length)
 
-          return { signedAuthEntry, signerAddress: walletAddress }
+          return { signedAuthEntry, signerAddress: activeSigner.address }
         },
       }
 
       // Step 3 — build the x402 client with correct .register() chain
       const client     = new x402Client().register(
         'stellar:*',
-        new ExactStellarScheme(signer, { url: SOROBAN_RPC_URL })
+        new ExactStellarScheme(x402Signer, { url: SOROBAN_RPC_URL })
       )
       const httpClient = new x402HTTPClient(client)
       console.log('✅ x402 client built')
@@ -156,9 +164,9 @@ export function useSearch(walletAddress: string | null = null) {
 
       // Flow step 3 — createPaymentPayload() triggers the Freighter popup (signs auth entry)
       advance(3)
-      console.log('🔐 Triggering Freighter popup via createPaymentPayload...')
+      console.log('🔐 Triggering wallet popup via createPaymentPayload...')
       const paymentPayload = await client.createPaymentPayload(paymentRequired)
-      console.log('✅ Freighter approved, payload created')
+      console.log('✅ Wallet approved, payload created')
 
       const paymentHeaders = httpClient.encodePaymentSignatureHeader(paymentPayload)
       console.log('✅ Payment headers encoded')
@@ -238,7 +246,7 @@ export function useSearch(walletAddress: string | null = null) {
         error:  msg,
       }))
     }
-  }, [walletAddress])
+  }, [walletAddress, signer])
 
   const reset = useCallback(() => {
     setSession({ query: '', results: [], txHash: null, paidAmount: null, status: 'idle', suggestions: [] })
