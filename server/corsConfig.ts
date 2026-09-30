@@ -3,6 +3,8 @@
  */
 
 import type { CorsOptions } from 'cors'
+import cors from 'cors'
+import type { Request, Response } from 'express'
 
 const CORS_ALLOWED_HEADERS = [
   'Content-Type',
@@ -74,4 +76,20 @@ export function buildCorsOptions(): CorsOptions {
       callback(null, allowed.includes(origin))
     },
   }
+}
+
+/** Apply the shared CORS policy to Vercel handlers without ending preflight requests. */
+export function applyServerlessCors(req: unknown, res: unknown): Promise<void> {
+  const middleware = cors({ ...buildCorsOptions(), preflightContinue: true })
+
+  return new Promise((resolve, reject) => {
+    middleware(req as Request, res as Response, (error) => {
+      if (error) {
+        reject(error)
+        return
+      }
+
+      resolve()
+    })
+  })
 }
