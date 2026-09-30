@@ -1,6 +1,14 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
 
-export default function handler(req: VercelRequest, res: VercelResponse) {
+import { loadRateLimitConfig } from '../server/rateLimitConfig.js'
+import { rateLimitGuard } from './rateLimit.js'
+
+const rateLimitConfig = loadRateLimitConfig()
+const limited = rateLimitGuard('GET /api/health', rateLimitConfig.health, rateLimitConfig)
+
+export default async function handler(req: VercelRequest, res: VercelResponse) {
+  if (await limited(req, res)) return
+
   const NETWORK = process.env.STELLAR_NETWORK || 'stellar:testnet'
   const FACILITATOR_URL = process.env.FACILITATOR_URL || 'https://www.x402.org/facilitator'
   const SERPER_API_KEY = process.env.SERPER_API_KEY

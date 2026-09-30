@@ -1,15 +1,20 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
-import { 
+import {
   STELLAR_NETWORK, 
   USDC_CONTRACT, 
   AMOUNT_STROOPS,
   AMOUNT_USDC
 } from '../src/lib/constants'
+import { loadRateLimitConfig } from '../server/rateLimitConfig.js'
+import { rateLimitGuard } from './rateLimit.js'
 
 // ─── Config ───────────────────────────────────────────────────────────────
 const RECEIVING_ADDRESS = process.env.STELLAR_RECEIVING_ADDRESS!
 const NETWORK           = STELLAR_NETWORK as 'stellar:testnet' | 'stellar:mainnet'
 const SERPER_API_KEY    = process.env.SERPER_API_KEY!
+
+const rateLimitConfig = loadRateLimitConfig()
+const limited = rateLimitGuard('GET /api/search', rateLimitConfig.search, rateLimitConfig)
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
 
@@ -28,6 +33,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     'PAYMENT-REQUIRED',
     'X-Payment-Response',
   ].join(', '))
+
+  if (await limited(req, res)) return
 
   if (req.method === 'OPTIONS') return res.status(200).end()
   if (req.method !== 'GET')    return res.status(405).json({ error: 'Method not allowed' })
@@ -118,7 +125,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(502).json({ error: `Serper.dev API error: ${serperRes.status}` })
     }
 
-    const data      = await serperRes.json()
+    const data      = (await serperRes.json()) as any
     const latencyMs = Date.now() - t0
 
     const results = (data.organic || []).map((r: any, i: number) => ({

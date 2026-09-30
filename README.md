@@ -70,7 +70,8 @@ npm run dev
 ### 6. Test the x402 flow
 
 ```bash
-npm run test:search "Stellar blockchain"
+npm test                            # unit + integration tests
+npm run test:search "Stellar blockchain"   # live end-to-end check
 ```
 
 ---

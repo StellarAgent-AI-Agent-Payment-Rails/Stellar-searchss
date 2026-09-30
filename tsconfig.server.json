@@ -12,6 +12,6 @@
     "resolveJsonModule": true,
     "noEmit": false
   },
-  "include": ["server/**/*", "mcp-server/**/*", "scripts/**/*"],
+  "include": ["server/**/*", "api/**/*", "mcp-server/**/*", "scripts/**/*", "test/**/*"],
   "exclude": ["node_modules", "dist", "src"]
 }

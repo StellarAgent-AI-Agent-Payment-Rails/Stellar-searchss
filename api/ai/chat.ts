@@ -1,9 +1,17 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
 import Groq from 'groq-sdk'
 
+import { loadRateLimitConfig } from '../../server/rateLimitConfig.js'
+import { rateLimitGuard } from '../rateLimit.js'
+
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY! })
 
+const rateLimitConfig = loadRateLimitConfig()
+const limited = rateLimitGuard('POST /api/ai/chat', rateLimitConfig.aiChat, rateLimitConfig)
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
+  if (await limited(req, res)) return
+
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' })
   }

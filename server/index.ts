@@ -17,6 +17,8 @@ import express, { Request, Response } from 'express'
 import cors from 'cors'
 import dotenv from 'dotenv'
 import { buildCorsOptions, getCorsStartupMessage } from './corsConfig.js'
+import { installRateLimiting } from './rateLimit.js'
+import { loadRateLimitConfig } from './rateLimitConfig.js'
 import Groq from 'groq-sdk'
 import { paymentMiddlewareFromConfig } from '@x402/express'
 import { ExactStellarScheme } from '@x402/stellar/exact/server'
@@ -59,6 +61,11 @@ const groq = new Groq({ apiKey: GROQ_API_KEY })
 // ─── Middleware ───────────────────────────────────────────────────────────
 app.use(cors(buildCorsOptions()))
 app.use(express.json())
+
+// Rate limiting must sit in front of the x402 payment middleware and every
+// route so unauthenticated floods are rejected before any paid work happens.
+const rateLimitConfig = loadRateLimitConfig()
+const rateLimiters = installRateLimiting(app, rateLimitConfig)
 
 // ─── x402 payment guard on /search ───────────────────────────────────────
 // paymentMiddlewareFromConfig is the recommended API per official Stellar docs.
@@ -527,8 +534,13 @@ if (process.env.NODE_ENV !== 'production') {
     console.log(`   Serper:      ${SERPER_API_KEY ? '✓' : '✗ MISSING'}`)
     console.log(`   Groq:        ${GROQ_API_KEY  ? '✓' : '✗ MISSING'}`)
     console.log(`   Receiving:   ${RECEIVING_ADDRESS || '✗ MISSING'}`)
-    console.log(`   ${getCorsStartupMessage()}\n`)
+    console.log(`   ${getCorsStartupMessage()}`)
+    console.log(
+      `   Rate limit:  ${rateLimitConfig.enabled ? 'on' : 'OFF'} — global ${rateLimitConfig.global.max}/${rateLimitConfig.global.windowMs}ms` +
+      `, trust proxy ${String(rateLimitConfig.trustProxy)}\n`,
+    )
   })
 }
 
+export { rateLimitConfig, rateLimiters }
 export default app

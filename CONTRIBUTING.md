@@ -397,7 +397,14 @@ const signedAuthEntry = Buffer.from(raw as unknown as Uint8Array).toString('base
 
 ## Testing
 
-Currently the project relies on manual testing. We are actively adding automated tests — see the open [testing issues](https://github.com/Emmy123222/Stellar-Search/issues?q=is%3Aopen+label%3Atesting). If you are adding a new hook or server route, please include tests.
+Automated unit and integration tests run with [Vitest](https://vitest.dev):
+
+```bash
+npm test          # run once
+npm run test:watch
+```
+
+Tests live next to the code they cover (`server/*.test.ts`, `api/*.test.ts`) with cross-cutting integration tests in `test/`. See the open [testing issues](https://github.com/Emmy123222/Stellar-Search/issues?q=is%3Aopen+label%3Atesting) for gaps. If you are adding a new hook or server route, please include tests.
 
 ### Manual testing checklist
 
