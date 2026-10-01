@@ -19,10 +19,10 @@ import logger from './logger'
 import { fetchPageText, UrlSummaryError } from './urlSummary'
 import {
   STELLAR_NETWORK,
-  HORIZON_URL, 
-  AMOUNT_USDC, 
-  AMOUNT_STROOPS 
-} from '../src/lib/constants'
+  HORIZON_URL,
+  AMOUNT_USDC,
+  AMOUNT_STROOPS
+} from '../shared/constants.js'
 
 dotenv.config()
 
@@ -37,6 +37,27 @@ const stats = {
   startTime: Date.now(),
   cacheHits: 0,
   cacheMisses: 0,
+}
+
+// ─── In-memory receipts ───────────────────────────────────────────────────
+export interface Receipt {
+  id: string
+  timestamp: string      // ISO-8601
+  type: 'search' | 'images' | 'news'
+  query: string
+  amountUsdc: string     // e.g. "0.001"
+  currency: 'USDC'
+  network: string
+  txHash: string | null
+  latencyMs: number
+}
+
+const MAX_RECEIPTS = 500
+export const receipts: Receipt[] = []
+
+export function addReceipt(receipt: Receipt): void {
+  receipts.unshift(receipt)
+  if (receipts.length > MAX_RECEIPTS) receipts.length = MAX_RECEIPTS
 }
 
 // ─── Query Cache ──────────────────────────────────────────────────────────
@@ -272,7 +293,7 @@ app.get('/search', async (req: Request, res: Response) => {
       return res.status(502).json({ error: `Serper.dev API error: ${serperRes.status}` })
     }
 
-    const data = await serperRes.json()
+    const data: any = await serperRes.json()
     const latencyMs = Date.now() - t0
 
     stats.totalQueries++
@@ -350,6 +371,18 @@ app.get('/search', async (req: Request, res: Response) => {
 
     queryCache.set(cacheKey, { data: responseData, timestamp: Date.now() })
 
+    addReceipt({
+      id: crypto.randomUUID(),
+      timestamp: new Date().toISOString(),
+      type: 'search',
+      query: cleanQ,
+      amountUsdc: AMOUNT_USDC,
+      currency: 'USDC',
+      network: NETWORK,
+      txHash,
+      latencyMs,
+    })
+
     return res.json(responseData)
   } catch (err: any) {
     console.error('[search error]', err.message)
@@ -413,7 +446,7 @@ app.get('/images', async (req: Request, res: Response) => {
       return res.status(502).json({ error: `Serper.dev API error: ${serperRes.status}` })
     }
 
-    const data = await serperRes.json()
+    const data: any = await serperRes.json()
     const latencyMs = Date.now() - t0
 
     stats.totalQueries++
@@ -446,6 +479,18 @@ app.get('/images', async (req: Request, res: Response) => {
     }
 
     queryCache.set(cacheKey, { data: responseData, timestamp: Date.now() })
+
+    addReceipt({
+      id: crypto.randomUUID(),
+      timestamp: new Date().toISOString(),
+      type: 'images',
+      query: cleanQ,
+      amountUsdc: AMOUNT_USDC,
+      currency: 'USDC',
+      network: NETWORK,
+      txHash,
+      latencyMs,
+    })
 
     return res.json(responseData)
   } catch (err: any) {
@@ -509,7 +554,7 @@ app.get('/news', async (req: Request, res: Response) => {
       return res.status(502).json({ error: `Serper.dev API error: ${serperRes.status}` })
     }
 
-    const data = await serperRes.json()
+    const data: any = await serperRes.json()
     const latencyMs = Date.now() - t0
 
     stats.totalQueries++
@@ -541,6 +586,18 @@ app.get('/news', async (req: Request, res: Response) => {
     }
 
     queryCache.set(cacheKey, { data: responseData, timestamp: Date.now() })
+
+    addReceipt({
+      id: crypto.randomUUID(),
+      timestamp: new Date().toISOString(),
+      type: 'news',
+      query: cleanQ,
+      amountUsdc: AMOUNT_USDC,
+      currency: 'USDC',
+      network: NETWORK,
+      txHash,
+      latencyMs,
+    })
 
     return res.json(responseData)
   } catch (err: any) {
@@ -605,9 +662,15 @@ app.post('/ai/chat', async (req: Request, res: Response) => {
     res.write(`data: ${JSON.stringify(data)}\n\n`)
   }
 
-  // Abort the Groq stream if the client disconnects mid-response.
+  // Abort the Groq stream if the client disconnects mid-response. The
+  // request's 'close' event fires as soon as its body is consumed, so
+  // disconnects are detected on the response instead: ServerResponse emits
+  // 'close' with writableEnded === false only when the client went away
+  // before the response completed.
   const controller = new AbortController()
-  req.on('close', () => controller.abort())
+  res.on('close', () => {
+    if (!res.writableEnded) controller.abort()
+  })
 
   try {
     const stream = await groq.chat.completions.create(
@@ -699,6 +762,52 @@ app.post('/summarize-url', async (req: Request, res: Response) => {
   }
 })
 
+// ─── GET /receipts ────────────────────────────────────────────────────────
+// Returns the in-memory paid-query receipts, optionally filtered to a date
+// range via ISO-8601 `from` and `to` query parameters.  Also returns a
+// `totalSpent` summary so an agent can report its own costs without having
+// to sum the amounts itself.
+app.get('/receipts', (req: Request, res: Response) => {
+  const { from, to, limit: limitParam } = req.query as Record<string, string>
+
+  let filtered = receipts
+
+  if (from) {
+    const fromMs = Date.parse(from)
+    if (isNaN(fromMs)) {
+      return res.status(400).json({ error: '`from` must be a valid ISO-8601 date string' })
+    }
+    filtered = filtered.filter((r) => Date.parse(r.timestamp) >= fromMs)
+  }
+
+  if (to) {
+    const toMs = Date.parse(to)
+    if (isNaN(toMs)) {
+      return res.status(400).json({ error: '`to` must be a valid ISO-8601 date string' })
+    }
+    filtered = filtered.filter((r) => Date.parse(r.timestamp) <= toMs)
+  }
+
+  if (limitParam !== undefined) {
+    const n = parseInt(limitParam, 10)
+    if (isNaN(n) || n < 1) {
+      return res.status(400).json({ error: '`limit` must be a positive integer' })
+    }
+    filtered = filtered.slice(0, n)
+  }
+
+  const totalSpentUsdc = filtered
+    .reduce((sum, r) => sum + parseFloat(r.amountUsdc), 0)
+    .toFixed(6)
+
+  return res.json({
+    receipts: filtered,
+    count: filtered.length,
+    totalSpentUsdc,
+    currency: 'USDC',
+  })
+})
+
 // ─── GET /health ──────────────────────────────────────────────────────────
 app.get('/health', (req: Request, res: Response) => {
   const avg = stats.latencies.length
@@ -754,13 +863,14 @@ app.get('/', (_req: Request, res: Response) => {
       'GET /news?q=<query>':   '0.001 USDC via x402 — news articles',
       'POST /ai/chat':         'Groq AI — free',
       'POST /summarize-url':   'Fetch a public URL and summarise it with Groq — free',
+      'GET /receipts':         'List past paid-query receipts with total-spent summary',
       'GET /health':           'Live server stats',
     },
   })
 })
 
 // ─── Start ────────────────────────────────────────────────────────────────
-if (process.env.NODE_ENV !== 'production') {
+if (process.env.NODE_ENV !== 'production' && process.env.NODE_ENV !== 'test') {
   app.listen(PORT, () => {
     console.log(`\n🚀 StellarSearch on http://localhost:${PORT}`)
     console.log(`   Network:     ${NETWORK}`)

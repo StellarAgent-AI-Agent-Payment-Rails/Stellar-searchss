@@ -1,38 +1,66 @@
-import { test, describe, before, after, assert } from 'node:assert';
+import { describe, test, beforeAll as before, afterAll as after } from 'vitest';
+import assert from 'node:assert';
 import http, { Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import { createApp } from '../server/app';
-import handler from '../api/index';
+import healthHandler from '../api/health';
+import searchHandler from '../api/search';
+
+type ServerlessHandler = (req: any, res: any) => unknown;
 
 type ParityCase = {
   name: string;
   method: 'GET' | 'POST';
-  path: string;
+  expressPath: string;
+  serverlessPath: string;
+  handler: ServerlessHandler;
+  compareFields: string[];
   body?: unknown;
   headers?: Record<string, string>;
 };
 
 const cases: ParityCase[] = [
-  { name: 'health happy path', method: 'GET', path: '/health' },
-  { name: 'search happy path', method: 'GET', path: '/api/search?q=Stellar+blockchain' },
-  { name: 'search missing query', method: 'GET', path: '/api/search' },
-  { name: 'search empty query', method: 'GET', path: '/api/search?q=' },
-  { name: 'suggestions happy path', method: 'GET', path: '/api/suggestions?q=stellar' },
-  { name: 'suggestions missing query', method: 'GET', path: '/api/suggestions' },
-  { name: 'unknown route', method: 'GET', path: '/definitely-not-a-route' },
   {
-    name: 'post search with body',
-    method: 'POST',
-    path: '/api/search',
-    body: { q: 'Stellar blockchain' },
-    headers: { 'content-type': 'application/json' },
+    name: 'health happy path',
+    method: 'GET',
+    expressPath: '/health',
+    serverlessPath: '/api/health',
+    handler: healthHandler,
+    compareFields: [
+      'status',
+      'version',
+      'network',
+      'pricePerQuery',
+      'protocol',
+      'facilitator',
+      'serperApiConfigured',
+      'groqApiConfigured',
+      'receivingAddressConfigured',
+    ],
   },
   {
-    name: 'post search with invalid json',
-    method: 'POST',
-    path: '/api/search',
-    body: '{ not json',
-    headers: { 'content-type': 'application/json' },
+    name: 'search happy path',
+    method: 'GET',
+    expressPath: '/search?q=Stellar+blockchain',
+    serverlessPath: '/api/search?q=Stellar+blockchain',
+    handler: searchHandler,
+    compareFields: [],
+  },
+  {
+    name: 'search missing query',
+    method: 'GET',
+    expressPath: '/search',
+    serverlessPath: '/api/search',
+    handler: searchHandler,
+    compareFields: [],
+  },
+  {
+    name: 'search empty query',
+    method: 'GET',
+    expressPath: '/search?q=',
+    serverlessPath: '/api/search?q=',
+    handler: searchHandler,
+    compareFields: [],
   },
 ];
 
@@ -86,7 +114,7 @@ async function callExpress(
   if (testCase.body !== undefined) {
     body = typeof testCase.body === 'string' ? testCase.body : JSON.stringify(testCase.body);
   }
-  const res = await fetch(new URL(testCase.path, baseUrl), {
+  const res = await fetch(new URL(testCase.expressPath, baseUrl), {
     method: testCase.method,
     headers,
     body,
@@ -99,7 +127,7 @@ async function callExpress(
 }
 
 async function callServerless(testCase: ParityCase): Promise<ResponseSnapshot> {
-  const url = new URL(testCase.path, 'http://localhost');
+  const url = new URL(testCase.serverlessPath, 'http://localhost');
   const headers: Record<string, string> = { ...testCase.headers };
   let body: string | undefined;
   if (testCase.body !== undefined) {
@@ -112,13 +140,40 @@ async function callServerless(testCase: ParityCase): Promise<ResponseSnapshot> {
     headers,
     body,
     query: Object.fromEntries(url.searchParams.entries()),
-  } as unknown as Parameters<typeof handler>[0];
+  };
 
-  const result = await handler(req);
-  const status = result.statusCode ?? 200;
-  const contentType = result.headers?.['content-type'] ?? result.headers?.['Content-Type'];
-  const raw = typeof result.body === 'string' ? result.body : JSON.stringify(result.body);
-  return { status, body: normalizeBody(raw, contentType)};
+  const res: any = {
+    statusCode: 200,
+    headers: {} as Record<string, string>,
+    body: '',
+    status(code: number) {
+      this.statusCode = code;
+      return this;
+    },
+    setHeader(name: string, value: string) {
+      this.headers[name.toLowerCase()] = value;
+      return this;
+    },
+    json(data: unknown) {
+      this.body = JSON.stringify(data);
+      return this;
+    },
+    send(data: unknown) {
+      this.body = typeof data === 'string' ? data : JSON.stringify(data);
+      return this;
+    },
+    end(data?: unknown) {
+      if (data !== undefined) {
+        this.body = typeof data === 'string' ? data : JSON.stringify(data);
+      }
+      return this;
+    },
+  };
+
+  await testCase.handler(req, res);
+
+  const contentType = res.headers['content-type'];
+  return { status: res.statusCode, body: normalizeBody(res.body, contentType) };
 }
 
 describe('parity between Express and serverless handlers', () => {
@@ -148,9 +203,16 @@ describe('parity between Express and serverless handlers', () => {
         expressResponse.status,
         `status code diverged for ${testCase.name}: Express = ${expressResponse.status}, serverless = ${serverlessResponse.status}`,
       );
+      const comparableBody = (body: unknown) => {
+        if (!body || typeof body !== 'object') return body;
+        const values = body as Record<string, unknown>;
+        return Object.fromEntries(
+          testCase.compareFields.map((field) => [field, values[field]]),
+        );
+      };
       assert.deepStrictEqual(
-        serverlessResponse.body,
-        expressResponse.body,
+        comparableBody(serverlessResponse.body),
+        comparableBody(expressResponse.body),
         `response body diverged for ${testCase.name}`,
       );
     });

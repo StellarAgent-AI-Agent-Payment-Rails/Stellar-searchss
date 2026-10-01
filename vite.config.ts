@@ -2,6 +2,9 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { readFileSync } from 'fs'
 import { resolve } from 'path'
+import { visualizer } from 'rollup-plugin-visualizer'
+
+const analyze = process.env.ANALYZE === '1'
 
 // Read version from package.json at build time so the frontend bundle always
 // reflects the version without an extra runtime fetch.
@@ -10,7 +13,16 @@ const { version } = JSON.parse(
 )
 
 export default defineConfig({
-  plugins: [react()],
+  plugins: [
+    react(),
+    analyze &&
+      visualizer({
+        filename: 'dist/stats.html',
+        gazzle: true,
+        broli: true,
+        template: 'trememap',
+      }),
+  ],
   // Required for @stellar/stellar-sdk and @stellar/freighter-api in browser
   define: {
     global: 'globalThis',

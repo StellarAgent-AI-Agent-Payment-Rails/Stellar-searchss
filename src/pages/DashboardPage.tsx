@@ -185,7 +185,7 @@ export function DashboardPage({ transactions, txLoading, publicKey, usdcBalance,
                   fontSize={10} 
                   tickLine={false} 
                   axisLine={false} 
-                  tickFormatter={(val) => `$${val}`}
+                  tickFormatter={(val: number) => `$${val}`}
                   fontFamily="monospace"
                 />
                 <Tooltip 
