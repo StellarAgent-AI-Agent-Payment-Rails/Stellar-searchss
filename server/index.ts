@@ -9,6 +9,7 @@ import { readFileSync } from 'fs'
 import { resolve, dirname } from 'path'
 import { fileURLToPath } from 'url'
 import { buildCorsOptions, getCorsStartupMessage } from './corsConfig.js'
+import { createRateLimiter } from './ratelimit.js'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const { version: APP_VERSION } = JSON.parse(
@@ -22,10 +23,10 @@ import logger from './logger'
 import { fetchPageText, UrlSummaryError } from './urlSummary'
 import {
   STELLAR_NETWORK,
-  HORIZON_URL, 
-  AMOUNT_USDC, 
-  AMOUNT_STROOPS 
-} from '../src/lib/constants'
+  HORIZON_URL,
+  AMOUNT_USDC,
+  AMOUNT_STROOPS,
+} from '../shared/constants.js'
 import {
   buildErrorResponse,
   buildUpstreamUnavailableResponse,
@@ -159,6 +160,15 @@ function requestIdFor(res: Response): string {
   return requestId
 }
 
+// ─── Rate limiting (free, cost-bearing endpoints) ─────────────────────────
+// /ai/chat and /summarize-url are free but each triggers a Groq call (and the
+// latter a network fetch), so they are the abuse-prone surface. Limits are
+// keyed per client IP so one caller cannot starve the rest.
+const freeRouteLimiter = createRateLimiter({
+  windowMs: Number(process.env.RATE_LIMIT_WINDOW_MS) || 60_000,
+  max: Number(process.env.RATE_LIMIT_MAX) || 30,
+})
+
 // ─── x402 payment guard on /search ───────────────────────────────────────
 // paymentMiddlewareFromConfig is the recommended API per official Stellar docs.
 // It uses the Coinbase public facilitator (no API key needed for testnet).
@@ -230,6 +240,8 @@ export function validateQuery(
   }
   // Strip null bytes and ASCII control characters (C0 + DEL) to prevent
   // log injection and odd Serper behavior.
+  // Stripping control characters is the point of this regex.
+  // eslint-disable-next-line no-control-regex
   const cleanQ = q.replace(/[\x00-\x1F\x7F]/g, '').trim()
   if (!cleanQ) {
     return { ok: false, error: 'Query contains no valid characters.' }
@@ -256,6 +268,7 @@ function parseSuggestions(raw: string): string[] {
   const cleaned: string[] = []
   for (const item of parsed) {
     if (typeof item !== 'string') return []
+    // eslint-disable-next-line no-control-regex
     const trimmed = item.replace(/[\x00-\x1F\x7F]/g, '').trim()
     if (!trimmed) return []
     cleaned.push(trimmed.slice(0, MAX_SUGGESTION_LENGTH))
@@ -359,6 +372,7 @@ app.get('/search', async (req: Request, res: Response) => {
           .slice(0, MAX_SNIPPETS_FED)
           .map((r: any) =>
             String(r.description || '')
+              // eslint-disable-next-line no-control-regex
               .replace(/[\x00-\x1F\x7F]/g, ' ')
               .slice(0, MAX_SNIPPET_LENGTH),
           )
@@ -386,8 +400,7 @@ app.get('/search', async (req: Request, res: Response) => {
           temperature: 0.7,
         })
         const raw = suggCompletion.choices[0]?.message?.content || '[]'
-        const match = raw.match(/\[[\s\S]*\]/)
-        if (match) suggestions = JSON.parse(match[0]).slice(0, 3)
+        suggestions = parseSuggestions(raw)
       } catch (err: unknown) {
         // Suggestions are an optional enhancement — a Groq failure must not
         // fail the search. Log it server-side, return no suggestions.
@@ -411,7 +424,23 @@ app.get('/search', async (req: Request, res: Response) => {
       txHash,
       latencyMs,
       suggestions,
+    }
+
+    queryCache.set(cacheKey, { data: responseData, timestamp: Date.now() })
+
+    addReceipt({
+      id: crypto.randomUUID(),
+      timestamp: new Date().toISOString(),
+      type: 'search',
+      query: cleanQ,
+      amountUsdc: AMOUNT_USDC,
+      currency: 'USDC',
+      network: NETWORK,
+      txHash,
+      latencyMs,
     })
+
+    return res.json(responseData)
   } catch (err: unknown) {
     const failure = buildErrorResponse({
       error: err,
@@ -522,7 +551,23 @@ app.get('/images', async (req: Request, res: Response) => {
       currency: 'USDC',
       txHash,
       latencyMs,
+    }
+
+    queryCache.set(cacheKey, { data: responseData, timestamp: Date.now() })
+
+    addReceipt({
+      id: crypto.randomUUID(),
+      timestamp: new Date().toISOString(),
+      type: 'images',
+      query: cleanQ,
+      amountUsdc: AMOUNT_USDC,
+      currency: 'USDC',
+      network: NETWORK,
+      txHash,
+      latencyMs,
     })
+
+    return res.json(responseData)
   } catch (err: unknown) {
     const failure = buildErrorResponse({
       error: err,
@@ -631,7 +676,23 @@ app.get('/news', async (req: Request, res: Response) => {
       currency: 'USDC',
       txHash,
       latencyMs,
+    }
+
+    queryCache.set(cacheKey, { data: responseData, timestamp: Date.now() })
+
+    addReceipt({
+      id: crypto.randomUUID(),
+      timestamp: new Date().toISOString(),
+      type: 'news',
+      query: cleanQ,
+      amountUsdc: AMOUNT_USDC,
+      currency: 'USDC',
+      network: NETWORK,
+      txHash,
+      latencyMs,
     })
+
+    return res.json(responseData)
   } catch (err: unknown) {
     const failure = buildErrorResponse({
       error: err,
@@ -651,7 +712,7 @@ app.get('/news', async (req: Request, res: Response) => {
 // Streams responses as Server-Sent Events when the client sends
 // `Accept: text/event-stream`; otherwise returns the full completion as JSON
 // (back-compat fallback for callers that don't support SSE).
-app.post('/ai/chat', async (req: Request, res: Response) => {
+app.post('/ai/chat', freeRouteLimiter, async (req: Request, res: Response) => {
   const { messages } = req.body as {
     messages: { role: 'system' | 'user' | 'assistant'; content: string }[]
   }
@@ -772,7 +833,7 @@ app.post('/ai/chat', async (req: Request, res: Response) => {
 // link-local addresses are refused, including via redirects and DNS rebinding.
 const MAX_INSTRUCTION_LENGTH = 200
 
-app.post('/summarize-url', async (req: Request, res: Response) => {
+app.post('/summarize-url', freeRouteLimiter, async (req: Request, res: Response) => {
   const { url, instruction } = (req.body ?? {}) as { url?: unknown; instruction?: unknown }
 
   let task = 'Summarise the page in a few short paragraphs, then list the key points.'
@@ -780,6 +841,7 @@ app.post('/summarize-url', async (req: Request, res: Response) => {
     if (typeof instruction !== 'string' || instruction.length > MAX_INSTRUCTION_LENGTH) {
       return res.status(400).json({ error: `instruction must be a string of at most ${MAX_INSTRUCTION_LENGTH} characters` })
     }
+    // eslint-disable-next-line no-control-regex
     const clean = instruction.replace(/[\x00-\x1F\x7F]/g, ' ').trim()
     if (clean) task = clean
   }

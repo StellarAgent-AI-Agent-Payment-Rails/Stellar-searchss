@@ -78,4 +78,4 @@ jobs:
         run: npm run build
 
       - name: Parity test (Express vs serverless)
-        run: npx tsx --test tests/parity.test.ts
+        run: npx vitest run tests/parity.test.ts

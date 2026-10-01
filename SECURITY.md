@@ -1,183 +1,140 @@
 # Security Policy
 
-StellarSearch moves money. Every search settles a real x402 payment on Stellar, and the
-server holds API keys and a receiving wallet. We take vulnerability reports seriously and
-we want to make it easy to tell us about a problem **privately**, before it is public.
+StellarSearch is a pay-per-query search service that settles payments on the Stellar network via the
+[x402](https://x402.org) protocol. Because payment **is** authentication in this system — there are no
+user accounts, sessions, or API keys — the security of the payment flow is the security of the
+product. This document is the entry point for how we handle security; the detailed analysis lives in
+a dedicated threat model.
+
+---
+
+## Payment Flow Threat Model
+
+> **[`docs/threat-model.md`](docs/threat-model.md)**
+>
+> Read this before deploying, reviewing a payment-related pull request, or changing any `@x402/*`
+> dependency.
+
+The threat model documents the trust boundaries between the **client**, the **backend server**, the
+**payment facilitator**, and the **Stellar network**; specifies what each party is trusted for versus
+what the server must verify independently; and enumerates 27 concrete attack scenarios with their
+mitigations or explicitly accepted risks.
+
+| Section | Contents |
+| --- | --- |
+| [§2 — System overview](docs/threat-model.md#2-system-overview) | Actors, the payment flow, and the **two divergent server implementations** |
+| [§3 — Trust boundaries](docs/threat-model.md#3-trust-boundaries) | TB-1 client ↔ backend, TB-2 upstream providers, TB-3 backend ↔ facilitator, TB-4 facilitator ↔ Stellar |
+| [§4 — Party trust matrix](docs/threat-model.md#4-party-trust-and-verification-matrix) | What each party is trusted for, and the **V-1…V-12** invariants the server must enforce |
+| [§5 — Attack enumeration](docs/threat-model.md#5-attack-enumeration-and-mitigations) | Replay, amount tampering, race conditions, post-settlement failure, and 23 more |
+| [§6 — Accepted risks](docs/threat-model.md#6-accepted-risks) | Deliberately unmitigated risks (AR-1…AR-8) and their compensating controls |
+| [§7 — Hardening backlog](docs/threat-model.md#7-hardening-backlog) | Prioritised remediation items |
+
+### Current posture — summary
+
+The highest-severity findings are recorded in the threat model. In brief:
+
+| ID | Finding | Severity | Status |
+| --- | --- | --- | --- |
+| [T-15](docs/threat-model.md#t-15-serverless-route-bypasses-payment-verification-entirely) | The Vercel handler `api/search.ts` checks only that a payment header is *present* — no signature, amount, asset, or settlement verification | **Critical** | **Unmitigated** |
+| [T-07](docs/threat-model.md#t-07-compromised-or-intercepted-facilitator-accepts-forged-payments) | The facilitator is the sole verification and settlement authority, reached with no mutual authentication | **Critical** | Accepted ([AR-1](docs/threat-model.md#6-accepted-risks)) |
+| [T-11](docs/threat-model.md#t-11-facilitator-reports-success-for-a-transaction-that-never-settled) | Settlement success is taken on trust and never confirmed against a finalized ledger | **Critical** | Accepted ([AR-2](docs/threat-model.md#6-accepted-risks)) |
+| [T-16](docs/threat-model.md#t-16-wildcard-cors-on-the-serverless-route) | Hard-coded `Access-Control-Allow-Origin: *` on the serverless route | High | Unmitigated |
+| [T-17](docs/threat-model.md#t-17-unauthenticated-resource-drain-and-no-rate-limiting) | No rate limiting on any route; `/ai/chat` is free and calls the billed Groq API | High | Unmitigated |
+| [T-25](docs/threat-model.md#t-25-usdc-contract-address-disagreement-between-implementations) | The two implementations quote different USDC contract addresses on mainnet | Medium | Unmitigated |
+
+> **Deployment note.** `server/index.ts` (Express) enforces payment via the `@x402` middleware.
+> `api/search.ts` (Vercel) does not. Until [T-15](docs/threat-model.md#t-15-serverless-route-bypasses-payment-verification-entirely)
+> is resolved, the Vercel deployment should be treated as **unmonetised** and not exposed to
+> untrusted traffic.
 
 ---
 
 ## Reporting a vulnerability
 
-**Please do not open a public issue for a security problem.**
+**Please do not open a public GitHub issue for a security vulnerability.**
 
-### Preferred channel — GitHub private vulnerability reporting
+Report it privately via GitHub's security advisory form:
 
-Use GitHub's private advisory flow:
+1. Go to **Security** → **Advisories** → **Report a vulnerability** on this repository.
+2. Include: affected component (`server/`, `api/`, `src/`, `mcp-server/`), a description of the issue,
+   reproduction steps, and any impact assessment you have made.
+3. You will receive an acknowledgement, and we will keep you updated as the issue is resolved.
 
-1. Open the [**Security** tab](https://github.com/StellarAgent-AI-Agent-Payment-Rails/Stellar-searchss/security)
-   of this repository.
-2. Click **Report a vulnerability**.
-3. Describe the issue. The report is visible only to you and the maintainers until it is
-   published.
+If private reporting is unavailable to you, open an issue that contains **only** a pointer asking the
+maintainers to contact you privately — no technical detail.
 
-This gives us a private thread, a place to draft a fix, and a CVE request when one is
-warranted.
+### What we ask of reporters
 
-### Fallback channel
+- Give us a reasonable window to ship a fix before public disclosure. We aim to acknowledge reports
+  within 3 business days.
+- Avoid accessing data that does not belong to you, and avoid sustained denial-of-service testing
+  against the public endpoints.
+- Reports of payment-integrity issues — anything that lets a client obtain a paid resource without a
+  settled payment — are treated as **Critical** and prioritised accordingly.
 
-If private vulnerability reporting is unavailable to you, contact a maintainer directly
-through their GitHub profile ([Emmy123222](https://github.com/Emmy123222)) and ask for a
-private channel. Do not include exploit details in the first public message — just say you
-have a security report and we will move the conversation somewhere private.
+### Scope
 
-### What to include
+In scope: the payment and verification flow, the facilitator integration, secret handling, the input
+validation on paid routes, and the serverless handlers.
 
-- **Summary** — what the vulnerability is, in one or two sentences.
-- **Impact** — what an attacker gains. Loss of funds, key exfiltration, and payment bypass
-  are all high priority; a cosmetic UI bug is not.
-- **Affected component** — for example `server/index.ts`, `api/`, `mcp-server/`, the
-  Freighter/x402 signing path in `src/hooks/useSearch.ts`, or a dependency.
-- **Reproduction** — minimal, numbered steps. A proof-of-concept or a request/response
-  capture is ideal. Redact your own keys and addresses.
-- **Environment** — OS, browser, Node version, Freighter version.
-- **Suggested fix** — optional, but very welcome.
-
-If you are unsure whether something counts, report it. We would rather triage a non-issue
-than miss a real one.
+Out of scope: the security of the Stellar network, Soroban, or the x402 specification; vulnerabilities
+in Serper.dev, Groq, or the Freighter extension; attacks requiring a compromised developer machine;
+and reports from automated scanners without a demonstrated impact against this codebase.
 
 ---
 
-## Secret Scanning
+## Secure development guidelines
 
-This repository enforces secret hygiene through three layers:
+These supplement [`CONTRIBUTING.md`](CONTRIBUTING.md); they do not replace it.
 
-1. **GHactions CI** - [gitleaks](https://gitleaks.com/) runs on every push and pull request via `.github/workflows/security.yml`. A committed API key fails the build.
-2. **Pre-commit hook** - `.husky/pre-commit` runs `gitleaks protect --staged` before any commit is created.
-3. **GitHub secret scanning and push protection** - enabled on the repository to block known secret patterns at the GitHub layer.
+### Secrets
 
-## What to Do If a Key Is Leaked
+- Never commit real secrets. `.env` is in `.gitignore` — keep it that way. **`.env.production` is
+  committed**; it must contain placeholders only.
+- Server secrets (`SERPER_API_KEY`, `GROQ_API_KEY`, `STELLAR_RECEIVING_ADDRESS`) belong in `.env`,
+  read via `process.env`, and must never be imported from `src/`.
+- Frontend variables must be prefixed `VITE_` to reach the browser. Anything `VITE_`-prefixed is
+  public — do not put a secret behind that prefix.
+- When adding an environment variable, add it to [`.env.example`](.env.example) with a descriptive
+  comment and a placeholder value.
 
-**Rotate first, then scrub.** Never the reverse order - a rewritten history does not invalidate a key that has already been exposed.
+### Payment-flow changes
 
-1. **Contain** - Revoke the leaked credential immediately in the provider console (Stellar, Groq, Vercel, etc.).
-2. **Rotate** - Generate a replacement credential and update it in GitHub Actions secrets and your local `.env`. Verify the new key works before continuing.
-3. **Assess** - Review provider access logs for unauthorized use between the leak and rotation.
-4. **Scrub** - Only after rotation, purge the secret from history using `git filter-repo --install --force --path <path>`, then force-push and notify collaborators to re-clone.
-5. **Prevent** - Add a gitleaks allowlist entry or regex only if the value is genuinely a placeholder, never to silence a real key.
+- Any change touching `server/index.ts:66-116`, `api/search.ts`, or the `@x402/*` packages is a
+  **security-sensitive change**. Check it against the V-1…V-12 invariants in
+  [§4 of the threat model](docs/threat-model.md#4-party-trust-and-verification-matrix) and update the
+  threat model in the same pull request.
+- Never let the client-supplied price, asset, or `payTo` reach a code path without being compared
+  against a server-computed value.
+- Never introduce a `Settlement-Overrides` header derived from client input — see
+  [T-12](docs/threat-model.md#t-12-settlement-overrides-header-abuse).
+- Upgrading `@x402/*` is a security change: the guarantees in §4.2 of the threat model are inherited
+  from those packages, not implemented in this repository.
 
----
+### Input handling
 
-## What to expect from us
+- Validate and bound all client input. `validateQuery()` in `server/index.ts:123-139` is the
+  reference implementation: length cap, control-character stripping, and clamped numeric parameters.
+- Do not return raw upstream provider error messages to clients
+  ([T-19](docs/threat-model.md#t-19-secret-exposure)).
+- Use the `logger` from `server/logger.ts` rather than `console.*`, and never log secrets,
+  authorization headers, or full payment payloads.
 
-| Stage | Target |
-|---|---|
-| Acknowledge receipt | within **48 hours** |
-| Triage and severity assessment | within **5 business days** |
-| Fix or documented mitigation | severity-dependent — see below |
-| Public disclosure | by agreement, after a fix ships |
+### Before opening a pull request
 
-Fix targets:
-
-| Severity | Examples | Target |
-|---|---|---|
-| Critical | Loss of funds, private key exposure, payment/signature bypass | **7 days** |
-| High | Auth bypass, server-side secret disclosure, RCE | **30 days** |
-| Medium / Low | Denial of service, information leak without secrets, dependency advisories | next release |
-
-We will keep you updated in the private thread, credit you in the advisory unless you ask
-us not to, and coordinate the disclosure date with you. Please give us the agreed window
-to ship a fix before going public.
-
-There is **no bug bounty** — this is a community hackathon project with no budget for
-payouts. We offer credit and our genuine thanks.
-
----
-
-## Supported versions
-
-StellarSearch is pre-1.0 software under active development. Only the latest `main` is
-supported.
-
-| Version | Supported |
-|---|---|
-| `main` (latest) | ✅ |
-| `1.0.x` | ✅ |
-| Older commits / forks | ❌ |
-
-If you are running an older fork, please reproduce the issue against current `main` before
-reporting.
+- [ ] `npx tsc --noEmit` passes
+- [ ] No secrets, `.env` values, or real keys in the diff
+- [ ] No new `console.log` / debug statements
+- [ ] Threat model updated if the change affects a trust boundary, an invariant, or an accepted risk
 
 ---
 
-## This is testnet-first software
+## Related documentation
 
-**Read this before you report, and before you run anything.**
-
-- The project is built and tested against **Stellar Testnet** (`stellar:testnet`) with
-  testnet USDC. The hosted deployment exists to demonstrate the x402 flow, not to move
-  real value.
-- **Mainnet is not supported.** A `stellar:mainnet` configuration is available in
-  `.env.example` for experimentation only. We make no security guarantees about it, and
-  you should not put meaningful funds behind it.
-- Testnet keys, testnet USDC, and funded testnet accounts have **no monetary value**.
-  Compromising a testnet-only key is still interesting to us — the *code path* is the same
-  one that would run on mainnet — but it is not a loss of funds.
-- Because it is a public demo, anything you paste into a hosted instance (queries, API
-  keys you supply, wallet addresses) should be treated as public. Never point the demo at
-  a mainnet key that holds real funds.
-
-In short: report anything that would be a serious bug on mainnet, even though the running
-deployment is not handling real money.
-
----
-
-## In scope
-
-- The x402 payment flow: `402` challenge, `X-Payment` header handling, signature
-  verification, and settlement in `server/index.ts` and `src/hooks/useSearch.ts`.
-- Express server routes, middleware, CORS configuration, and rate limiting (`server/`).
-- Vercel serverless equivalents (`api/`).
-- MCP server and its tools (`mcp-server/`).
-- Secret handling — anything that can leak `SERPER_API_KEY`, `GROQ_API_KEY`,
-  `STELLAR_RECEIVING_ADDRESS`, or a user's private key.
-- The Freighter wallet integration in the browser (`src/hooks/useFreighterWallet.ts`).
-- Vulnerable or malicious dependencies.
-
-## Out of scope
-
-- Anything that only affects a testnet deployment with testnet funds, with no realistic
-  mainnet analogue.
-- Denial of service through sheer volume against a public demo instance, without a
-  specific flaw.
-- Missing security headers or best-practice hardening with no demonstrated impact.
-- Automated scanner output with no reproduction steps.
-- Social engineering of maintainers or contributors.
-
----
-
-## Safe harbour
-
-We will not pursue or support legal action against researchers who:
-
-- act in good faith and only test against their own accounts and the public demo,
-- avoid privacy violations, data destruction, and service degradation,
-- do not access, modify, or exfiltrate another person's data or funds,
-- give us a reasonable window to fix the issue before public disclosure.
-
-If you are unsure whether your testing crosses a line, ask first via the private channel.
-
----
-
-## For maintainers
-
-- Keep private vulnerability reporting enabled: **Settings → Code security and analysis →
-  Private vulnerability reporting**.
-- Triage incoming reports in the private advisory, not in issues.
-- Rotate any key that a report suggests may be exposed, then note the rotation in the
-  advisory.
-- `npm audit` runs against this repo; treat critical advisories in the payment path as
-  security issues, not chores.
-
----
-
-*StellarSearch — Stellar Hackathon 2026 · Agents on Stellar*
+| Document | Purpose |
+| --- | --- |
+| [`docs/threat-model.md`](docs/threat-model.md) | Payment flow threat model — trust boundaries, invariants, attacks |
+| [`CONTRIBUTING.md`](CONTRIBUTING.md) | Architecture, boundaries, workflow, and code style |
+| [`TROUBLESHOOTING.md`](TROUBLESHOOTING.md) | Payment-header format spec and common failure modes |
+| [`README.md`](README.md) | Setup, architecture overview, and the payment flow |
+| [`.env.example`](.env.example) | Documented environment variables |

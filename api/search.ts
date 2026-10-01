@@ -4,12 +4,13 @@ import {
   USDC_CONTRACT, 
   AMOUNT_STROOPS,
   AMOUNT_USDC
-} from '../src/lib/constants'
+} from '../shared/constants.js'
 import {
   buildErrorResponse,
   buildUpstreamUnavailableResponse,
   resolveRequestId,
 } from '../src/lib/apiError'
+import { incrementCounter } from '../src/lib/stats'
 
 // ─── Config ───────────────────────────────────────────────────────────────
 const RECEIVING_ADDRESS = process.env.STELLAR_RECEIVING_ADDRESS!
@@ -48,9 +49,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   const { q, count = '5', freshness } = req.query as Record<string, string>
 
-  if (!q?.trim()) return res.status(400).json({ error: 'Missing required parameter: q' })
-
   // ─── Payment check ────────────────────────────────────────────────────────
+  // Ordering matters for parity with server/index.ts: there the x402 guard is
+  // middleware, so it answers 402 before the route handler ever validates `q`.
+  // Validating `q` first here would return 400 where Express returns 402.
   const paymentHeader =
     req.headers['payment-signature'] ||
     req.headers['x-payment']         ||
@@ -86,6 +88,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     )
     return res.status(402).json({ error: 'Payment required' })
   }
+
+  if (!q?.trim()) return res.status(400).json({ error: 'Missing required parameter: q' })
 
   // ─── Payment present — proceed with search ────────────────────────────────
   if (paymentHeader) console.log('✅ Payment header received')

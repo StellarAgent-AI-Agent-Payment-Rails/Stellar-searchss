@@ -139,10 +139,25 @@ describe('POST /ai/chat SSE and fallback', () => {
 
     assert.equal(res.status, 200)
     const text = await res.text()
-    assert.equal(
-      text,
-      'event: error\ndata: {"error":"Groq AI error: Groq service unavailable"}\n\n',
-    )
+
+    // Upstream Groq details stay server-side (issue #159): the client gets a
+    // generic message, a correlation id, and a stable error code.
+    const errorLine = text
+      .split('\n')
+      .find(line => line.startsWith('data: '))
+    assert.ok(errorLine, 'expected an error event')
+
+    const payload = JSON.parse(errorLine!.slice('data: '.length))
+    assert.equal(payload.error, 'The AI assistant is temporarily unavailable. Please try again shortly.')
+    assert.equal(payload.code, 'ai_unavailable')
+    assert.equal(typeof payload.requestId, 'string')
+    assert.equal(payload.requestId, res.headers.get('x-request-id'))
+
+    // The raw upstream message must never reach the client.
+    assert.ok(!text.includes('Groq service unavailable'))
+
+    // The stream still terminates cleanly after the error event.
+    assert.ok(text.endsWith('\n\n'))
   })
 
   it('aborts the upstream Groq stream when client disconnects mid-stream', async () => {

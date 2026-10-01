@@ -2,7 +2,7 @@ import { describe, test, beforeAll as before, afterAll as after } from 'vitest';
 import assert from 'node:assert';
 import http, { Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
-import { createApp } from '../server/app';
+import app from '../server/index';
 import healthHandler from '../api/health';
 import searchHandler from '../api/search';
 
@@ -181,7 +181,9 @@ describe('parity between Express and serverless handlers', () => {
   let baseUrl: string;
 
   before(async () => {
-    const app = createApp();
+    // `server/index.ts` exports the configured Express app and only calls
+    // app.listen() when NODE_ENV is neither production nor test, so importing
+    // it here does not bind a port.
     server = http.createServer(app);
     const addr = await listen(server);
     baseUrl = `http://127.0.0.1:${addr.port}`;

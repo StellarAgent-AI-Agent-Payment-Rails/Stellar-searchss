@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from 'framer-motion'
-import { Search, Zap, AlertCircle } from 'lucide-react'
+import { Search, Zap, AlertCircle, RotateCw, ExternalLink } from 'lucide-react'
 import {
   SearchBar,
   SearchResults,
@@ -18,10 +18,11 @@ interface Props {
   session: SearchSession
   search: (query: string, count?: number) => Promise<void>
   reset: () => void
+  retry: () => Promise<void>
   onNavigateFundingGuide: () => void
 }
 
-export function SearchPage({ wallet, onConnectWallet, session, search, reset, onNavigateFundingGuide }: Props) {
+export function SearchPage({ wallet, onConnectWallet, session, search, reset, retry, onNavigateFundingGuide }: Props) {
   const handleSearch = (query: string) => {
     if (!wallet.connected) { onConnectWallet(); return }
     search(query)
@@ -123,9 +124,22 @@ export function SearchPage({ wallet, onConnectWallet, session, search, reset, on
             <PaymentFlowVisualizer session={session} />
 
             {session.status === 'error' && (
-              <div className="flex items-center gap-3 p-4 rounded-xl border border-red-500/25 bg-red-500/5">
+              <div className="p-4 rounded-xl border border-red-500/25 bg-red-500/5" role="alert">
+                <div className="flex items-start gap-3">
                 <AlertCircle className="w-4 h-4 text-red-400 flex-shrink-0" />
-                <p className="text-sm text-red-300">{session.error}</p>
+                  <div className="min-w-0">
+                    <p className="text-sm text-red-300">{session.error}</p>
+                    <p className="text-xs text-white/35 mt-1">The payment/search flow stopped at step {session.step ?? 'unknown'}. You can retry without retyping your query.</p>
+                    <div className="flex flex-wrap items-center gap-3 mt-3">
+                      <button onClick={retry} className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border border-red-300/30 text-red-200 hover:bg-red-300/10 font-display text-xs tracking-wider">
+                        <RotateCw className="w-3 h-3" /> RETRY SEARCH
+                      </button>
+                      <a href="#docs" onClick={() => onNavigateFundingGuide()} className="inline-flex items-center gap-1 text-xs text-white/45 hover:text-neon-cyan">
+                        Troubleshooting guide <ExternalLink className="w-3 h-3" />
+                      </a>
+                    </div>
+                  </div>
+                </div>
               </div>
             )}
 

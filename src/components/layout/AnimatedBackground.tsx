@@ -71,8 +71,7 @@ export function AnimatedBackground() {
 const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)')
 
     let animId: number
-    const matrixChars = '01ABCDEF⬊̖
-¸x402USDC'.split('')
+    const matrixChars = '01ABCDEF⬡◈▲⬢x402USDC'.split('')
 
     const resize = () => {
       canvas.width = window.innerWidth
@@ -240,9 +239,9 @@ mediaQuery.removeEventListener('change', handleChange)
 
   return (
     <canvas
-      refCanvasRef
+      ref={canvasRef}
       className="fixed inset-0 pointer-events-none z-0"
-      style={{ mixBliendMode: 'screen' }}
+      style={{ mixBlendMode: 'screen' }}
     />
   )
 }

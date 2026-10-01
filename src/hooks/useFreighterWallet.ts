@@ -21,6 +21,7 @@ export interface WalletState {
   xlmBalance: string
   usdcBalance: string
   loading: boolean
+  refreshing: boolean
   error: string | null
   hint: string | null
 }
@@ -110,6 +111,7 @@ export function useFreighterWallet() {
     xlmBalance: '0',
     usdcBalance: '0',
     loading: false,
+    refreshing: false,
     error: null,
     hint: null,
   })
@@ -118,6 +120,7 @@ export function useFreighterWallet() {
   const [txLoadingMore, setTxLoadingMore] = useState(false)
   const [txCursor, setTxCursor] = useState<string | null>(null)
   const [txHasMore, setTxHasMore] = useState(false)
+  const [transactionError, setTransactionError] = useState<string | null>(null)
 
   // Fetch real balances from Horizon
   const fetchBalances = useCallback(async (publicKey: string) => {
@@ -138,7 +141,7 @@ export function useFreighterWallet() {
         } else if (
           balance.asset_type === 'credit_alphanum4' &&
           (balance as any).asset_code === 'USDC' &&
-          (balance as any).asset_issuer === USDB_ISSUER
+          (balance as any).asset_issuer === USDC_ISSUER
         ) {
           usdc = parseFloat(balance.balance).toFixed(6)
         }
@@ -171,6 +174,7 @@ export function useFreighterWallet() {
   const fetchTransactions = useCallback(
     async (publicKey: string, pageSize: number = DEFAULT_TX_PAGE_SIZE) => {
       setTxLoading(true)
+      setTransactionError(null)
       try {
         const ops = await withBackoff(() =>
           horizon
@@ -181,24 +185,7 @@ export function useFreighterWallet() {
             .call()
         )
 
-        const txs: StellarTransaction[] = ops.records
-          .filter((op: any) => op.type === 'payment' || op.type === 'create_account')
-          .map((op: any) => ({
-            id: op.id,
-            hash: op.transaction_hash,
-            type: op.type,
-            amount: op.amount ? parseFloat(op.amount).toFixed(4) : '—',
-            asset:
-              op.asset_type === 'native'
-                ? 'XLM'
-                : op.asset_code || 'Unknown',
-            from: op.from || op.funder || '',
-            to: op.to || op.account || '',
-            timestamp: op.created_at,
-            memo: op.transaction?.memo,
-          }))
-
-const txs = ops.records
+        const txs = ops.records
           .filter((op: any) => op.type === 'payment' || op.type === 'create_account')
           .map(mapOperation)
 
@@ -207,9 +194,8 @@ const txs = ops.records
         setTxHasMore(ops.records.length === pageSize)
       } catch (err: any) {
         if (!isRateLimitError(err)) {
-          setTransactions([])
-          setTxCursor(null)
-          setTxHasMore(false)
+          console.error('Failed to load transactions:', err)
+          setTransactionError('Could not load transactions. Please try again.')
         }
       } finally {
         setTxLoading(false)
@@ -250,6 +236,8 @@ const txs = ops.records
         setTxHasMore(ops.records.length === pageSize)
       } catch (err: any) {
         if (!isRateLimitError(err)) {
+          console.error('Failed to load more transactions:', err)
+          setTransactionError('Could not load transactions. Please try again.')
           // Keep existing transactions on failure and stop further paging attempts
           setTxHasMore(false)
         }
@@ -316,6 +304,7 @@ const txs = ops.records
       xlmBalance: '0',
       usdcBalance: '0',
       loading: false,
+      refreshing: false,
       error: null,
       hint: null,
     })
@@ -325,9 +314,13 @@ const txs = ops.records
   }, [])
 
   const refresh = useCallback(async () => {
-    if (wallet.publicKey) {
+    if (!wallet.publicKey) return
+    setWallet(prev => ({ ...prev, refreshing: true }))
+    try {
       await fetchBalances(wallet.publicKey)
       await fetchTransactions(wallet.publicKey)
+    } finally {
+      setWallet(prev => ({ ...prev, refreshing: false }))
     }
   }, [wallet.publicKey, fetchBalances, fetchTransactions])
 
@@ -374,6 +367,7 @@ const txs = ops.records
     wallet,
     transactions,
     txLoading,
+    transactionError,
     txLoadingMore,
     txHasMore,
     loadMoreTransactions,

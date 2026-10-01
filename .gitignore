@@ -6,5 +6,11 @@ dist/
 *.log
 .vite/
 
+# Playwright
+test-results/
+playwright-report/
+blob-report/
+playwright/.cache/
+
 # Local scripts
 create_issues.py
