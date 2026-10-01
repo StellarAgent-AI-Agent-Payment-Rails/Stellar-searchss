@@ -1,12 +1,17 @@
 import { m } from 'framer-motion'
 import { Search, BookOpen, BarChart2, ExternalLink, Zap, Github, Globe } from 'lucide-react'
+import { Tooltip } from '../ui/Tooltip'
 import { WalletPanel } from '../wallet/WalletPanel'
 import type { WalletState, StellarTransaction } from '../../hooks/useFreighterWallet'
 import { IS_MAINNET } from '../../lib/stellar'
 
 type Page = 'search' | 'docs' | 'dashboard'
 
-const NAV_ITEMS: { id: Page; label: string; Icon: React.FC<{ className?: string }> }[] = [
+const NAV_ITEMS: {
+  id: Page
+  label: string
+  Icon: React.ComponentType<{ className?: string } & React.AriaAttributes>
+}[] = [
   { id: 'search',    label: 'SEARCH',       Icon: Search    },
   { id: 'docs',      label: 'HOW IT WORKS', Icon: BookOpen  },
   { id: 'dashboard', label: 'DASHBOARD',    Icon: BarChart2 },
@@ -44,7 +49,7 @@ export function Navbar({
             className="w-7 h-7 rounded-lg flex items-center justify-center transition-all"
             style={{ background: 'rgba(0,245,255,0.12)', border: '1px solid rgba(0,245,255,0.35)' }}
           >
-            <Zap className="w-3.5 h-3.5 text-neon-cyan" />
+            <Zap className="w-3.5 h-3.5 text-neon-cyan" aria-hidden="true" />
           </div>
           <span className="font-display text-sm text-white tracking-wider">
             STELLAR<span className="text-neon-cyan">SEARCH</span>
@@ -59,7 +64,7 @@ export function Navbar({
               : 'bg-neon-cyan/10 border-neon-cyan/30 text-neon-cyan'
           }`}
         >
-          <Globe className="w-2.5 h-2.5" />
+          <Globe className="w-2.5 h-2.5" aria-hidden="true" />
           {IS_MAINNET ? 'MAINNET' : 'TESTNET'}
         </div>
 
@@ -70,10 +75,13 @@ export function Navbar({
               key={id}
               onClick={() => onNavigate(id)}
               aria-current={page === id ? "page" : undefined}
+              // The visible label is `display: none` below `sm`, which removes
+              // it from the accessibility tree — keep an explicit name for it.
+              aria-label={label}
               className="relative flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-display text-xs tracking-wider transition-colors"
               style={{ color: page === id ? '#00f5ff' : 'rgba(255,255,255,0.3)' }}
             >
-              <Icon className="w-3.5 h-3.5" />
+              <Icon className="w-3.5 h-3.5" aria-hidden="true" />
               <span className="hidden sm:inline">{label}</span>
               {page === id && (
                 <m.div
@@ -92,22 +100,26 @@ export function Navbar({
 
         {/* Right actions */}
         <div className="flex items-center gap-2 flex-shrink-0">
-          <a
-            href="https://github.com/stellar/x402-stellar"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="p-2 rounded-lg text-white/25 hover:text-white/55 hover:bg-white/5 transition-all"
-          >
-            <Github className="w-4 h-4" />
-          </a>
+          <Tooltip label="View source on GitHub" side="bottom">
+            <a
+              href="https://github.com/stellar/x402-stellar"
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="View source on GitHub (opens in a new tab)"
+              className="p-2 rounded-lg text-white/25 hover:text-white/55 hover:bg-white/5 transition-all"
+            >
+              <Github className="w-4 h-4" aria-hidden="true" />
+            </a>
+          </Tooltip>
           <a
             href="https://developers.stellar.org/docs/build/agentic-payments/x402"
             target="_blank"
             rel="noopener noreferrer"
+            aria-label="x402 documentation (opens in a new tab)"
             className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-display text-xs text-white/25 hover:text-white/50 transition-all"
             style={{ border: '1px solid rgba(255,255,255,0.08)' }}
           >
-            x402 DOCS <ExternalLink className="w-3 h-3" />
+            x402 DOCS <ExternalLink className="w-3 h-3" aria-hidden="true" />
           </a>
           <WalletPanel
             wallet={wallet}

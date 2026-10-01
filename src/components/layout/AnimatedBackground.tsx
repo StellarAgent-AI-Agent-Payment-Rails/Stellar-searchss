@@ -203,6 +203,7 @@ export function AnimatedBackground() {
   return (
     <canvas
       ref={canvasRef}
+      aria-hidden="true"
       className="fixed inset-0 pointer-events-none z-0"
       style={{ mixBlendMode: 'screen' }}
     />

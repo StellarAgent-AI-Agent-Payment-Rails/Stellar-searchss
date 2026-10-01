@@ -20,7 +20,7 @@ export function Footer() {
             className="w-5 h-5 rounded flex items-center justify-center"
             style={{ background: 'rgba(0,245,255,0.1)', border: '1px solid rgba(0,245,255,0.25)' }}
           >
-            <Zap className="w-2.5 h-2.5 text-neon-cyan" />
+            <Zap className="w-2.5 h-2.5 text-neon-cyan" aria-hidden="true" />
           </div>
           <span className="font-display text-xs text-white/20">
             STELLARSEARCH &#183; Stellar Hackathon 2026

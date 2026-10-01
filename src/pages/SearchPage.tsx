@@ -54,7 +54,7 @@ export function SearchPage({ wallet, onConnectWallet, session, search, reset, on
                   className="w-8 h-8 rounded-full flex items-center justify-center"
                   style={{ background: 'rgba(0,245,255,0.15)', border: '1px solid rgba(0,245,255,0.5)', boxShadow: '0 0 10px rgba(0,245,255,0.3)' }}
                 >
-                  <Search className="w-4 h-4 text-neon-cyan" />
+                  <Search className="w-4 h-4 text-neon-cyan" aria-hidden="true" />
                 </div>
               </div>
             </motion.div>
@@ -82,7 +82,7 @@ export function SearchPage({ wallet, onConnectWallet, session, search, reset, on
                 className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-display text-sm tracking-wider text-neon-cyan"
                 style={{ border: '1px solid rgba(0,245,255,0.4)', background: 'rgba(0,245,255,0.08)', boxShadow: '0 0 20px rgba(0,245,255,0.15)' }}
               >
-                <Zap className="w-4 h-4" />
+                <Zap className="w-4 h-4" aria-hidden="true" />
                 CONNECT FREIGHTER TO SEARCH
               </motion.button>
             )}
@@ -124,7 +124,7 @@ export function SearchPage({ wallet, onConnectWallet, session, search, reset, on
 
             {session.status === 'error' && (
               <div className="flex items-center gap-3 p-4 rounded-xl border border-red-500/25 bg-red-500/5">
-                <AlertCircle className="w-4 h-4 text-red-400 flex-shrink-0" />
+                <AlertCircle className="w-4 h-4 text-red-400 flex-shrink-0" aria-hidden="true" />
                 <p className="text-sm text-red-300">{session.error}</p>
               </div>
             )}

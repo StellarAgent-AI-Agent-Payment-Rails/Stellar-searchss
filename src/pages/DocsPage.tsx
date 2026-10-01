@@ -110,7 +110,7 @@ export function DocsPage() {
               className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg font-display text-xs tracking-wider text-white/40 hover:text-neon-cyan transition-all"
               style={{ border: '1px solid rgba(255,255,255,0.08)' }}
             >
-              {label} <ExternalLink className="w-3 h-3" />
+              {label} <ExternalLink className="w-3 h-3" aria-hidden="true" />
             </a>
           ))}
         </div>
@@ -290,7 +290,7 @@ export function DocsPage() {
                 className="flex items-center gap-2 text-sm text-white/55 hover:text-neon-cyan transition-colors"
               >
                 {value}
-                <ExternalLink className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
+                <ExternalLink className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" aria-hidden="true" />
               </a>
             </motion.div>
           ))}

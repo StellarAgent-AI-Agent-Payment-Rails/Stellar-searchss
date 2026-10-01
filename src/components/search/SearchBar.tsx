@@ -68,7 +68,7 @@ export function SearchBar({
             backdropFilter: 'blur(16px)',
           }}
         >
-          <Search className="w-5 h-5 flex-shrink-0" style={{ color: isWrongNetwork ? 'rgba(239,68,68,0.5)' : 'rgba(0,245,255,0.5)' }} />
+          <Search className="w-5 h-5 flex-shrink-0" style={{ color: isWrongNetwork ? 'rgba(239,68,68,0.5)' : 'rgba(0,245,255,0.5)' }} aria-hidden="true" />
 
           <input
             ref={inputRef}
@@ -85,6 +85,10 @@ export function SearchBar({
           <motion.button
             type="submit"
             disabled={isSearching || isWrongNetwork}
+            // While searching the button shows only a spinner, so without this
+            // it has no accessible name at all. The visible "0.001 USDC" is
+            // still contained in the name, per WCAG 2.5.3 Label in Name.
+            aria-label={isSearching ? 'Searching…' : `Search — costs ${AMOUNT_USDC} USDC`}
             className="flex-shrink-0 flex items-center gap-2 px-4 py-2 rounded-xl font-display text-xs tracking-wider transition-all disabled:opacity-40"
             style={{
               background: isSearching || isWrongNetwork ? 'transparent' : 'rgba(0,245,255,0.12)',
@@ -101,7 +105,7 @@ export function SearchBar({
                 transition={{ duration: 0.8, repeat: Infinity, ease: 'linear' }}
               />
             ) : (
-              <><Zap className="w-3.5 h-3.5" /> {AMOUNT_USDC} USDC</>
+              <><Zap className="w-3.5 h-3.5" aria-hidden="true" /> {AMOUNT_USDC} USDC</>
             )}
           </motion.button>
         </div>

@@ -199,7 +199,7 @@ export function SearchResults({ results, query, isLoading, isImageSearch }: Prop
             className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md font-display text-xs tracking-wider text-neon-cyan disabled:opacity-40 hover:bg-neon-cyan/10 transition-colors"
             style={{ border: '1px solid rgba(0,245,255,0.3)', background: 'rgba(0,245,255,0.06)' }}
           >
-            <Sparkles className="w-3 h-3" />
+            <Sparkles className="w-3 h-3" aria-hidden="true" />
             {summarizing ? 'SUMMARIZING…' : summary ? 'REGENERATE' : 'SUMMARIZE'}
           </button>
           <div className="flex items-center gap-1.5">
@@ -223,7 +223,7 @@ export function SearchResults({ results, query, isLoading, isImageSearch }: Prop
             }}
           >
             <div className="flex items-center gap-2">
-              <Sparkles className="w-3 h-3 text-neon-cyan" />
+              <Sparkles className="w-3 h-3 text-neon-cyan" aria-hidden="true" />
               <span className="font-display text-xs text-neon-cyan tracking-wider">AI SUMMARY · GROQ</span>
               {summarizing && (
                 <span className="flex items-center gap-1 ml-auto">
@@ -309,7 +309,7 @@ export function SearchResults({ results, query, isLoading, isImageSearch }: Prop
             </div>
 
             <div className="flex-shrink-0 w-7 h-7 rounded-lg flex items-center justify-center border border-white/8 text-white/25 group-hover:text-neon-cyan group-hover:border-neon-cyan/30 transition-all mt-0.5">
-              <ExternalLink className="w-3.5 h-3.5" />
+              <ExternalLink className="w-3.5 h-3.5" aria-hidden="true" />
             </div>
           </div>
 

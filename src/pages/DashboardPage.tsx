@@ -2,6 +2,8 @@ import { motion } from 'framer-motion'
 import { useState, useEffect, useMemo } from 'react'
 import { ExternalLink, Activity, BarChart2, RefreshCw, History, Search, ChevronDown } from 'lucide-react'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts'
+// Aliased so it is never confused with the recharts chart <Tooltip> above.
+import { Tooltip as UiTooltip } from '../components/ui/Tooltip'
 import { IS_MAINNET, STELLAR_NETWORK, AMOUNT_USDC, STELLAR_EXPERT_URL, truncateHash, formatTimeAgo, explorerTxUrl, explorerAccountUrl } from '../lib/stellar'
 import type { StellarTransaction } from '../hooks/useFreighterWallet'
 import type { SearchReceipt } from '../hooks/useSearch'
@@ -92,13 +94,19 @@ export function DashboardPage({ transactions, txLoading, publicKey, usdcBalance,
             <div className={`w-1.5 h-1.5 rounded-full animate-pulse ${IS_MAINNET ? 'bg-neon-amber' : 'bg-neon-green'}`} />
             <span className={`font-display text-xs tracking-wider ${IS_MAINNET ? 'text-neon-amber/60' : 'text-neon-green/60'}`}>{networkLabel}</span>
           </div>
-          <button
-            onClick={onRefresh}
-            disabled={txLoading}
-            className="p-2 rounded-lg border border-white/10 text-white/30 hover:text-neon-cyan transition-colors disabled:opacity-40"
-          >
-            <RefreshCw className={`w-4 h-4 ${txLoading ? 'animate-spin' : ''}`} />
-          </button>
+          <UiTooltip label="Refresh on-chain data" side="bottom">
+            <button
+              onClick={onRefresh}
+              disabled={txLoading}
+              aria-label="Refresh on-chain data"
+              className="p-2 rounded-lg border border-white/10 text-white/30 hover:text-neon-cyan transition-colors disabled:opacity-40"
+            >
+              <RefreshCw
+                className={`w-4 h-4 ${txLoading ? 'animate-spin' : ''}`}
+                aria-hidden="true"
+              />
+            </button>
+          </UiTooltip>
         </div>
       </motion.div>
 
@@ -119,7 +127,7 @@ export function DashboardPage({ transactions, txLoading, publicKey, usdcBalance,
               rel="noopener noreferrer"
               className="flex items-center gap-1 font-display text-xs text-neon-cyan/50 hover:text-neon-cyan transition-colors"
             >
-              VIEW ON EXPLORER <ExternalLink className="w-3 h-3" />
+              VIEW ON EXPLORER <ExternalLink className="w-3 h-3" aria-hidden="true" />
             </a>
           </div>
 
@@ -165,7 +173,7 @@ export function DashboardPage({ transactions, txLoading, publicKey, usdcBalance,
           style={{ background: 'rgba(6,13,20,0.7)', border: '1px solid rgba(255,184,0,0.15)' }}
         >
           <div className="flex items-center gap-2 mb-6">
-            <BarChart2 className="w-4 h-4 text-neon-amber/40" />
+            <BarChart2 className="w-4 h-4 text-neon-amber/40" aria-hidden="true" />
             <span className="font-display text-xs text-white/30 tracking-widest">USDC SPENT OVER TIME</span>
           </div>
           <div className="h-64 w-full">
@@ -223,7 +231,7 @@ export function DashboardPage({ transactions, txLoading, publicKey, usdcBalance,
       >
         <div className="flex items-center justify-between p-5 border-b border-white/5">
           <div className="flex items-center gap-2">
-            <Activity className="w-4 h-4 text-neon-cyan/40" />
+            <Activity className="w-4 h-4 text-neon-cyan/40" aria-hidden="true" />
             <span className="font-display text-xs text-white/30 tracking-widest">LIVE TRANSACTION HISTORY</span>
             <span className="font-display text-white/15" style={{ fontSize: '10px' }}>· FROM STELLAR HORIZON</span>
           </div>
@@ -233,7 +241,7 @@ export function DashboardPage({ transactions, txLoading, publicKey, usdcBalance,
             rel="noopener noreferrer"
             className="flex items-center gap-1 font-display text-xs text-white/20 hover:text-neon-cyan transition-colors"
           >
-            EXPLORER <ExternalLink className="w-3 h-3" />
+            EXPLORER <ExternalLink className="w-3 h-3" aria-hidden="true" />
           </a>
         </div>
 
@@ -248,7 +256,7 @@ export function DashboardPage({ transactions, txLoading, publicKey, usdcBalance,
             </div>
           ) : transactions.length === 0 ? (
             <div className="text-center py-10">
-              <BarChart2 className="w-8 h-8 text-white/10 mx-auto mb-3" />
+              <BarChart2 className="w-8 h-8 text-white/10 mx-auto mb-3" aria-hidden="true" />
               <p className="font-display text-xs text-white/20 tracking-widest">NO TRANSACTIONS YET</p>
               {!publicKey && <p className="text-white/25 text-sm mt-2">Connect your wallet to see your history</p>}
             </div>
@@ -272,7 +280,7 @@ export function DashboardPage({ transactions, txLoading, publicKey, usdcBalance,
                       className="font-mono text-white/25 hover:text-neon-cyan transition-colors flex items-center gap-1"
                       style={{ fontSize: '10px' }}
                     >
-                      {truncateHash(tx.hash, 6)} <ExternalLink className="w-2.5 h-2.5" />
+                      {truncateHash(tx.hash, 6)} <ExternalLink className="w-2.5 h-2.5" aria-hidden="true" />
                     </a>
                     <span className="text-white/20" style={{ fontSize: '10px' }}>{formatTimeAgo(tx.timestamp)}</span>
                   </div>
@@ -322,7 +330,7 @@ export function DashboardPage({ transactions, txLoading, publicKey, usdcBalance,
       >
         <div className="flex items-center justify-between p-5 border-b border-white/5">
           <div className="flex items-center gap-2">
-            <History className="w-4 h-4 text-neon-cyan/40" />
+            <History className="w-4 h-4 text-neon-cyan/40" aria-hidden="true" />
             <span className="font-display text-xs text-white/30 tracking-widest">SEARCH AUDIT LOG</span>
             <span className="font-display text-white/15" style={{ fontSize: '10px' }}>· PERSISTED LOCALLY</span>
           </div>
@@ -363,7 +371,7 @@ export function DashboardPage({ transactions, txLoading, publicKey, usdcBalance,
         <div className="divide-y divide-white/4">
           {receipts.length === 0 ? (
             <div className="text-center py-10">
-              <Search className="w-8 h-8 text-white/10 mx-auto mb-3" />
+              <Search className="w-8 h-8 text-white/10 mx-auto mb-3" aria-hidden="true" />
               <p className="font-display text-xs text-white/20 tracking-widest">NO SEARCH RECEIPTS YET</p>
               <p className="text-white/25 text-sm mt-2">Perform a search to see your payment history</p>
             </div>
@@ -389,7 +397,7 @@ export function DashboardPage({ transactions, txLoading, publicKey, usdcBalance,
                       className="font-mono text-white/25 hover:text-neon-cyan transition-colors flex items-center gap-1"
                       style={{ fontSize: '10px' }}
                     >
-                      {truncateHash(receipt.txHash, 8)} <ExternalLink className="w-2.5 h-2.5" />
+                      {truncateHash(receipt.txHash, 8)} <ExternalLink className="w-2.5 h-2.5" aria-hidden="true" />
                     </a>
                     <span className="text-white/20" style={{ fontSize: '10px' }}>{formatTimeAgo(receipt.timestamp)}</span>
                   </div>

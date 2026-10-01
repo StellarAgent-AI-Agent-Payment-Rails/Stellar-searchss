@@ -27,7 +27,7 @@ export function SearchSuggestions( { onSelect, aiSuggestions }: Props ) {
       className="space-y-3"
     >
       <div className="flex items-center gap-1.5">
-        {isAi && <Sparkles className="w-3 h-3 text-neon-amber/60" />}
+        {isAi && <Sparkles className="w-3 h-3 text-neon-amber/60" aria-hidden="true" />}
         <p className="font-display text-xs text-white/25 tracking-widest">
           {isAi ? 'YOU MIGHT ALSO SEARCH FOR' : 'TRY THESE'}
         </p>

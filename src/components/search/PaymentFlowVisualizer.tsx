@@ -155,7 +155,7 @@ export function PaymentFlowVisualizer({ session }: Props) {
               rel="noopener noreferrer"
               className="font-mono text-xs text-neon-green hover:opacity-80 transition-opacity flex items-center gap-1"
             >
-              {truncateHash(session.txHash)} <ExternalLink className="w-3 h-3" />
+              {truncateHash(session.txHash)} <ExternalLink className="w-3 h-3" aria-hidden="true" />
             </a>
           </div>
           {session.paidAmount && (

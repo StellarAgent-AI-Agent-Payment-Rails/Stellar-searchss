@@ -8,7 +8,7 @@ export { WalletPanel } from './wallet'
 export { SearchBar, SearchResults, SearchSuggestions, PaymentFlowVisualizer } from './search'
 
 // UI
-export { StatsGrid, ZeroBalanceBanner } from './ui'
+export { StatsGrid, Tooltip, ZeroBalanceBanner } from './ui'
 
 // AI
 export { GroqAssistant } from './ai'
