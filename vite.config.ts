@@ -1,4 +1,4 @@
-import { defineConfig } from 'vite'
+import { defineConfig } from 'vitest/config'
 import react from '@vitejs/plugin-react'
 import { readFileSync } from 'fs'
 import { resolve } from 'path'
@@ -51,7 +51,7 @@ export default defineConfig({
         manualChunks: (id) => {
           if (!id) return
           if (id.includes('node_modules')) {
-            if (id.match(/[\\\/]node_modules[\\/](react|react-dom|scheduler)[\\/]/)) {
+            if (id.match(/[\\/]node_modules[\\/](react|react-dom|scheduler)[\\/]/)) {
               return 'vendor-react'
             }
             if (id.includes('node_modules/framer-motion')) {
@@ -87,4 +87,7 @@ export default defineConfig({
       },
     },
   },
+  // Vitest configuration lives in vitest.config.ts, which takes precedence over
+  // this file. Keeping it there lets server tests run in the node environment
+  // while component tests run in jsdom within a single `npm test` invocation.
 })

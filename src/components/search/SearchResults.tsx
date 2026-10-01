@@ -120,7 +120,7 @@ export function SearchResults({ results, query, isLoading, isImageSearch }: Prop
       )
     }
     return (
-      <div className="space-y-3">
+      <div className="space-y-3" role="status" aria-label="Loading search results">
         {[1, 2, 3].map((i) => (
           <div key={i} className="animate-pulse rounded-xl p-4 space-y-3" style={{ background: 'rgba(6,13,20,0.6)', border: '1px solid rgba(255,255,255,0.06)' }}>
             <div className="flex gap-2">
@@ -221,7 +221,7 @@ export function SearchResults({ results, query, isLoading, isImageSearch }: Prop
         const reader  = res.body.getReader()
         const decoder = new TextDecoder('utf-8')
         let   buffer  = ''
-        while (true) {
+        for (;;) {
           const { value, done } = await reader.read()
           if (done) break
           buffer += decoder.decode(value, { stream: true })

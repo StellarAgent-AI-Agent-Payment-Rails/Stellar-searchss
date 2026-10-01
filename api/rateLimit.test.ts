@@ -31,7 +31,8 @@ class FakeResponse {
   }
 
   once(event: string, listener: () => void): this {
-    ;(this.listeners[event] ??= []).push(listener)
+    const bucket = (this.listeners[event] ??= [])
+    bucket.push(listener)
     return this
   }
 

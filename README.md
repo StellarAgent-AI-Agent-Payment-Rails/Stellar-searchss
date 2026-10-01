@@ -158,6 +158,111 @@ machine-readable summary. See `scripts/test-search.ts -- --help`.
 
 ---
 
+## Deployment (Vercel)
+
+StellarSearch deploys as a static Vite frontend plus the Vercel serverless
+functions in `api/`. `vercel.json` (committed) supplies the build command
+(`npm run build`), the output directory (`dist`), the install command, and the
+`/api/*` and SPA rewrites, so the dashboard build settings can stay at their
+defaults. No separate backend host is required.
+
+### 1. Import the project
+
+1. Push your fork to GitHub.
+2. In Vercel, **Add New → Project** and import the repository. Vercel detects the
+   Vite framework from `vercel.json`; leave the build and output settings as they
+   are.
+3. Add the environment variables below under **Settings → Environment
+   Variables** for the **Production** environment. Add **Preview** too if you
+   want working preview deployments.
+
+### 2. Environment variables
+
+`.env.production` is the committed reference for this list. Treat it as a
+template — set the real values in **Vercel → Settings → Environment Variables**,
+not in the file. Vercel does not load a committed `.env.production` for the
+serverless functions; only the `VITE_*` entries are read by Vite at build time,
+so keep those in sync with the values in your Vercel project (or delete them from
+your fork and set everything in Vercel).
+
+Variables prefixed `VITE_` are **build-time**: Vite inlines them into the static
+bundle, so changing one requires a redeploy. Every other variable is **runtime**:
+it is read per request by the `api/` functions. Redeploy after changing either
+kind so both the bundle and the functions pick up the new values.
+
+| Variable | Required | Build-time / runtime | Purpose | Example |
+|---|---|---|---|---|
+| `STELLAR_RECEIVING_ADDRESS` | **Yes** | Runtime | `payTo` account that receives 0.001 USDC for every paid query | `G…` (your funded testnet keypair) |
+| `SERPER_API_KEY` | **Yes** | Runtime | Serper.dev key backing `/api/search` | `your_serper_api_key_here` |
+| `GROQ_API_KEY` | **Yes** | Runtime | Groq key for `/api/ai/chat` and AI summaries | `gsk_…` |
+| `STELLAR_NETWORK` | No | Runtime | Network the functions settle on. Default `stellar:testnet` | `stellar:testnet` |
+| `FACILITATOR_URL` | No | Runtime | x402 facilitator that verifies and settles payments. Default `https://www.x402.org/facilitator` | `https://www.x402.org/facilitator` |
+| `VITE_STELLAR_NETWORK` | No | **Build-time** (`VITE_`) | Network inlined into the browser bundle. Keep it equal to `STELLAR_NETWORK` | `stellar:testnet` |
+| `VITE_SERVER_URL` | No | **Build-time** (`VITE_`) | API base the browser calls. Use the relative `/api` on Vercel | `/api` |
+| `PAYMENTS_DISABLED` | No | Runtime | Load-testing escape hatch for local runs only. Never set it in production | `true` |
+
+`NODE_ENV` and `VERCEL_ENV` are injected by Vercel and read by `api/search.ts` to
+keep the payment gate on in production — do not set them yourself.
+
+Missing a **Yes** variable degrades the feature rather than hiding it: without
+`SERPER_API_KEY` the paid search route returns an upstream error, without
+`GROQ_API_KEY` the AI chat fails, and without `STELLAR_RECEIVING_ADDRESS` the
+402 response has no `payTo` for the agent to pay.
+
+### 3. Deploy
+
+Deploy from the Vercel dashboard, or from the CLI:
+
+```bash
+npm run deploy        # npm run build && vercel --prod
+```
+
+### 4. Post-deploy verification checklist
+
+Replace `<your-app>` with your Vercel domain, then confirm each item:
+
+- [ ] `curl -s https://<your-app>.vercel.app/api/health` returns `200` with
+      `"status":"ok"`, a `network` matching your target, and
+      `receivingAddressConfigured`, `serperApiConfigured`, and
+      `groqApiConfigured` all `true`.
+- [ ] `curl -i "https://<your-app>.vercel.app/api/search?q=stellar"` returns
+      `402` with a `PAYMENT-REQUIRED` header — proof the x402 gate is active and
+      unpaid requests do not return results.
+- [ ] `curl -s -X POST https://<your-app>.vercel.app/api/ai/chat -H 'Content-Type: application/json' -d '{"messages":[{"role":"user","content":"Summarize x402"}]}'`
+      returns a JSON completion rather than a `500`.
+- [ ] The site loads and its network badge matches `STELLAR_NETWORK` /
+      `VITE_STELLAR_NETWORK`.
+- [ ] Connect Freighter on testnet, run a search, approve the Soroban auth
+      entry, and confirm results render with a `TX HASH` that opens a confirmed
+      transaction on [Stellar Expert testnet](https://stellar.expert/explorer/testnet).
+- [ ] `/api/health`'s `facilitator` value equals `FACILITATOR_URL`.
+- [ ] The browser Network tab / page source contains **no** value of
+      `STELLAR_RECEIVING_ADDRESS`, `SERPER_API_KEY`, or `GROQ_API_KEY` (only
+      `VITE_*` values may appear in the bundle).
+
+To move the deployment to mainnet, work through [`docs/mainnet.md`](docs/mainnet.md)
+before changing `STELLAR_NETWORK`.
+
+### Other runtimes (optional)
+
+These are not needed for the Vercel frontend + `api/` deployment, but the MCP
+server, the self-hosted Express server, and the CLI tests read them:
+
+| Variable | Required | Used by | Purpose | Example |
+|---|---|---|---|---|
+| `SEARCH_API_URL` | No | MCP server, CLI tests | Absolute API base the MCP search/stats tools call. Must include `/api` on Vercel. Default `http://localhost:3001` | `https://your-app.vercel.app/api` |
+| `ALLOWED_ORIGINS` | No | Express server (self-host) | Comma-separated browser origins allowed when `NODE_ENV=production` | `https://your-app.vercel.app` |
+| `PORT` | No | Express server (self-host) | Port for `npm run server`. Default `3001` | `3001` |
+| `DEBUG_BANNER` | No | Express server (self-host) | `1` prints the full receiving address in the startup banner | `1` |
+| `STELLAR_PAYER_SECRET` | No | CLI paid test | Testnet secret used by `npm run test:search -- --paid` | `S…` |
+| `SOROBAN_RPC_URL` | No | CLI paid test | Soroban RPC endpoint for the paid test. Default `https://soroban-testnet.stellar.org` | `https://soroban-testnet.stellar.org` |
+
+`.env.example` also carries two optional placeholders for an external serverless
+stats store. No code currently reads them, so they are not required and are
+omitted from the tables above; set them only if you later wire that store up.
+
+---
+
 ## Get testnet USDC
 
 Searches are paid in USDC on Stellar testnet. A fresh wallet holds **zero USDC**, and unlike XLM there is no automatic faucet — you must opt in by adding a **trustline** before any USDC can land in your account. Complete these four steps in order; the faucet only works after step 3. (The same guide is available in-app on the **How it works** page at `/docs#get-testnet-usdc`.)
@@ -245,9 +350,11 @@ Claude Code / any MCP client
 The MCP server sits in front of the same Express routes, so an agent using Claude Code
 pays through the identical x402 flow.
 
-## Search history and privacy
-
-Successful paid searches keep a receipt in the current browser’s localStorage with the transaction hash, amount, timestamp, and network. Query text is **not stored by default**. To opt in, enable **Save search query text in this browser** in the Dashboard. Turning it off removes query text from existing receipts, while keeping payment metadata. Use **Clear receipts** in the Dashboard to delete all locally stored receipts. The app keeps at most the 50 most recent receipts; clearing browser site data also removes them.
+> **Security:** payment *is* authentication in this project — there are no accounts, sessions, or API
+> keys, so the security of the payment flow is the security of the product. The trust boundaries
+> between client, server, facilitator, and the Stellar network are documented in the
+> **[payment flow threat model](docs/threat-model.md)**, which also enumerates the known attacks and
+> mitigations. See [`SECURITY.md`](SECURITY.md) for the security policy and reporting process.
 
 ---
 
@@ -300,12 +407,13 @@ stellar-search/
 ├── mcp-server/
 │   └── index.ts                        # MCP tools (see below)
 ├── scripts/
-│   ├── setup.sh                        # One-shot env setup
-│   └── test-search.ts                  # End-to-end x402 test script
-├── public/favicon.svg
+│   └── test-search.ts          # End-to-end test script
+├── docs/
+│   └── threat-model.md         # Payment flow trust boundaries and attack analysis
 ├── .env.example
 ├── vercel.json                 # Committed build + routing config
 ├── claude_mcp.json
+├── SECURITY.md
 └── README.md
 ```
 

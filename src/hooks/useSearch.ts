@@ -253,5 +253,10 @@ export function useSearch(walletAddress: string | null = null) {
     setSession({ query: '', results: [], txHash: null, paidAmount: null, status: 'idle', suggestions: [] })
   }, [])
 
-  return { session, search, reset }
+  const retry = useCallback(() => {
+    if (session.query) return search(session.query)
+    return Promise.resolve()
+  }, [search, session.query])
+
+  return { session, search, reset, retry }
 }

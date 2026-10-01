@@ -11,6 +11,12 @@ import { fileURLToPath } from 'url'
 import { buildCorsOptions, getCorsStartupMessage } from './corsConfig.js'
 import { installRateLimiting } from './rateLimit.js'
 import { loadRateLimitConfig } from './rateLimitConfig.js'
+import { createRateLimiter } from './ratelimit.js'
+
+const __dirname = dirname(fileURLToPath(import.meta.url))
+const { version: APP_VERSION } = JSON.parse(
+  readFileSync(resolve(__dirname, '../package.json'), 'utf-8'),
+)
 import Groq from 'groq-sdk'
 import { paymentMiddlewareFromConfig } from '@x402/express'
 import { ExactStellarScheme } from '@x402/stellar/exact/server'
@@ -116,6 +122,8 @@ function displayAddress(address: string): string {
 const groq = new Groq({ apiKey: GROQ_API_KEY })
 
 // ─── Middleware ───────────────────────────────────────────────────────────
+// CORS, compression and JSON body parsing are applied by the shared app factory
+// so tests can mount the identical middleware stack via createApp().
 app.use(cors(buildCorsOptions()))
 app.use(compression({
   // SSE must remain uncompressed so each event is delivered immediately.
@@ -132,6 +140,15 @@ app.use(express.json())
 // route so unauthenticated floods are rejected before any paid work happens.
 const rateLimitConfig = loadRateLimitConfig()
 const rateLimiters = installRateLimiting(app, rateLimitConfig)
+
+// /summarize-url is free but triggers an outbound fetch, and unlike /ai/chat it
+// has no dedicated scope in rateLimitConfig.ts. It is additionally protected by
+// the dependency-free fixed-window limiter from upstream. /ai/chat is already
+// covered by rateLimiters.aiChat above, so it is deliberately not re-limited.
+const summarizeUrlLimiter = createRateLimiter({
+  windowMs: Number(process.env.RATE_LIMIT_WINDOW_MS) || 60_000,
+  max: Number(process.env.SUMMARIZE_URL_RATE_LIMIT_MAX) || 30,
+})
 
 // ─── x402 payment guard on /search ───────────────────────────────────────
 // paymentMiddlewareFromConfig is the recommended API per official Stellar docs.
@@ -204,6 +221,7 @@ export function validateQuery(
   }
   // Strip null bytes and ASCII control characters (C0 + DEL) to prevent
   // log injection and odd Serper behavior.
+  // eslint-disable-next-line no-control-regex -- intentional sanitization
   const cleanQ = q.replace(/[\x00-\x1F\x7F]/g, '').trim()
   if (!cleanQ) {
     return { ok: false, error: 'Query contains no valid characters.' }
@@ -230,6 +248,7 @@ function parseSuggestions(raw: string): string[] {
   const cleaned: string[] = []
   for (const item of parsed) {
     if (typeof item !== 'string') return []
+    // eslint-disable-next-line no-control-regex -- intentional sanitization
     const trimmed = item.replace(/[\x00-\x1F\x7F]/g, '').trim()
     if (!trimmed) return []
     cleaned.push(trimmed.slice(0, MAX_SUGGESTION_LENGTH))
@@ -324,6 +343,7 @@ app.get('/search', async (req: Request, res: Response) => {
           .slice(0, MAX_SNIPPETS_FED)
           .map((r: any) =>
             String(r.description || '')
+              // eslint-disable-next-line no-control-regex -- intentional sanitization
               .replace(/[\x00-\x1F\x7F]/g, ' ')
               .slice(0, MAX_SNIPPET_LENGTH),
           )
@@ -704,7 +724,7 @@ app.post('/ai/chat', async (req: Request, res: Response) => {
 // link-local addresses are refused, including via redirects and DNS rebinding.
 const MAX_INSTRUCTION_LENGTH = 200
 
-app.post('/summarize-url', async (req: Request, res: Response) => {
+app.post('/summarize-url', summarizeUrlLimiter, async (req: Request, res: Response) => {
   const { url, instruction } = (req.body ?? {}) as { url?: unknown; instruction?: unknown }
 
   let task = 'Summarise the page in a few short paragraphs, then list the key points.'
@@ -712,6 +732,7 @@ app.post('/summarize-url', async (req: Request, res: Response) => {
     if (typeof instruction !== 'string' || instruction.length > MAX_INSTRUCTION_LENGTH) {
       return res.status(400).json({ error: `instruction must be a string of at most ${MAX_INSTRUCTION_LENGTH} characters` })
     }
+    // eslint-disable-next-line no-control-regex -- intentional sanitization
     const clean = instruction.replace(/[\x00-\x1F\x7F]/g, ' ').trim()
     if (clean) task = clean
   }

@@ -1,9 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { m, AnimatePresence, LazyMotion, domAnimation } from 'framer-motion'
-import Bot from 'lucide-react/dist/esm/icons/bot'
-import Send from 'lucide-react/dist/esm/icons/send'
-import X from 'lucide-react/dist/esm/icons/x'
 import type { SearchResult } from '../../hooks/useSearch'
+import { Bot, Send, X } from 'lucide-react'
 
 interface Message {
   role: 'system' | 'user' | 'assistant'
@@ -41,7 +39,7 @@ async function consumeSSE(
   const decoder = new TextDecoder('utf-8')
   let   buffer  = ''
 
-  while (true) {
+  for (;;) {
     const { value, done } = await reader.read()
     if (done) break
     buffer += decoder.decode(value, { stream: true })

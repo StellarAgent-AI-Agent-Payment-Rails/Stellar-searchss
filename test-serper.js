@@ -1,11 +1,10 @@
 // Simple test to verify Serper.dev API integration
-const fetch = require('node-fetch');
-
+// `node-fetch` is not a dependency; Node 18+ provides a global `fetch`.
 async function testSerper() {
-  const SERPER_API_KEY = 'your_serper_api_key_here'; // Replace with actual key
+  const SERPER_API_KEY = process.env.SERPER_API_KEY || '';
   
-  if (SERPER_API_KEY === 'your_serper_api_key_here') {
-    console.log('❌ Please set a real SERPER_API_KEY in this file');
+  if (!SERPER_API_KEY) {
+    console.log('❌ Set SERPER_API_KEY in the environment to run this check');
     return;
   }
 

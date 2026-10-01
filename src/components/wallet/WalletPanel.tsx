@@ -175,10 +175,10 @@ export function WalletPanel({
                 </span>
                 <button
                   onClick={onRefresh}
-                  disabled={txLoading}
+                  disabled={txLoading || wallet.refreshing}
                   className="p-1 text-white/30 hover:text-neon-cyan transition-colors disabled:opacity-50"
                 >
-                  <RefreshCw className={`w-3 h-3 ${txLoading ? 'animate-spin' : ''}`} />
+                  <RefreshCw className={`w-3 h-3 ${wallet.refreshing ? 'animate-spin' : ''}`} />
                 </button>
               </div>
 

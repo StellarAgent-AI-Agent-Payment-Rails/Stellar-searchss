@@ -6,6 +6,13 @@ import { fileURLToPath } from 'url'
 import { loadRateLimitConfig } from '../server/rateLimitConfig.js'
 import { rateLimitGuard } from './rateLimit.js'
 
+const CACHE_SECONDS = 5
+
+const __dirname = dirname(fileURLToPath(import.meta.url))
+const { version: APP_VERSION } = JSON.parse(
+  readFileSync(resolve(__dirname, '../package.json'), 'utf-8'),
+)
+
 const rateLimitConfig = loadRateLimitConfig()
 const limited = rateLimitGuard('GET /api/health', rateLimitConfig.health, rateLimitConfig)
 

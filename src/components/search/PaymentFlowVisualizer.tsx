@@ -1,7 +1,7 @@
 import { m, AnimatePresence } from 'framer-motion'
-import ExternalLink from 'lucide-react/dist/esm/icons/external-link'
 import type { SearchSession } from '../../hooks/useSearch'
 import { explorerTxUrl, truncateHash } from '../../lib/stellar'
+import { ExternalLink } from 'lucide-react'
 
 // 6 steps of the x402 flow per the official x402 quickstart:
 //   request → 402 → sign → retry → facilitate → result
@@ -82,7 +82,7 @@ export function PaymentFlowVisualizer({ session }: Props) {
                       animate={{ scale: 1 }}
                       style={{ color: step.color }}
                       className="text-xs font-bold"
-                    >✓</motion.span>
+                    >✓</m.span>
                   ) : stepFailed ? (
                     <span style={{ color: '#ef4444' }} className="text-xs font-bold">✗</span>
                   ) : (

@@ -97,6 +97,7 @@ Then branch, commit and open a PR — the conventions are in [Development Workfl
 11. [Testing](#testing)
 12. [Common Pitfalls](#common-pitfalls)
 13. [Getting Help](#getting-help)
+14. [Changelog & Releases](#changelog--releases)
 
 ---
 
@@ -476,14 +477,22 @@ const signedAuthEntry = Buffer.from(raw as unknown as Uint8Array).toString('base
 
 ## Testing
 
-Automated unit and integration tests run with [Vitest](https://vitest.dev):
+Automated unit and integration tests run with [Vitest](https://vitest.dev). Frontend component tests use React Testing Library and jsdom.
 
 ```bash
-npm test          # run once
-npm run test:watch
+npm test            # run once
+npm run test:watch  # re-run on change
+npm run test:a11y   # axe accessibility checks only
 ```
 
-Tests live next to the code they cover (`server/*.test.ts`, `api/*.test.ts`) with cross-cutting integration tests in `test/`. See the open [testing issues](https://github.com/Emmy123222/Stellar-Search/issues?q=is%3Aopen+label%3Atesting) for gaps. If you are adding a new hook or server route, please include tests.
+Server and API tests live next to the code they cover (`server/*.test.ts`, `api/*.test.ts`), frontend component tests live next to their component as `<Component>.test.tsx`, and cross-cutting integration tests live in `test/` and `tests/`. See the open [testing issues](https://github.com/StellarAgent-AI-Agent-Payment-Rails/Stellar-searchss/issues?q=is%3Aopen+label%3Atesting) for areas that still need coverage. If you are adding a new hook, component, or server route, please include focused tests.
+
+### Component-test conventions
+
+- Put tests next to the component as `<Component>.test.tsx`.
+- Render with React Testing Library and query by accessible role or label before using test IDs.
+- Test user-visible behavior (including guards and empty/loading states), not implementation details.
+- Mock network, wallet, and toast boundaries; do not make payment calls from unit tests.
 
 ### Manual testing checklist
 
@@ -545,6 +554,41 @@ npm run test:search "Stellar blockchain"
 | Account not found | Account not funded on testnet | Fund it at Stellar Lab |
 | USDC balance always 0 | Wrong USDC issuer address | Use `GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5` for testnet |
 | Transactions not loading | Horizon rate-limit | Add a 500ms delay between calls; use pagination |
+
+---
+
+## Changelog & Releases
+
+Every notable change to StellarSearch is recorded in [`CHANGELOG.md`](./CHANGELOG.md), which follows the [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) format and adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+### When to update the changelog
+
+If your PR changes behaviour that a deployer or user would care about, add an entry under the `## [Unreleased]` section of `CHANGELOG.md` in the same PR. Use the appropriate subsection:
+
+| Subsection | Use for |
+|---|---|
+| `Added` | New features, new env vars, new endpoints |
+| `Changed` | Behaviour changes to existing features |
+| `Deprecated` | Features that will be removed in a future release |
+| `Removed` | Features removed in this release |
+| `Fixed` | Bug fixes |
+| `Security` | Vulnerability fixes |
+
+Docs-only, test-only, and internal refactor PRs do not require a changelog entry.
+
+### Release process
+
+Maintainers cut releases as follows:
+
+1. Move entries from `## [Unreleased]` into a new `## [x.y.z] - YYYY-MM-DD` section.
+2. Update the comparison links at the bottom of `CHANGELOG.md`.
+3. Bump the version in `package.json` to match.
+4. Tag the commit (`git tag vX.Y.Z`) and push the tag.
+5. Publish the GitHub Release using the new changelog section as the release notes.
+
+### Automating from conventional commits
+
+Because all commits follow [Conventional Commits](#commit-messages), the changelog can be generated automatically. A future PR will wire up a tool such as [`git-cliff`](https://git-cliff.org) or [`conventional-changelog`](https://github.com/conventional-changelog/conventional-changelog) to produce entries from commit history. Until then, update `CHANGELOG.md` by hand — the commit types (`feat`, `fix`, `docs`, etc.) map directly onto the changelog subsections above.
 
 ---
 

@@ -13,9 +13,11 @@ const getEnv = (key: string, fallback: string) => {
   if (typeof process !== 'undefined' && process.env && process.env[key]) {
     return process.env[key]
   }
-  // @ts-ignore
+  // Vite statically replaces `import.meta.env` at build time; the computed key
+  // defeats its analysis, so the index access needs suppressing.
+  // @ts-expect-error -- import.meta.env is Vite-injected and not typed by tsc
   if (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env[`VITE_${key}`]) {
-    // @ts-ignore
+    // @ts-expect-error -- same computed-key limitation as above
     return import.meta.env[`VITE_${key}`]
   }
   return fallback
@@ -36,13 +38,13 @@ export const STELLAR_EXPERT_MAINNET = 'https://stellar.expert/explorer/public'
 export const STELLAR_EXPERT_URL = IS_MAINNET ? STELLAR_EXPERT_MAINNET : STELLAR_EXPERT_TESTNET
 
 // USDC Issuer
-export const USDC_ISSUER_TESTNET = 'GBBD45IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5'
-export const USDK_ISSUER_MAINNET = 'GA5ZSEJYB37JRC5AVCIA5MOP4RHTM335X2KGX3IHOJAPP5RE34K4KZVN'
+export const USDC_ISSUER_TESTNET = 'GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5'
+export const USDC_ISSUER_MAINNET = 'GA5ZSEJYB37JRC5AVCIA5MOP4RHTM335X2KGX3IHOJAPP5RE34K4KZVN'
 export const USDC_ISSUER = IS_MAINNET ? USDC_ISSUER_MAINNET : USDC_ISSUER_TESTNET
 
 // USDC Soroban Contract (for x402)
-export const USDK_CONTRACT_TESTNET = 'CBIELTK6YBZJU5UP2WWQEUCYKLPU6AUMZ2BQ4WWFEIE3USCIHMXQDAMA'
-export const USDK_CONTRACT_MAINNET = 'CCW67TSZV3SSS2HXMBQ5JFGCKJ^XZM7UQUWUZPUTHXSTZLEO7EJJUST'
+export const USDC_CONTRACT_TESTNET = 'CBIELTK6YBZJU5UP2WWQEUCYKLPU6AUNZ2BQ4WWFEIE3USCIHMXQDAMA'
+export const USDC_CONTRACT_MAINNET = 'CCW67TSZV3SSS2HXMBQ5JFGCKJNXKZM7UQUWUZPUTHXSTZLEO7EJJUST'
 export const USDC_CONTRACT = IS_MAINNET ? USDC_CONTRACT_MAINNET : USDC_CONTRACT_TESTNET
 
 // Payments

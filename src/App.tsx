@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo }         from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import { motion, AnimatePresence, MotionConfig } from 'framer-motion'
 import { AnimatedBackground, Navbar, LiveTicker, Footer } from './components/layout'
 import { GroqAssistant }                       from './components/ai'
@@ -39,13 +39,17 @@ export default function App() {
   }, [])
 
   const {
-    wallet, transactions, txLoading,
+    wallet, transactions, txLoading, txLoadingMore, txHasMore, loadMoreTransactions,
     connect, disconnect, refresh,
   } = useFreighterWallet()
 
+  const loadMore = useCallback(() => {
+    if (wallet.publicKey) void loadMoreTransactions(wallet.publicKey)
+  }, [wallet.publicKey, loadMoreTransactions])
+
   // Lifted so the floating GroqAssistant can read the last completed search
   // and pre-populate context (issue #57).
-  const { session, search, reset } = useSearch(
+  const { session, search, reset, retry } = useSearch(
     wallet.connected ? wallet.publicKey : null
   )
 
@@ -99,6 +103,7 @@ export default function App() {
                   session={session}
                   search={search}
                   reset={reset}
+                  retry={retry}
                   onNavigateFundingGuide={() => navigate('docs', 'get-testnet-usdc')}
                 />
               )}
@@ -111,6 +116,9 @@ export default function App() {
                   usdcBalance={wallet.usdcBalance}
                   xlmBalance={wallet.xlmBalance}
                   onRefresh={refresh}
+                  hasMore={txHasMore}
+                  onLoadMore={loadMore}
+                  loadingMore={txLoadingMore}
                 />
               )}
             </motion.div>

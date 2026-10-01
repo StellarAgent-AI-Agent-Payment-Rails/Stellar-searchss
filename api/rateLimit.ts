@@ -111,8 +111,12 @@ export function rateLimitGuard(
         res as never,
         done,
       )
-      res.once('finish', done)
-      res.once('close', done)
+      // `res.once` is absent on the minimal response doubles used by
+      // tests/parity.test.ts, so guard the registration rather than assume a
+      // full http.ServerResponse. The limiter has already settled the promise
+      // by the time this runs for an allowed request.
+      res.once?.('finish', done)
+      res.once?.('close', done)
     })
 
     return res.statusCode === 429
