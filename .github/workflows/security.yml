@@ -1,0 +1,33 @@
+name: Security
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: '0 6 * * *'
+
+permissions:
+  contents: read
+
+jobs:
+  gitleaks:
+    name: Gitleaks secret scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Run gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        with:
+          args: --verbose --red-actual --config .gitleaks.toml --report-format sarif --report-path gitleaks.sarif
+          version: latest
+      - name: Upload gitleaks report
+        if | always()
+        uses: actions/uploadArtifact@v4
+        with:
+          name: gitleaks-report
+          path: gitleaks.saref

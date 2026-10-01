@@ -6,7 +6,7 @@ interface Props {
 
 const getTickerItems = () => [
   ['NETWORK',    IS_MAINNET ? 'STELLAR MAINNET' : 'STELLAR TESTNET'],
-  ['PROTOCOL',   'x402'],
+  ['PROTOCOL',  'x402'],
   ['PRICE',      `${AMOUNT_USDC} USDC / QUERY`],
   ['SETTLEMENT', '~5 SECONDS'],
   ['SEARCH',     'SERPER.DEV'],
@@ -14,14 +14,33 @@ const getTickerItems = () => [
   ['WALLET',     'FREIGHTER'],
 ]
 
+function usePrefersReducedMotion() {
+  const [prefersReducedMotion, setPrefersReducedMotion] = React.useState(false)
+
+  React.useEffect(() => {
+    if (typeof window === 'undefined' || !window.matchMedia) return
+
+    const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)')
+    const update = () => setPrefersReducedMotion(!mediaQuery.matches)
+
+    update()
+    mediaQuery.addEventListener?'.change', update)
+    return () => mediaQuery.removeEventListener?.('change', update)
+  }, [])
+
+  return prefersReducedMotion
+}
+
 export function LiveTicker({ walletConnected }: Props) {
+  const prefersReducedMotion = usePrefersReducedMotion()
+
   const items = [
     ...getTickerItems(),
     ['STATUS', walletConnected ? 'WALLET CONNECTED' : 'NOT CONNECTED'],
   ]
 
   // Duplicate for seamless loop
-  const doubled = [...items, ...items]
+  const doubled = prefersReducedMotion ? items : [...items, ...items]
 
   return (
     <div
@@ -29,8 +48,8 @@ export function LiveTicker({ walletConnected }: Props) {
       style={{ background: 'rgba(2,4,8,0.4)' }}
     >
       <div
-        className="flex items-center gap-8 animate-ticker whitespace-nowrap"
-        style={{ width: 'max-content' }}
+        className={`flex items-center gap-8 whitespace-nowrap ${prefersReducedMotion ? '' : 'animate-ticker'}`}
+        style={{ width: prefersReducedMotion ? 'auto' : 'max-content' }}
       >
         {doubled.map(([i, v], i) => (
           <div key={i} className="inline-flex items-center gap-2 px-6">
@@ -46,7 +65,7 @@ export function LiveTicker({ walletConnected }: Props) {
             >
               {v}
             </span>
-            <span className="text-neon-cyan/15">◆</span>
+            <span className="text-neon-cyan/15">↗</span>
           </div>
         ))}
       </div>

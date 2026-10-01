@@ -76,13 +76,18 @@ function ImageCell({ result, onSelect }: { result: ImageResult; onSelect?: (r: I
         />
       )}
       <img
-        src={result.thumbnailUrl}
+        src={imageFailed ? '/image-placeholder.svg' : result.thumbnailUrl}
         alt={result.title ?? ''}
         width={result.width}
         height={result.height}
         loading="lazy"
         decoding="async"
+        referrerPolicy="no-referrer"
         onLoad={() => setLoaded(true)}
+        onError={() => {
+          setImageFailed(true);
+          setLoaded(true);
+        }}
         style={{
           ...imageStyles,
           opacity: loaded ? 1 : 0,

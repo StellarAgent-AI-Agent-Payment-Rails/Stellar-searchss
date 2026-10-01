@@ -393,6 +393,30 @@ Prefer reading the ${HEALTH_RESOURCE_URI} resource if your client supports resou
         properties: {},
       },
     },
+    {
+      name: 'list_receipts',
+      description: `List past paid queries recorded by the StellarSearch server.
+Each receipt contains the query type (search/images/news), timestamp, amount paid in USDC, and the Stellar transaction hash.
+The response also includes a \`totalSpentUsdc\` summary across all returned receipts.
+Use this tool when an agent needs to audit or report its own spending.`,
+      inputSchema: {
+        type: 'object',
+        properties: {
+          from: {
+            type: 'string',
+            description: 'ISO-8601 start of date range (inclusive), e.g. "2026-01-01T00:00:00Z"',
+          },
+          to: {
+            type: 'string',
+            description: 'ISO-8601 end of date range (inclusive), e.g. "2026-12-31T23:59:59Z"',
+          },
+          limit: {
+            type: 'number',
+            description: 'Maximum number of receipts to return (default: all within range, max 500)',
+          },
+        },
+      },
+    },
   ],
 }))
 
@@ -529,11 +553,11 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       const res = await fetch(`${SERVER_URL}/search?${params}`)
 
       if (!res.ok) {
-        const e = await res.json().catch(() => ({}))
+        const e: any = await res.json().catch(() => ({}))
         throw new Error(e.error || `HTTP ${res.status}`)
       }
 
-      const data = await res.json()
+      const data: any = await res.json()
       const formatted = data.results
         .map((r: any, i: number) => `${i + 1}. **${r.title}**\n   ${r.url}\n   ${r.description}`)
         .join('\n\n')
@@ -753,6 +777,83 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       return { content: [{ type: 'text', text: formatServerStats(stats) }] }
     } catch (err: any) {
       return reportToolError('Server stats', err)
+    }
+  }
+
+  // ── list_receipts ─────────────────────────────────────────────────────
+  if (name === 'list_receipts') {
+    const { from, to, limit } = args as { from?: string; to?: string; limit?: number }
+
+    try {
+      const params = new URLSearchParams()
+      if (from)  params.set('from',  from)
+      if (to)    params.set('to',    to)
+      if (limit) params.set('limit', String(Math.floor(limit)))
+
+      const url = `${SERVER_URL}/receipts${params.toString() ? `?${params}` : ''}`
+      const res = await fetch(url)
+
+      if (!res.ok) {
+        const e = await res.json().catch(() => ({})) as { error?: string }
+        throw new Error(e.error || `HTTP ${res.status}`)
+      }
+
+      const data = await res.json() as {
+        receipts: Array<{
+          id: string
+          timestamp: string
+          type: string
+          query: string
+          amountUsdc: string
+          currency: string
+          network: string
+          txHash: string | null
+          latencyMs: number
+        }>
+        count: number
+        totalSpentUsdc: string
+        currency: string
+      }
+
+      if (data.count === 0) {
+        const rangeNote = from || to
+          ? ` in the specified date range${from ? ` from ${from}` : ''}${to ? ` to ${to}` : ''}`
+          : ''
+        return {
+          content: [{
+            type: 'text',
+            text: `📋 No paid-query receipts found${rangeNote}.\nThe server records receipts in memory while it is running; they reset on restart.`,
+          }],
+        }
+      }
+
+      const lines: string[] = [
+        `📋 Paid-Query Receipts (${data.count} shown)`,
+        `💸 Total spent: ${data.totalSpentUsdc} ${data.currency}`,
+        ...(from || to
+          ? [`📅 Date range: ${from ?? '(start)'}  →  ${to ?? '(now)'}`]
+          : []),
+        '',
+      ]
+
+      for (const r of data.receipts) {
+        const typeIcon = r.type === 'images' ? '🖼️' : r.type === 'news' ? '📰' : '🔍'
+        const txLine = r.txHash
+          ? `   Tx:        ${r.txHash}`
+          : `   Tx:        (not available)`
+        lines.push(
+          `${typeIcon} [${r.timestamp}] ${r.type.toUpperCase()}`,
+          `   Query:     "${r.query}"`,
+          `   Paid:      ${r.amountUsdc} ${r.currency} on ${r.network}`,
+          txLine,
+          `   Latency:   ${r.latencyMs}ms`,
+          '',
+        )
+      }
+
+      return { content: [{ type: 'text', text: lines.join('\n') }] }
+    } catch (err: any) {
+      return reportToolError('list_receipts', err)
     }
   }
 
