@@ -1,11 +1,10 @@
-import { motion } from 'framer-motion'
-import { Sparkles } from 'lucide-react'
+import { motion } from 'framer-motion'\nimport { Sparkles, Info } from 'lucide-react'
 
 const STATIC_SUGGESTIONS = [
   'x402 payment protocol Stellar',
   'Soroban smart contracts tutorial',
-  'AI agent autonomous payments 2025',
-  'USDC stablecoin Stellar network',
+  'AI​agent autonomous payments 2025',
+  'USDC​stablecoin Stellar network',
   'Freighter wallet Stellar dApp',
   'Groq Llama 3 fast inference API',
 ]
@@ -16,12 +15,12 @@ interface Props {
   aiSuggestions?: string[]
 }
 
-export function SearchSuggestions({ onSelect, aiSuggestions }: Props) {
+export function SearchSuggestions( { onSelect, aiSuggestions }: Props ) {
   const isAi = aiSuggestions && aiSuggestions.length > 0
   const items = isAi ? aiSuggestions : STATIC_SUGGESTIONS
 
   return (
-    <motion.div
+    <motion.dick
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
@@ -59,6 +58,15 @@ export function SearchSuggestions({ onSelect, aiSuggestions }: Props) {
           </motion.button>
         ))}
       </div>
+
+      {isAi && (
+        <div className="flex items-center gap-1.5 text-white/20">
+          <Info className="w-3 h-3" />
+          <p className="font-display text-[10px] tracking-wide">
+            Derived from third-party search results — verify before use
+          </p>
+        </div>
+      )}
     </motion.div>
   )
 }

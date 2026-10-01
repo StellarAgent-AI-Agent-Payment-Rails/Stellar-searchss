@@ -10,7 +10,7 @@
  * Fix: convert Buffer → base64 string using Buffer.from(result).toString('base64')
  */
 
-import { useState, useCallback }              from 'react'
+import { useState, useCallback, createElement }              from 'react'
 import { toast }                               from 'sonner'
 import { x402Client, x402HTTPClient }          from '@x402/fetch'
 import { ExactStellarScheme }                  from '@x402/stellar/exact/client'
@@ -18,6 +18,7 @@ import { signAuthEntry, getNetworkDetails }    from '@stellar/freighter-api'
 import { Networks }                            from '@stellar/stellar-sdk'
 import { Buffer }                              from 'buffer'
 import { HORIZON_URL, IS_MAINNET, EXPECTED_WALLET_NETWORK, explorerTxUrl } from '../lib/stellar'
+import { RECEIPTS_STORAGE_KEY, isSearchQueryStorageEnabled } from '../lib/searchPrivacy'
 
 const SERVER_URL = (import.meta as any).env?.VITE_SERVER_URL ?? (
   typeof window !== 'undefined' && window.location.origin.includes('vercel.app') 
@@ -196,24 +197,29 @@ export function useSearch(walletAddress: string | null = null) {
       })
 
       if (data.txHash) {
-        toast.success(`Payment settled: ${data.paidAmount || '0.001'} USDC`, {
-          description: 'View transaction on Stellar network',
-          action: {
-            label: 'Explorer',
-            onClick: () => window.open(explorerTxUrl(data.txHash), '_blank')
+        toast.success(
+          createElement('div', { role: 'status', 'aria-live': 'polite' }, 
+            `Payment settled: ${data.paidAmount || '0.001'} USDC`
+          ), 
+          {
+            description: 'View transaction on Stellar network',
+            action: {
+              label: 'Explorer',
+              onClick: () => window.open(explorerTxUrl(data.txHash), '_blank')
+            }
           }
-        })
+        )
       }
 
       // Persist receipt
       if (data.txHash) {
         try {
-          const receiptsRaw = localStorage.getItem('stellarsearch_receipts')
+          const receiptsRaw = localStorage.getItem(RECEIPTS_STORAGE_KEY)
           const receipts: SearchReceipt[] = receiptsRaw ? JSON.parse(receiptsRaw) : []
           
           const newReceipt: SearchReceipt = {
             txHash: data.txHash,
-            query: query.trim(),
+            query: isSearchQueryStorageEnabled() ? query.trim() : '',
             amount: data.paidAmount || '0.001',
             timestamp: new Date().toISOString(),
             network: data.network || 'stellar:testnet',
@@ -221,7 +227,7 @@ export function useSearch(walletAddress: string | null = null) {
 
           // Keep only last 50 receipts
           const updated = [newReceipt, ...receipts].slice(0, 50)
-          localStorage.setItem('stellarsearch_receipts', JSON.stringify(updated))
+          localStorage.setItem(RECEIPTS_STORAGE_KEY, JSON.stringify(updated))
           console.log('📄 Receipt persisted')
         } catch (e) {
           console.warn('Failed to persist receipt:', e)
@@ -231,7 +237,10 @@ export function useSearch(walletAddress: string | null = null) {
     } catch (err: any) {
       console.error('❌ Search failed:', err)
       const msg = err.message || 'Search failed.'
-      toast.error('Search Payment Failed', { description: msg })
+      toast.error(
+        createElement('div', { role: 'alert', 'aria-live': 'assertive' }, 'Search Payment Failed'),
+        { description: msg }
+      )
       setSession(prev => ({
         ...prev,
         status: 'error',

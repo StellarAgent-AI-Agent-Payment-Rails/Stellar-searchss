@@ -6,20 +6,97 @@ This document covers everything you need to go from zero to a merged pull reques
 
 ---
 
+## ⚡ First 15 minutes
+
+Want to see the app running and change something you can look at? Follow this section only — it is the shortest path from clone to a visible change. **No wallet, no testnet account, no blockchain knowledge required.**
+
+Everything after this section is reference material for when you need it.
+
+### 1. Clone and install (~4 min)
+
+```bash
+git clone https://github.com/<your-username>/Stellar-Search.git
+cd Stellar-Search
+npm install          # Node 18+ and npm 9+ required
+```
+
+### 2. Add two free API keys (~4 min)
+
+```bash
+cp .env.example .env
+```
+
+Open `.env` and set **only these two** values:
+
+| Key | Where to get it | Cost |
+|---|---|---|
+| `SERPER_API_KEY` | [serper.dev](https://serper.dev) | Free — 2,500 queries/month |
+| `GROQ_API_KEY` | [console.groq.com/keys](https://console.groq.com/keys) | Free |
+
+Leave every other value in `.env` exactly as it is. `STELLAR_RECEIVING_ADDRESS` can stay as the placeholder and the server will still boot — it only matters for the paid `/search` route (see step 5).
+
+### 3. Run it (~2 min)
+
+```bash
+npm run dev:all      # starts the Express backend (:3001) and Vite frontend (:5173)
+```
+
+Open **http://localhost:5173**. You should see the landing page, navbar, footer and the stats grid. The floating Groq assistant works too, because it only needs `GROQ_API_KEY`.
+
+> Prefer two terminals? Run `npm run server` and `npm run dev` side by side. (`npm run setup` does steps 1 and 2 for you if you would rather run one command.)
+
+### 4. Make a visible change (~3 min)
+
+Pick any file under `src/` and edit it — Vite hot-reloads instantly, so you get feedback in the browser without restarting anything.
+
+```
+src/components/layout/Footer.tsx   # change the tagline text
+src/components/layout/Navbar.tsx   # tweak a link label or spacing
+src/pages/DocsPage.tsx             # fix wording in the docs copy
+```
+
+That is a real, PR-able contribution. Confirm it still typechecks before opening a PR:
+
+```bash
+npx tsc --noEmit
+```
+
+### 5. What you can (and cannot) do without a wallet
+
+| ✅ Works with no wallet | ⛔ Needs Freighter + funded testnet USDC |
+|---|---|
+| Everything in `src/` — pages, components, hooks, styling, copy, layout | `/search` (the 0.001 USDC paid route) and anything that calls it |
+| `npm run dev`, `npm run build`, `npx tsc --noEmit` | `src/hooks/useSearch.ts`, `src/hooks/useFreighterWallet.ts`, `src/components/wallet/WalletPanel.tsx` |
+| `GET /health` and `GET /ai/chat` on the backend | `src/pages/DashboardPage.tsx` (reads live Horizon tx history) |
+| Docs, README, CONTRIBUTING, issue triage, tests | `npm run test:search`, MCP payment tools |
+
+If your change never touches the payment flow, you never need to install Freighter or create a Stellar account. The full wallet walkthrough is in [Local Development Setup](#local-development-setup).
+
+### 6. Find something to work on
+
+- **[Good first issues](https://github.com/Emmy123222/Stellar-Search/issues?q=is%3Aopen+label%3A%22good+first+issue%22)** — scoped, self-contained, with clear acceptance criteria.
+- [All open issues](https://github.com/Emmy123222/Stellar-Search/issues) — the backlog has 50+ scoped ideas.
+- Comment _"I'd like to work on this"_ on the issue before you start, so two people do not build the same thing.
+
+Then branch, commit and open a PR — the conventions are in [Development Workflow](#development-workflow) and [Submitting a Pull Request](#submitting-a-pull-request).
+
+---
+
 ## Table of Contents
 
-1. [Code of Conduct](#code-of-conduct)
-2. [Project Overview](#project-overview)
-3. [Prerequisites](#prerequisites)
-4. [Local Development Setup](#local-development-setup)
-5. [Project Structure](#project-structure)
-6. [Development Workflow](#development-workflow)
-7. [Submitting a Pull Request](#submitting-a-pull-request)
-8. [Issue Guidelines](#issue-guidelines)
-9. [Coding Standards](#coding-standards)
-10. [Testing](#testing)
-11. [Common Pitfalls](#common-pitfalls)
-12. [Getting Help](#getting-help)
+1. [First 15 minutes](#first-15-minutes)
+2. [Code of Conduct](#code-of-conduct)
+3. [Project Overview](#project-overview)
+4. [Prerequisites](#prerequisites)
+5. [Local Development Setup](#local-development-setup)
+6. [Project Structure](#project-structure)
+7. [Development Workflow](#development-workflow)
+8. [Submitting a Pull Request](#submitting-a-pull-request)
+9. [Issue Guidelines](#issue-guidelines)
+10. [Coding Standards](#coding-standards)
+11. [Testing](#testing)
+12. [Common Pitfalls](#common-pitfalls)
+13. [Getting Help](#getting-help)
 
 ---
 
@@ -78,7 +155,7 @@ Before you begin, make sure you have:
 |---|---|---|
 | `SERPER_API_KEY` | [serper.dev](https://serper.dev) | Free — 2,500 queries/month |
 | `GROQ_API_KEY` | [console.groq.com/keys](https://console.groq.com/keys) | Free |
-| `STELLAR_RECEIVING_ADDRESS` | [Stellar Lab](https://laboratory.stellar.org/#account-creator?network=test) | Free testnet keypair |
+| `STELLAR_RECEIVING_ADDRESS` | [Stellar Lab](https://lab.stellar.org/account/fund) | Free testnet keypair |
 
 > **Note:** You only need `SERPER_API_KEY` and `GROQ_API_KEY` for most frontend work. The `STELLAR_RECEIVING_ADDRESS` is only required if you are working on the payment flow.
 
@@ -89,9 +166,9 @@ Before you begin, make sure you have:
 ### 1. Fork and clone
 
 ```bash
-# Fork the repo on GitHub first, then:
-git clone https://github.com/<your-username>/Stellar-Search.git
-cd Stellar-Search
+# Fork the repository on GitHub first, then clone it:
+git clone https://github.com/StellarAgent-AI-Agent-Payment-Rails/Stellar-searchss.git
+cd Stellar-searchss
 ```
 
 ### 2. Install dependencies
@@ -113,7 +190,7 @@ Open `.env` and fill in your values:
 SERPER_API_KEY=your_serper_api_key_here
 GROQ_API_KEY=gsk_your_groq_key_here
 
-# Required for x402 payment flow
+# Required for x402 payment flow (official x402.org facilitator — no facilitator API key required)
 STELLAR_RECEIVING_ADDRESS=GXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 STELLAR_NETWORK=stellar:testnet
 VITE_STELLAR_NETWORK=stellar:testnet
@@ -131,8 +208,8 @@ VITE_SERVER_URL=http://localhost:3001
 1. Install [Freighter](https://freighter.app) browser extension.
 2. Create a new wallet (or import one).
 3. Switch to **Testnet**: Settings → Network → Testnet.
-4. Get a funded testnet account at [Stellar Lab](https://laboratory.stellar.org/#account-creator?network=test).
-5. Add the USDC trustline and claim testnet USDC from the faucet.
+4. Get a funded testnet account at [Stellar Lab](https://lab.stellar.org/account/fund).
+5. Add the USDC trustline and claim testnet USDC from the [Circle faucet](https://faucet.circle.com) — the full walkthrough is the [Get testnet USDC](README.md#get-testnet-usdc) section of the README.
 
 > If you are **not** working on the wallet or payment flow, you can skip step 4 entirely — the frontend works without a wallet for most UI changes.
 
@@ -224,7 +301,7 @@ stellar-search/
 
 ### Pick an issue
 
-Browse [open issues](https://github.com/Emmy123222/Stellar-Search/issues). Issues labelled **good first issue** are specifically chosen for first-time contributors — they are scoped, self-contained, and have clear acceptance criteria.
+Browse [open issues](https://github.com/StellarAgent-AI-Agent-Payment-Rails/Stellar-searchss/issues). Issues labelled **good first issue** are specifically chosen for first-time contributors — they are scoped, self-contained, and have clear acceptance criteria.
 
 Comment on the issue before you start: _"I'd like to work on this"_ — this avoids duplicate effort.
 
@@ -342,7 +419,7 @@ When you open a bug, include:
 
 - Explain the **problem** you are solving, not just the solution you have in mind.
 - If the feature involves the payment flow or blockchain state, describe how edge cases (network error, wallet rejection, insufficient balance) should behave.
-- Check the [open issues](https://github.com/Emmy123222/Stellar-Search/issues) first — the backlog already has 50+ scoped ideas waiting for contributors.
+- Check the [open issues](https://github.com/StellarAgent-AI-Agent-Payment-Rails/Stellar-searchss/issues) first — the backlog already has 50+ scoped ideas waiting for contributors.
 
 ---
 
@@ -380,6 +457,8 @@ When you open a bug, include:
 
 Only write a comment when the **why** is non-obvious — a hidden constraint, a Stellar SDK quirk, or a workaround for a specific bug. Do not comment what the code does; well-named identifiers do that. Do not leave `TODO:` comments in PRs — open an issue instead.
 
+Significant architecture decisions are recorded as [Architecture Decision Records](./docs/adr/README.md) in `docs/adr/`. If your change reverses or revises one of those decisions, update the relevant ADR (or write a new one that supersedes it).
+
 ```ts
 // Freighter returns a Buffer, not a string — must convert to base64 explicitly.
 // Using .toString() gives "[object Buffer]" (9 chars) causing x402 signature length error.
@@ -397,7 +476,7 @@ const signedAuthEntry = Buffer.from(raw as unknown as Uint8Array).toString('base
 
 ## Testing
 
-Currently the project relies on manual testing. We are actively adding automated tests — see the open [testing issues](https://github.com/Emmy123222/Stellar-Search/issues?q=is%3Aopen+label%3Atesting). If you are adding a new hook or server route, please include tests.
+Currently the project relies on manual testing. We are actively adding automated tests — see the open [testing issues](https://github.com/StellarAgent-AI-Agent-Payment-Rails/Stellar-searchss/issues?q=is%3Aopen+label%3Atesting). If you are adding a new hook or server route, please include tests.
 
 ### Manual testing checklist
 
@@ -464,7 +543,7 @@ npm run test:search "Stellar blockchain"
 
 ## Getting Help
 
-- **Bug or question about the code?** Open a [GitHub Issue](https://github.com/Emmy123222/Stellar-Search/issues/new).
+- **Bug or question about the code?** Open a [GitHub Issue](https://github.com/StellarAgent-AI-Agent-Payment-Rails/Stellar-searchss/issues/new).
 - **Something in this guide is wrong or unclear?** Open a PR fixing it — contributions to docs are just as valuable as code.
 - **x402 protocol questions?** See the [official x402 docs](https://x402.org) and the [Stellar agentic payments guide](https://developers.stellar.org/docs/build/agentic-payments/x402/built-on-stellar).
 - **Freighter API reference?** [Stellar Freighter docs](https://docs.freighter.app).
@@ -477,4 +556,5 @@ All contributors are welcome to add themselves to a `CONTRIBUTORS` list. When yo
 
 ---
 
-*StellarSearch — Stellar Hackathon 2026 · Agents on Stellar*
+*StellarSearch — Stellar Hackathon 2026 · Agents on Stellar*.
+.

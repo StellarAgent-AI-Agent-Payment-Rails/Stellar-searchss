@@ -1,4 +1,4 @@
-import { motion } from 'framer-motion'
+import { m } from 'framer-motion'
 import { Search, BookOpen, BarChart2, ExternalLink, Zap, Github, Globe } from 'lucide-react'
 import { WalletPanel } from '../wallet/WalletPanel'
 import type { WalletState, StellarTransaction } from '../../hooks/useFreighterWallet'
@@ -76,7 +76,7 @@ export function Navbar({
               <Icon className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">{label}</span>
               {page === id && (
-                <motion.div
+                <m.div
                   layoutId="nav-active"
                   className="absolute inset-0 rounded-lg"
                   style={{
