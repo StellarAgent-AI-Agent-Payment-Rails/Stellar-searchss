@@ -3,6 +3,22 @@
 > **Stellar Hackathon 2026 · Agents on Stellar**
 > Zero mock data. Real x402 payments. Real Serper.dev Search. Real Groq AI. Real Freighter wallet.
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
+
+---
+
+## Demo
+
+![Animated walkthrough of the StellarSearch x402 payment flow](public/demo-flow.svg)
+
+A self-contained animated walkthrough of the real UI, state-for-state:
+**connect Freighter → search → HTTP 402 → sign the Soroban auth entry → retry with `X-PAYMENT` → the facilitator settles `0.001 USDC` on Stellar testnet → results render with the settlement linked to Stellar Expert.**
+
+It renders inline on GitHub with no local setup and is only ~20 KB. It is an
+illustration of the flow, not a screen recording — to capture a full video of a
+live settlement (with the transaction verifiable on the explorer), follow
+[`docs/DEMO_RECORDING.md`](docs/DEMO_RECORDING.md).
+
 ---
 
 ## What it is
@@ -11,13 +27,17 @@ StellarSearch is a pay-per-query web search API for autonomous AI agents. Every 
 
 ---
 
+
+For full endpoint parameters, response shapes, and error codes, see [`docs/api.md`](docs/api.md).
+
+
 ## Real stack (no mocks)
 
 | Layer | Real package / service |
 |---|---|
 | Payment protocol | `@x402/express` + `@x402/stellar` + `@x402/core` |
 | Blockchain | Stellar Testnet (via Horizon API) |
-| Facilitator | OpenZeppelin x402 (`channels.openzeppelin.com`) |
+| Facilitator | Official x402 Facilitator (`https://www.x402.org/facilitator`) |
 | Wallet connect | `@stellar/freighter-api` (real Freighter extension) |
 | Balances / tx | Stellar Horizon REST API (live, not mocked) |
 | Search results | Serper.dev API (real Google search results) |
@@ -28,11 +48,13 @@ StellarSearch is a pay-per-query web search API for autonomous AI agents. Every 
 
 ## Setup
 
+> **Note on Mainnet:** If you are preparing to transition this project to the Stellar Mainnet, please read our [Mainnet Transition Guide](docs/mainnet.md) for critical safety checklists and requirements.
+
 ### 1. Clone and install
 
 ```bash
-git clone <this-repo>
-cd stellar-search
+git clone https://github.com/StellarAgent-AI-Agent-Payment-Rails/Stellar-searchss.git
+cd Stellar-searchss
 npm install
 ```
 
@@ -40,8 +62,7 @@ npm install
 
 | Key | Where to get it |
 |---|---|
-| `STELLAR_RECEIVING_ADDRESS` | [Stellar Lab](https://laboratory.stellar.org/#account-creator?network=test) — generate + fund testnet keypair |
-| `OPENZEPPELIN_API_KEY` | [channels.openzeppelin.com/testnet/gen](https://channels.openzeppelin.com/testnet/gen) |
+| `STELLAR_RECEIVING_ADDRESS` | [Stellar Lab](https://lab.stellar.org/account/fund) — generate + fund testnet keypair |
 | `SERPER_API_KEY` | [serper.dev](https://serper.dev/) — free tier: 2.5k queries/month |
 | `GROQ_API_KEY` | [console.groq.com/keys](https://console.groq.com/keys) — free |
 
@@ -49,12 +70,12 @@ npm install
 
 ```bash
 cp .env.example .env
-# Fill in the 5 keys above
+# Fill in the 3 keys above (FACILITATOR_URL defaults to https://www.x402.org/facilitator)
 ```
 
 ### 4. Install Freighter
 
-Install the [Freighter browser extension](https://freighter.app), create a testnet wallet, and fund it with USDC at [Stellar Lab](https://laboratory.stellar.org).
+Install the [Freighter browser extension](https://freighter.app), create a testnet wallet, and fund it with USDC — see [Get testnet USDC](#get-testnet-usdc) below.
 
 ### 5. Run
 
@@ -67,12 +88,77 @@ npm run dev
 # → http://localhost:5173
 ```
 
+### Response compression
+
+The Express server compresses eligible responses when the client advertises a
+supported encoding. The `/ai/chat` SSE endpoint is excluded so streamed events
+are delivered immediately. On Vercel, the CDN applies response compression at
+the network edge automatically; the Express middleware is for deployments that
+run this server directly.
+
+To measure gzip savings on a captured search response without making another
+paid request, save its JSON body and run
+`node scripts/measure-compression.mjs < search-response.json`.
+
 ### 6. Test the x402 flow
+
+Default mode is **free** — it asserts request validation, `/health`, and that
+`/search` enforces payment (expects HTTP 402). It settles nothing and exits
+non-zero if any check fails:
 
 ```bash
 npm test                            # unit + integration tests
 npm run test:search "Stellar blockchain"   # live end-to-end check
 ```
+
+Full paid flow (**spends testnet USDC**, ~0.001 USDC per search, up to ~0.003
+USDC per run). Requires a funded testnet payer key in `.env`:
+
+```bash
+# .env:
+STELLAR_PAYER_SECRET=S...  # testnet account with XLM + USDC trustline + balance
+npm run test:search "Stellar blockchain" -- --paid
+```
+
+Human-readable result listings appear only with `--verbose`; `--json` prints a
+machine-readable summary. See `scripts/test-search.ts -- --help`.
+
+---
+
+## Get testnet USDC
+
+Searches are paid in USDC on Stellar testnet. A fresh wallet holds **zero USDC**, and unlike XLM there is no automatic faucet — you must opt in by adding a **trustline** before any USDC can land in your account. Complete these four steps in order; the faucet only works after step 3. (The same guide is available in-app on the **How it works** page at `/docs#get-testnet-usdc`.)
+
+### Step 1 — Create a testnet account
+
+Generate a keypair with the [Freighter browser extension](https://freighter.app), or use [Stellar Lab](https://lab.stellar.org/account/fund). Keep the secret key (`S…`) private — it never needs to leave your device.
+
+### Step 2 — Fund the account with testnet XLM
+
+A new account must hold the minimum balance before it can hold assets. Friendbot tops up your account with free testnet XLM in one click:
+
+- **Browser:** [Stellar Lab → Fund account](https://lab.stellar.org/account/fund)
+- **CLI:** `curl "https://friendbot.stellar.org?addr=G…"`
+
+### Step 3 — Add the USDC trustline
+
+Trust the USDC issuer so your account can hold USDC. The testnet USDC issuer used by this app (and by the faucet) is:
+
+```
+USDC-GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5
+```
+
+You can verify the issuer on [StellarExpert](https://stellar.expert/explorer/testnet/asset/USDC-GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5).
+
+- **Browser:** [Stellar Lab → Fund account](https://lab.stellar.org/account/fund) has a trustline button on the same page.
+- **SDK:** follow Circle's [USDC trustline quickstart](https://developers.circle.com/stablecoins/quickstart-setup-usdc-trustline-stellar) to submit a `changeTrust` operation with `@stellar/stellar-sdk`.
+- **Concepts:** see [Stellar Docs — trustlines](https://developers.stellar.org/docs/learn/fundamentals/stellar-data-structures/accounts#trustlines).
+
+> If you add a trustline to the wrong issuer, faucet USDC will never arrive. Double-check the address above.
+
+### Step 4 — Claim testnet USDC from the faucet
+
+Once the trustline exists, Circle's public [testnet faucet](https://faucet.circle.com) sends free testnet USDC straight to your address (currently 20 USDC per address every 2 hours). That balance is what pays for searches — **0.001 USDC per query**.
 
 ---
 
@@ -83,7 +169,7 @@ Browser (Freighter) → GET /search?q=...
                      ← HTTP 402 + payment requirements
                      → Sign Soroban auth entry (Freighter prompt)
                      → GET /search + X-Payment: <signature>
-                     ← OpenZeppelin facilitator verifies + settles 0.001 USDC
+                     ← x402 facilitator (x402.org) verifies + settles 0.001 USDC
                      ← 200 OK + Search results
 ```
 
@@ -91,8 +177,12 @@ Browser (Freighter) → GET /search?q=...
 2. Returns `HTTP 402 Payment Required` with price + network + payTo address
 3. The x402 client signs a Soroban authorization entry via Freighter wallet
 4. Retries with `X-Payment` header containing the signed entry
-5. OpenZeppelin facilitator at `channels.openzeppelin.com/x402/testnet` verifies the signature and settles 0.001 USDC on Stellar testnet
+5. Official x402 facilitator at `https://www.x402.org/facilitator` (configured via `FACILITATOR_URL`) verifies the signature and settles 0.001 USDC on Stellar testnet
 6. Server receives confirmation and returns search results
+
+## Search history and privacy
+
+Successful paid searches keep a receipt in the current browser’s localStorage with the transaction hash, amount, timestamp, and network. Query text is **not stored by default**. To opt in, enable **Save search query text in this browser** in the Dashboard. Turning it off removes query text from existing receipts, while keeping payment metadata. Use **Clear receipts** in the Dashboard to delete all locally stored receipts. The app keeps at most the 50 most recent receipts; clearing browser site data also removes them.
 
 ---
 
@@ -117,12 +207,19 @@ stellar-search/
 │   │   └── DashboardPage.tsx       # Live Horizon tx history
 │   └── lib/stellar.ts              # Horizon helpers
 ├── server/
-│   └── index.ts                # Express + @x402/express + Serper.dev + Groq
+│   ├── index.ts                # Express + @x402/express + Serper.dev + Groq
+│   └── urlSummary.ts           # SSRF-guarded page fetch + HTML→text for summarize_url
 ├── mcp-server/
-│   └── index.ts                # MCP tools: web_search, ai_summarize, check_balance
+│   └── index.ts                # MCP tools: web_search, ai_summarize, summarize_url, check_balance + prompts
+│                                # + the stellar-search://health resource
 ├── scripts/
 │   └── test-search.ts          # End-to-end test script
+├── public/
+│   └── demo-flow.svg           # Animated README walkthrough of the payment flow
+├── docs/
+│   └── DEMO_RECORDING.md       # How to record the real settlement demo
 ├── .env.example
+├── vercel.json                 # Committed build + routing config
 ├── claude_mcp.json
 └── README.md
 ```
@@ -131,23 +228,98 @@ stellar-search/
 
 ## Claude Code / MCP integration
 
+The MCP server can use either your local API or the hosted StellarSearch API. The [`claude_mcp.json`](claude_mcp.json) example includes both entries; keep or enable the one you want to use. Run the config from the repository root after installing dependencies with `npm install`.
+
+The example uses `npx tsx ./mcp-server/index.ts` because the MCP server is written in TypeScript. `tsx` runs the source directly without a compilation step, and is available through this project's dependencies. Alternatively, build or bundle the MCP entry point as JavaScript with Node-resolvable imports, then configure the MCP client to run that generated file with `node`. `tsconfig.server.json` covers server and MCP code and emits to `dist`; the default `npm run build` builds the frontend and does not compile the MCP server.
+
+The MCP server reads these environment variables:
+
+| Variable | Required | Description |
+|---|---|---|
+| `GROQ_API_KEY` | Yes | Groq API key used by the `ai_summarize` tool. The Groq client is initialized when the MCP server starts, so provide a key even if you only plan to use other tools. |
+| `SEARCH_API_URL` | No | Base URL for the StellarSearch API used by search and stats tools. Defaults to `http://localhost:3001`. For the hosted service, use `https://stellar-search-2twg.vercel.app/api`. |
+
+The local entry expects the API server to be running on port 3001. The hosted entry connects to the deployed API and does not require a local API server. Both still require a Groq key for the MCP process to start.
+
+Then tell Claude Code: `"Search for the latest Stellar x402 examples"` — it calls `web_search`, the server pays via x402, and Claude gets real results.
+
+### `summarize_url` (free)
+
+`summarize_url` lets an agent read a link it found: it fetches the page, strips the HTML to text and summarises it with Groq. It takes `url` and an optional `instruction` (e.g. "extract the pricing table"). The MCP tool calls the server's `POST /summarize-url`:
+
+```bash
+curl -X POST http://localhost:3001/summarize-url \
+  -H 'Content-Type: application/json' \
+  -d '{"url": "https://developers.stellar.org/docs"}'
+```
+
+**Free, not paid.** Like `ai_summarize` and `/ai/chat`, it only costs a Groq call and no Serper query, so it isn't behind x402. If it needs to be paid later, add `POST /summarize-url` to `x402Routes` in `server/index.ts`.
+
+**Limits and SSRF protection.** Fetching arbitrary URLs from the server is an SSRF risk, so:
+
+- only `http`/`https` on ports 80 and 443, with no credentials in the URL
+- `localhost`, `*.local`, `*.internal` and private, loopback, link-local (including `169.254.169.254`), CGNAT, multicast and other reserved IPv4/IPv6 ranges are refused with `403`
+- the address check runs on the IP the socket actually connects to, so a public hostname that resolves (or is rebound) to an internal IP is refused too
+- redirects are followed up to 3 times, and every hop is checked again
+- only `text/html` / `text/plain` responses; a 10 s timeout; at most 1 MB downloaded and 12,000 characters sent to the model (the response says `truncated: true` when it was cut)
+
+Run the tests with `npm run test:url`.
+
+### MCP prompts
+
+The server also exposes reusable prompt templates that show up in MCP clients' prompt pickers. Each one wires up the right tool with sensible defaults:
+
+| Prompt | Arguments | Tool used | What it does |
+|---|---|---|---|
+| `cited_research` | `topic` (required), `depth` (optional, default `3`) | `web_search` | Researches a topic and returns a cited summary with sources |
+| `competitive_comparison` | `company_a`, `company_b` (required) | `web_search` | Compares two companies side by side with sourced facts |
+| `news_roundup` | `topic` (required), `timeframe` (optional, default `last 7 days`) | `web_search` | Summarizes recent news on a topic with links |
+
+Example: pick `cited_research`, enter `topic: "Stellar x402 adoption"`, and the client issues a `web_search` call with a research-oriented query.
+
+### Tools and resources
+
+Alongside its tools (`web_search`, `image_search`, `news_search`, `ai_summarize`, `check_balance`, `get_search_stats`), the server exposes live server stats as an MCP **resource**:
+
+| Type | Name | Description |
+|---|---|---|
+| Resource | `stellar-search://health` | Live server stats as JSON (`application/json`), backed by `GET /health` |
+| Tool | `get_search_stats` | The same stats, formatted for a chat reply |
+
+Server stats are reference data, so they fit the resource model better than a tool: a client can surface them without a model deciding to spend a tool call on it. Clients that support resources can list and read it directly:
+
 ```json
-// claude_mcp.json
+// resources/list
 {
-  "mcpServers": {
-    "stellar-search": {
-      "command": "npx",
-      "args": ["tsx", "./mcp-server/index.ts"],
-      "env": {
-        "GROQ_API_KEY": "your_groq_api_key",
-        "SEARCH_API_URL": "http://localhost:3001"
-      }
+  "resources": [
+    {
+      "uri": "stellar-search://health",
+      "name": "stellar-search-health",
+      "mimeType": "application/json"
     }
-  }
+  ]
 }
 ```
 
-Then tell Claude Code: `"Search for the latest Stellar x402 examples"` — it calls `web_search`, the server pays via x402, and Claude gets real results.
+```json
+// resources/read — { "uri": "stellar-search://health" }
+{
+  "status": "ok",
+  "network": "stellar:testnet",
+  "pricePerQuery": "0.001 USDC",
+  "protocol": "x402",
+  "facilitator": "https://www.x402.org/facilitator",
+  "totalQueries": 1234,
+  "totalUsdcSettled": "1.2340",
+  "avgLatencyMs": 812,
+  "uptime": "2h",
+  "serperApiConfigured": true,
+  "groqApiConfigured": true,
+  "receivingAddressConfigured": true
+}
+```
+
+`get_search_stats` is kept for backward compatibility — it reads the same endpoint and still works for clients that only call tools.
 
 ---
 
@@ -156,7 +328,13 @@ Then tell Claude Code: `"Search for the latest Stellar x402 examples"` — it ca
 | Requirement | ✓ |
 |---|---|
 | Open-source repo + README | ✅ |
-| 2–3 min video demo | Record showing: connect Freighter → search → see 402 → payment settles → results |
-| Real Stellar testnet transactions | ✅ Every search settles 0.001 USDC via OpenZeppelin facilitator |
+| 2–3 min video demo | ✅ Animated flow walkthrough embedded above — see [Demo](#demo). Use the [recording guide](docs/DEMO_RECORDING.md) to capture a full video of a live settlement |
+| Real Stellar testnet transactions | ✅ Every search settles 0.001 USDC via the x402 facilitator (`https://www.x402.org/facilitator`) |
 | x402 protocol | ✅ `@x402/express` + `@x402/stellar` |
 | Addresses explicit demand signal | ✅ "pay-per-query web search instead of monthly subscriptions" |
+
+---
+
+## License
+
+Released under the [MIT License](./LICENSE). © 2026 StellarSearch contributors.

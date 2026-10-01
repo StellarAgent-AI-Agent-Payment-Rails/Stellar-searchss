@@ -1,4 +1,4 @@
-import { useState, useMemo }                   from 'react'
+import { useState, useEffect, useMemo }         from 'react'
 import { motion, AnimatePresence }             from 'framer-motion'
 import { AnimatedBackground, Navbar, LiveTicker, Footer } from './components/layout'
 import { GroqAssistant }                       from './components/ai'
@@ -8,8 +8,35 @@ import { Toaster }                             from 'sonner'
 
 type Page = 'search' | 'docs' | 'dashboard'
 
+// The app is a SPA without a router: keep the current page in the URL hash so
+// deep links like #docs work on load and browser back/forward keeps working
+// (issue #94 links users here from the zero-balance banner).
+const getPageFromHash = (): Page => {
+  const hash = window.location.hash.replace('#', '')
+  return hash === 'docs' || hash === 'dashboard' ? (hash as Page) : 'search'
+}
+
 export default function App() {
-  const [page, setPage] = useState<Page>('search')
+  const [page, setPage] = useState<Page>(getPageFromHash)
+
+  const navigate = (p: Page, anchor?: string) => {
+    setPage(p)
+    window.history.pushState(null, '', p === 'search' ? window.location.pathname : `#${p}`)
+    if (anchor) {
+      // Wait for the new page to mount, then scroll to the section anchor.
+      requestAnimationFrame(() => {
+        document.getElementById(anchor)?.scrollIntoView({ behavior: 'smooth' })
+      })
+    } else {
+      window.scrollTo({ top: 0 })
+    }
+  }
+
+  useEffect(() => {
+    const onPopState = () => setPage(getPageFromHash())
+    window.addEventListener('popstate', onPopState)
+    return () => window.removeEventListener('popstate', onPopState)
+  }, [])
 
   const {
     wallet, transactions, txLoading,
@@ -31,6 +58,9 @@ export default function App() {
 
   return (
     <div className="min-h-screen relative text-white">
+      <a href="#main-content" className="skip-link">
+        Skip to main content
+      </a>
       {/* Canvas particle / matrix background */}
       <AnimatedBackground />
 
@@ -39,7 +69,7 @@ export default function App() {
         {/* Top navigation bar */}
         <Navbar
           page={page}
-          onNavigate={setPage}
+          onNavigate={navigate}
           wallet={wallet}
           transactions={transactions}
           txLoading={txLoading}
@@ -52,7 +82,7 @@ export default function App() {
         <LiveTicker walletConnected={wallet.connected} />
 
         {/* Page content */}
-        <main className="flex-1">
+        <main id="main-content" className="flex-1" tabIndex={-1}>
           <AnimatePresence mode="wait">
             <motion.div
               key={page}
@@ -68,6 +98,7 @@ export default function App() {
                   session={session}
                   search={search}
                   reset={reset}
+                  onNavigateFundingGuide={() => navigate('docs', 'get-testnet-usdc')}
                 />
               )}
               {page === 'docs' && <DocsPage />}
@@ -91,6 +122,16 @@ export default function App() {
 
       {/* Floating Groq AI assistant */}
       <GroqAssistant lastSearch={lastSearch} />
+
+      {/* Accessible Live Regions for persistent state so toast isn't the only surface */}
+      <div className="sr-only" aria-live="assertive" role="alert">
+        {session.status === 'error' ? `Error: ${session.error}` : ''}
+      </div>
+      <div className="sr-only" aria-live="polite" role="status">
+        {session.status === 'complete' && session.txHash 
+          ? `Payment settled: ${session.paidAmount || '0.001'} USDC` 
+          : ''}
+      </div>
 
       <Toaster position="bottom-right" theme="dark" duration={4000} richColors />
     </div>

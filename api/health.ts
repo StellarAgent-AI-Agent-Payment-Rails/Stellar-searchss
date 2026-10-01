@@ -1,4 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
+import { readFileSync } from 'fs'
+import { resolve, dirname } from 'path'
+import { fileURLToPath } from 'url'
 
 import { loadRateLimitConfig } from '../server/rateLimitConfig.js'
 import { rateLimitGuard } from './rateLimit.js'
@@ -15,8 +18,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const GROQ_API_KEY = process.env.GROQ_API_KEY
   const RECEIVING_ADDRESS = process.env.STELLAR_RECEIVING_ADDRESS
 
-  res.json({
+  const body = {
     status: 'ok',
+    version: APP_VERSION,
     network: NETWORK,
     pricePerQuery: '0.001 USDC',
     protocol: 'x402',
@@ -24,6 +28,23 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     serperApiConfigured: !!SERPER_API_KEY,
     groqApiConfigured: !!GROQ_API_KEY,
     receivingAddressConfigured: !!RECEIVING_ADDRESS,
+    stats: await getStats(),
     timestamp: new Date().toISOString(),
-  })
+  }
+
+  const etag = `"${Buffer.from(JSON.stringify(body)).toString('base64url')}"`
+
+  res.setHeader('Cache-Control', `public, max-age=${CACHE_SECONDS}`)
+  res.setHeader('ETag', etag)
+
+  if (req.headers['if-none-match'] === etag) {
+    res.status(304).end()
+    return
+  }
+
+  res.json(body)
+}
+
+async function getStats(): Promise<{ searches: number; payments: number } | null> {
+  return null
 }

@@ -49,7 +49,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     req.headers['x-payment']         ||
     req.headers['X-PAYMENT']
 
-  if (!paymentHeader) {
+  if (!paymentHeader && !PAYMENTS_DISABLED) {
     // Return x402 v2 payment requirements
     // The key fix: asset must be a Soroban C... contract address, NOT "USDC:ISSUER"
     const paymentRequired = {
@@ -81,7 +81,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   // ─── Payment present — proceed with search ────────────────────────────────
-  console.log('✅ Payment header received')
+  if (paymentHeader) console.log('✅ Payment header received')
+  else console.log('⚠️  PAYMENTS_DISABLED — bypassing payment gate (load test mode)')
 
   let txHash: string | null = null
   try {
@@ -140,6 +141,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       relevanceScore: Math.max(0.5, 1 - i * 0.06),
       publishedAt:    r.date || undefined,
     }))
+
+    // Record successful search for stats. Best-effort: never block the response.
+    incrementCounter('searches').catch(() => {})
+    incrementCounter('results', results.length).catch(() => {})
 
     return res.json({
       query:      q.trim(),

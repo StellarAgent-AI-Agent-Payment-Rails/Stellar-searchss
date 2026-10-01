@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion'
-import { ExternalLink, GitBranch, Globe, Shield, Zap, Code2, Server } from 'lucide-react'
-import { IS_MAINNET, STELLAR_NETWORK, AMOUNT_USDC, STELLAR_EXPERT_URL, HORIZON_URL } from '../lib/stellar'
+import { CheckCircle2, Coins, Droplets, ExternalLink, GitBranch, Globe, KeyRound, Shield, Wallet, Zap, Code2, Server } from 'lucide-react'
+import { IS_MAINNET, STELLAR_NETWORK, AMOUNT_USDC, STELLAR_EXPERT_URL, HORIZON_URL, USDC_ISSUER_TESTNET } from '../lib/stellar'
+import { FUNDING_URLS } from '../lib/funding'
 
 const getSteps = () => [
   {
@@ -29,6 +30,44 @@ const getSteps = () => [
   },
 ]
 
+// Issue #94: all links verified live before publishing. Friendbot funds XLM
+// only — testnet USDC comes from the Circle faucet, which requires the
+// trustline to exist first, hence the strict step order.
+const getFundingSteps = () => [
+  {
+    num: '01', icon: KeyRound, color: '#00f5ff',
+    title: 'Create a testnet account',
+    desc:  'Generate a keypair with the Freighter browser extension, or use Stellar Lab. Keep the secret key (S…) private — it never needs to leave your device.',
+    links: [{ label: 'Stellar Lab — create account', href: FUNDING_URLS.fundXlm }],
+    code:  'Keypair.random() → G… (public) / S… (secret)',
+  },
+  {
+    num: '02', icon: Wallet, color: '#ffb800',
+    title: 'Fund the account with testnet XLM',
+    desc:  'A new account must hold the minimum balance before it can hold assets. Friendbot tops up your account with free testnet XLM in one click.',
+    links: [{ label: 'Fund with testnet XLM (Friendbot)', href: FUNDING_URLS.fundXlm }],
+    code:  'curl "https://friendbot.stellar.org?addr=G…"',
+  },
+  {
+    num: '03', icon: Coins, color: '#7dd3fc',
+    title: 'Add the USDC trustline',
+    desc:  `Trust the USDC issuer ${USDC_ISSUER_TESTNET} so your account can hold USDC. Stellar Lab has a button for this on the fund page — or follow Circle's quickstart to submit it with the SDK.`,
+    links: [
+      { label: 'Stellar Lab — fund page (includes trustline button)', href: FUNDING_URLS.fundXlm },
+      { label: 'Circle — USDC trustline quickstart', href: FUNDING_URLS.trustlineQuickstart },
+      { label: 'Stellar Docs — how trustlines work', href: FUNDING_URLS.trustlineDocs },
+    ],
+    code:  `changeTrust({ asset: 'USDC:${USDC_ISSUER_TESTNET}' })`,
+  },
+  {
+    num: '04', icon: Droplets, color: '#39ff14',
+    title: 'Claim testnet USDC from the faucet',
+    desc:  'Once the trustline exists, Circle\'s public faucet sends free testnet USDC straight to your address. That balance is what pays for searches.',
+    links: [{ label: 'Circle testnet faucet', href: FUNDING_URLS.usdcFaucet }],
+    code:  `USDC balance → pay ${AMOUNT_USDC} per /search query`,
+  },
+]
+
 const getStack = () => [
   { label: 'Payment protocol', value: 'x402 (@x402/express + @x402/stellar)',              href: 'https://x402.org' },
   { label: 'Blockchain',       value: IS_MAINNET ? 'Stellar Mainnet' : 'Stellar Testnet',    href: 'https://developers.stellar.org' },
@@ -43,6 +82,7 @@ const getStack = () => [
 export function DocsPage() {
   const STEPS = getSteps()
   const STACK = getStack()
+  const FUNDING_STEPS = getFundingSteps()
   const networkLabel = IS_MAINNET ? 'Mainnet' : 'Testnet'
 
   return (
@@ -121,6 +161,106 @@ export function DocsPage() {
         </div>
       </section>
 
+      {/* Get testnet USDC — funding guide (issue #94) */}
+      <section id="get-testnet-usdc" className="space-y-5 scroll-mt-20">
+        <div>
+          <span className="font-display text-xs text-neon-cyan/35 tracking-widest">WALLET SETUP</span>
+          <h2 className="font-display text-2xl text-white mt-1">Get testnet USDC</h2>
+          <p className="text-white/45 text-sm max-w-2xl mt-2 leading-relaxed">
+            Every search costs {AMOUNT_USDC} USDC. New wallets start at zero — these four steps take you from
+            an empty account to one that can pay for searches. Complete them in order: the faucet only works
+            after the trustline exists.
+          </p>
+        </div>
+        <div className="space-y-3">
+          {FUNDING_STEPS.map((step, i) => {
+            const Icon = step.icon
+            return (
+              <motion.div
+                key={step.num}
+                initial={{ opacity: 0, x: -16 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: i * 0.08 }}
+                className="flex gap-5 rounded-xl p-5"
+                style={{ background: 'rgba(6,13,20,0.6)', border: '1px solid rgba(255,255,255,0.06)' }}
+              >
+                <div className="flex-shrink-0 flex flex-col items-center gap-2">
+                  <div
+                    className="w-10 h-10 rounded-xl flex items-center justify-center"
+                    style={{ background: `${step.color}15`, border: `1px solid ${step.color}30` }}
+                  >
+                    <Icon className="w-5 h-5" style={{ color: step.color }} />
+                  </div>
+                  {i < FUNDING_STEPS.length - 1 && <div className="flex-1 w-px bg-white/5 min-h-4" />}
+                </div>
+                <div className="flex-1 pb-2">
+                  <div className="flex items-center gap-2 mb-1.5">
+                    <span className="font-display text-xs text-white/20">{step.num}</span>
+                    <h3 className="font-display text-sm text-white">{step.title}</h3>
+                  </div>
+                  <p className="text-white/45 text-sm leading-relaxed mb-3">{step.desc}</p>
+                  <div className="space-y-1.5 mb-3">
+                    {step.links.map(({ label, href }) => (
+                      <a
+                        key={label}
+                        href={href}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-1.5 text-xs text-neon-cyan/70 hover:text-neon-cyan transition-colors w-fit"
+                      >
+                        <ExternalLink className="w-3 h-3 flex-shrink-0" />
+                        {label}
+                      </a>
+                    ))}
+                  </div>
+                  <div className="py-2 px-3 rounded-lg bg-black/30 border border-white/5">
+                    <code className="font-mono text-xs break-all" style={{ color: 'rgba(0,245,255,0.6)' }}>
+                      {step.code}
+                    </code>
+                  </div>
+                </div>
+              </motion.div>
+            )
+          })}
+        </div>
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="rounded-2xl p-6"
+          style={{ background: 'rgba(6,13,20,0.7)', border: '1px solid rgba(0,245,255,0.2)' }}
+        >
+          <div className="flex items-start gap-4">
+            <div
+              className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+              style={{ background: 'rgba(0,245,255,0.1)', border: '1px solid rgba(0,245,255,0.3)' }}
+            >
+              <CheckCircle2 className="w-5 h-5 text-neon-cyan" />
+            </div>
+            <div className="space-y-2 min-w-0">
+              <h3 className="font-display text-sm text-neon-cyan">TRUST EXACTLY THIS ISSUER</h3>
+              <p className="text-white/45 text-sm leading-relaxed">
+                If you add a trustline to the wrong issuer, faucet USDC will never arrive. The testnet USDC
+                issuer used by this app (and by the faucet) is:
+              </p>
+              <div className="py-2 px-3 rounded-lg bg-black/30 border border-white/5 overflow-x-auto">
+                <code className="font-mono text-xs break-all" style={{ color: 'rgba(0,245,255,0.6)' }}>
+                  USDC-{USDC_ISSUER_TESTNET}
+                </code>
+              </div>
+              <a
+                href={`https://stellar.expert/explorer/testnet/asset/USDC-${USDC_ISSUER_TESTNET}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 text-xs text-neon-cyan/70 hover:text-neon-cyan transition-colors"
+              >
+                <ExternalLink className="w-3 h-3" />
+                Verify the issuer on StellarExpert
+              </a>
+            </div>
+          </div>
+        </motion.div>
+      </section>
+
       {/* Real stack */}
       <section className="space-y-5">
         <div>
@@ -155,6 +295,17 @@ export function DocsPage() {
             </motion.div>
           ))}
         </div>
+      </section>
+
+      {/* Search privacy */}
+      <section className="space-y-3" aria-labelledby="search-privacy-heading">
+        <div>
+          <span className="font-display text-xs text-neon-cyan/35 tracking-widest">LOCAL DATA</span>
+          <h2 id="search-privacy-heading" className="font-display text-2xl text-white mt-1">Search history and privacy</h2>
+        </div>
+        <p className="text-white/45 text-sm leading-relaxed">
+          Successful paid searches keep a local receipt in this browser, including the transaction hash, amount, time, and network. Search query text is not stored unless you opt in using the “Save search query text in this browser” control in the Dashboard. Turning the setting off removes query text from existing receipts; you can also clear all local receipts there. Receipts are kept only in this browser’s localStorage and are limited to the 50 most recent searches.
+        </p>
       </section>
 
       {/* Hackathon note */}

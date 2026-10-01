@@ -7,6 +7,7 @@ interface Props {
   results: SearchResult[]
   query: string
   isLoading?: boolean
+  isImageSearch?: boolean
 }
 
 const SERVER_URL = (import.meta as any).env?.VITE_SERVER_URL ?? (
@@ -15,12 +16,31 @@ const SERVER_URL = (import.meta as any).env?.VITE_SERVER_URL ?? (
     : 'http://localhost:3001'
 )
 
-export function SearchResults({ results, query, isLoading }: Props) {
+export function SearchResults({ results, query, isLoading, isImageSearch }: Props) {
   const [summary, setSummary]               = useState<string>('')
   const [summaryError, setSummaryError]     = useState<string | null>(null)
   const [summarizing, setSummarizing]       = useState(false)
 
   if (isLoading) {
+    if (isImageSearch) {
+      return (
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+          {Array.from({ length: 8 }).map((_, i) => (
+            <div
+              key={i}
+              className="animate-pulse rounded-xl overflow-hidden"
+              style={{
+                background: 'rgba(6,13,20,0.6)',
+                border: '1px solid rgba(255,255,255,0.06)',
+                aspectRatio: '4 / 3',
+              }}
+            >
+              <div className="w-full h-full bg-white/5" />
+            </div>
+          ))}
+        </div>
+      )
+    }
     return (
       <div className="space-y-3">
         {[1, 2, 3].map((i) => (
@@ -43,6 +63,52 @@ export function SearchResults({ results, query, isLoading }: Props) {
   }
 
   if (!results.length) return null
+
+  if (isImageSearch) {
+    return (
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3"
+      >
+        {results.map((r, i) => (
+          <motion.a
+            key={r.id}
+            href={r.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label={r.title}
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: i * 0.04 }}
+            className="group block rounded-xl overflow-hidden hover:border-neon-cyan/25 transition-all"
+            style={{
+              background: 'rgba(6,13,20,0.6)',
+              border: '1px solid rgba(255,255,255,0.06)',
+              backdropFilter: 'blur(8px)',
+              aspectRatio: '4 / 3',
+            }}
+          >
+            <div className="w-full h-full flex flex-col">
+              <div className="flex-1 min-h-0 bg-white/5 overflow-hidden">
+                <img
+                  src={r.url}
+                  alt={r.title}
+                  loading="lazy"
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                />
+              </div>
+              <div className="p-2.5">
+                <p className="text-white/70 text-xs leading-snug line-clamp-2 group-hover:text-neon-cyan transition-colors">
+                  {r.title}
+                </p>
+              </div>
+            </div>
+          </motion.a>
+        ))}
+      </motion.div>
+    )
+  }
 
   const summarize = async () => {
     if (summarizing) return

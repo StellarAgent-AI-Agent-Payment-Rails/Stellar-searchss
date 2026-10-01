@@ -7,3 +7,8 @@ export interface ApiStat {
   avgLatencyMs: number
   uptime: string
 }
+
+// Injected by Vite at build time from package.json → version.
+// See vite.config.ts `define: { __APP_VERSION__ }`.
+declare const __APP_VERSION__: string
+

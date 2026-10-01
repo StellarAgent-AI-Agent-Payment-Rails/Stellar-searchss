@@ -39,24 +39,31 @@ export function WalletPanel({
   /* ── Not connected ── */
   if (!wallet.connected) {
     return (
-      <motion.button
-        onClick={onConnect}
-        disabled={wallet.loading}
-        className="flex items-center gap-2 px-4 py-2 rounded-lg border border-white/10 font-display text-xs tracking-wider text-white/50 hover:border-neon-cyan/40 hover:text-neon-cyan transition-all disabled:opacity-50"
-        whileHover={{ scale: 1.02 }}
-        whileTap={{ scale: 0.98 }}
-      >
-        {wallet.loading ? (
-          <motion.div
-            className="w-3.5 h-3.5 rounded-full border border-neon-cyan/40 border-t-neon-cyan"
-            animate={{ rotate: 360 }}
-            transition={{ duration: 0.8, repeat: Infinity, ease: 'linear' }}
-          />
-        ) : (
-          <Wallet className="w-3.5 h-3.5" />
+      <div className="flex flex-col items-start gap-2">
+        <motion.button
+          onClick={onConnect}
+          disabled={wallet.loading}
+          className="flex items-center gap-2 px-4 py-2 rounded-lg border border-white/10 font-display text-xs tracking-wider text-white/50 hover:border-neon-cyan/40 hover:text-neon-cyan transition-all disabled:opacity-50"
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
+        >
+          {wallet.loading ? (
+            <motion.div
+              className="w-3.5 h-3.5 rounded-full border border-neon-cyan/40 border-t-neon-cyan"
+              animate={{ rotate: 360 }}
+              transition={{ duration: 0.8, repeat: Infinity, ease: 'linear' }}
+            />
+          ) : (
+            <Wallet className="w-3.5 h-3.5" />
+          )}
+          {wallet.loading ? 'CONNECTING...' : 'CONNECT FREIGHTER'}
+        </motion.button>
+        {wallet.hint && (
+          <p role="status" className="max-w-xs text-xs text-red-300" aria-live="polite">
+            {wallet.hint}
+          </p>
         )}
-        {wallet.loading ? 'CONNECTING...' : 'CONNECT FREIGHTER'}
-      </motion.button>
+      </div>
     )
   }
 
@@ -233,7 +240,7 @@ export function WalletPanel({
                 </a>
               ) : (
                 <a
-                  href="https://laboratory.stellar.org/#account-creator?network=test"
+                  href="https://lab.stellar.org/account/fund"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex-1 py-2 rounded-lg border border-neon-cyan/20 text-center font-display text-[10px] text-neon-cyan/70 hover:bg-neon-cyan/5 transition-colors uppercase tracking-widest"

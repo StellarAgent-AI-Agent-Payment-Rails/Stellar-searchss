@@ -115,11 +115,11 @@ console.log('Address:', addr.address)
 // Check balance at: https://stellar.expert/explorer/testnet/account/YOUR_ADDRESS
 ```
 
-**Fix**: Get testnet USDC:
-1. Go to [Stellar Laboratory](https://laboratory.stellar.org/#account-creator?network=test)
+**Fix**: Get testnet USDC (full guide: [Get testnet USDC](README.md#get-testnet-usdc)):
+1. Go to [Stellar Lab](https://lab.stellar.org/account/fund)
 2. Create/fund testnet account
-3. Add USDC trustline
-4. Get testnet USDC from faucet
+3. Add USDC trustline (issuer: `GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5`)
+4. Get testnet USDC from the [Circle faucet](https://faucet.circle.com)
 
 ### 4. ✅ API Keys Configuration
 
