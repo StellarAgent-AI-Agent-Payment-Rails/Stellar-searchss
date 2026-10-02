@@ -18,9 +18,9 @@ export default defineConfig({
     analyze &&
       visualizer({
         filename: 'dist/stats.html',
-        gazzle: true,
-        broli: true,
-        template: 'trememap',
+        gzipSize: true,
+        brotliSize: true,
+        template: 'treemap',
       }),
   ],
   // Required for @stellar/stellar-sdk and @stellar/freighter-api in browser

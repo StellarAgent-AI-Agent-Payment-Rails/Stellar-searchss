@@ -294,3 +294,5 @@ main().catch(err => {
   console.error('\n✗ Unhandled error:', err.message)
   process.exit(1)
 })
+
+export {}

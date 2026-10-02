@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict'
-import { createAnimationLoopController } from '../src/components/layout/AnimatedBackground.tsx'
+import { createAnimationLoopController } from '../src/components/layout/AnimatedBackground'
 
 type Listener = () => void
 const visibilityListeners = new Set<Listener>()

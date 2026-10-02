@@ -39,7 +39,7 @@ export default function App() {
   }, [])
 
   const {
-    wallet, transactions, txLoading,
+    wallet, transactions, txLoading, txHasMore, txLoadingMore, loadMoreTransactions,
     connect, disconnect, refresh,
   } = useFreighterWallet()
 
@@ -112,6 +112,9 @@ export default function App() {
                   usdcBalance={wallet.usdcBalance}
                   xlmBalance={wallet.xlmBalance}
                   onRefresh={refresh}
+                  hasMore={txHasMore}
+                  onLoadMore={() => loadMoreTransactions(wallet.publicKey ?? '')}
+                  loadingMore={txLoadingMore}
                 />
               )}
             </motion.div>

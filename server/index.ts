@@ -30,6 +30,35 @@ import {
   AMOUNT_STROOPS
 } from '../shared/constants.js'
 
+// Serper.dev response shapes (their API returns untyped JSON)
+interface SerperSearchItem {
+  title?: string
+  link?: string
+  snippet?: string
+  date?: string
+}
+interface SerperSearchResponse { organic?: SerperSearchItem[] }
+
+interface SerperImageItem {
+  title?: string
+  imageUrl?: string
+  thumbnailUrl?: string
+  link?: string
+  imageWidth?: number
+  imageHeight?: number
+}
+interface SerperImagesResponse { images?: SerperImageItem[] }
+
+interface SerperNewsItem {
+  title?: string
+  link?: string
+  snippet?: string
+  source?: string
+  date?: string
+  imageUrl?: string
+}
+interface SerperNewsResponse { news?: SerperNewsItem[] }
+
 dotenv.config()
 
 const app  = express()

@@ -58,7 +58,7 @@ src/pages/DocsPage.tsx             # fix wording in the docs copy
 That is a real, PR-able contribution. Confirm it still typechecks before opening a PR:
 
 ```bash
-npx tsc --noEmit
+npm run typecheck
 ```
 
 ### 5. What you can (and cannot) do without a wallet
@@ -66,7 +66,7 @@ npx tsc --noEmit
 | ✅ Works with no wallet | ⛔ Needs Freighter + funded testnet USDC |
 |---|---|
 | Everything in `src/` — pages, components, hooks, styling, copy, layout | `/search` (the 0.001 USDC paid route) and anything that calls it |
-| `npm run dev`, `npm run build`, `npx tsc --noEmit` | `src/hooks/useSearch.ts`, `src/hooks/useFreighterWallet.ts`, `src/components/wallet/WalletPanel.tsx` |
+| `npm run dev`, `npm run build`, `npm run typecheck` | `src/hooks/useSearch.ts`, `src/hooks/useFreighterWallet.ts`, `src/components/wallet/WalletPanel.tsx` |
 | `GET /health` and `GET /ai/chat` on the backend | `src/pages/DashboardPage.tsx` (reads live Horizon tx history) |
 | Docs, README, CONTRIBUTING, issue triage, tests | `npm run test:search`, MCP payment tools |
 
@@ -327,7 +327,7 @@ git checkout -b fix/freighter-rejection-loop
 
 - Keep changes focused — one concern per PR.
 - Follow the [coding standards](#coding-standards) below.
-- Run the typecheck frequently: `npx tsc --noEmit`.
+- Run the typecheck frequently: `npm run typecheck`.
 
 ### Commit messages
 
@@ -380,7 +380,7 @@ docs: add CONTRIBUTING.md
    - **Screenshots** — required for any UI change.
 
 4. Make sure:
-   - [ ] `npx tsc --noEmit` passes with no errors.
+   - [ ] `npm run typecheck` passes with no errors.
    - [ ] The app starts and the affected feature works manually.
    - [ ] No new `console.log` / debug statements left in.
    - [ ] No secrets or `.env` values committed.
@@ -504,12 +504,18 @@ For UI changes:
 - [ ] No horizontal scroll at any breakpoint.
 - [ ] Light and dark mode look acceptable (if theme toggle exists).
 
-### Running the TypeScript compiler
+### Running the typecheck
 
 ```bash
-# Check all TypeScript errors (does not emit files)
-npx tsc --noEmit
+# Check all TypeScript errors across the app, server, MCP server and
+# scripts (does not emit files). CI runs this on every PR.
+npm run typecheck
 ```
+
+This checks all three TypeScript projects: `tsconfig.json` (app),
+`tsconfig.server.json` (server, MCP server, scripts) and
+`tsconfig.node.json` (`vite.config.ts`). A type error in any of them
+fails CI.
 
 ### End-to-end test script
 

@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 import { render } from '@testing-library/react'
 import { axe } from 'vitest-axe'
 import { describe, expect, it } from 'vitest'
@@ -32,7 +33,9 @@ const wallet: WalletState = {
   xlmBalance: '0',
   usdcBalance: '0',
   loading: false,
+  refreshing: false,
   error: null,
+  hint: null,
 }
 
 const session: SearchSession = {
@@ -47,7 +50,7 @@ const session: SearchSession = {
 describe('page accessibility smoke checks', () => {
   it('checks the search page', async () => {
     const { container } = render(
-      <SearchPage wallet={wallet} onConnectWallet={() => undefined} session={session} search={async () => undefined} reset={() => undefined} />,
+      <SearchPage wallet={wallet} onConnectWallet={() => undefined} session={session} search={async () => undefined} reset={() => undefined} retry={async () => undefined} onNavigateFundingGuide={() => undefined} />,
     )
     await expectNoUnlistedCriticalViolations('search', container)
   })
@@ -59,7 +62,7 @@ describe('page accessibility smoke checks', () => {
 
   it('checks the dashboard page', async () => {
     const { container } = render(
-      <DashboardPage transactions={[]} txLoading={false} publicKey={null} usdcBalance="0" xlmBalance="0" onRefresh={() => undefined} />,
+      <DashboardPage transactions={[]} txLoading={false} publicKey={null} usdcBalance="0" xlmBalance="0" onRefresh={() => undefined} hasMore={false} onLoadMore={() => undefined} loadingMore={false} />,
     )
     await expectNoUnlistedCriticalViolations('dashboard', container)
   })

@@ -68,11 +68,7 @@ export function AnimatedBackground() {
     const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
     if (prefersReducedMotion) return
 
-const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)')
-
-    let animId: number
-    const matrixChars = '01ABCDEF⬊̖
-¸x402USDC'.split('')
+    const matrixChars = '01ABCDEF⬡◈▲⬢x402USDC'.split('')
 
     const resize = () => {
       canvas.width = window.innerWidth
@@ -107,7 +103,7 @@ const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)')
     let frame = 0
 
     const draw = () => {
-      if (!visible) { animId = requestAnimationFrame(draw); return }
+      if (!visible) { return }
       ctx.clearRect(0, 0, canvas.width, canvas.height)
       frame++
 
@@ -212,7 +208,6 @@ const renderStatic = () => {
     }
 
     const handleChange = () => {
-      cancelAnimationFrame(animId)
       start()
     }
 
@@ -233,16 +228,16 @@ const renderStatic = () => {
     return () => {
       animationLoop.cleanup()
       window.removeEventListener('resize', resize)
-mediaQuery.removeEventListener('change', handleChange)
+      removeMotionListener(handleChange)
       document.removeEventListener('visibilitychange', onVisibility)
     }
   }, [])
 
   return (
     <canvas
-      refCanvasRef
+      ref={canvasRef}
       className="fixed inset-0 pointer-events-none z-0"
-      style={{ mixBliendMode: 'screen' }}
+      style={{ mixBlendMode: 'screen' }}
     />
   )
 }

@@ -1,4 +1,5 @@
-import { motion } from 'framer-motion'\nimport { Sparkles, Info } from 'lucide-react'
+import { motion } from 'framer-motion'
+import { Sparkles, Info } from 'lucide-react'
 
 const STATIC_SUGGESTIONS = [
   'x402 payment protocol Stellar',
@@ -20,7 +21,7 @@ export function SearchSuggestions( { onSelect, aiSuggestions }: Props ) {
   const items = isAi ? aiSuggestions : STATIC_SUGGESTIONS
 
   return (
-    <motion.dick
+    <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
