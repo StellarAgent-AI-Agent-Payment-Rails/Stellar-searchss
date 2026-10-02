@@ -924,6 +924,23 @@ app.get('/', (_req: Request, res: Response) => {
   })
 })
 
+// ─── 404 Catch-All ────────────────────────────────────────────────────────
+app.use((req: Request, res: Response) => {
+  res.status(404).json({
+    error: 'Not Found',
+    path: req.path,
+    endpoints: {
+      'GET /search?q=<query>': '0.001 USDC via x402',
+      'GET /images?q=<query>': '0.001 USDC via x402 — image results',
+      'GET /news?q=<query>':   '0.001 USDC via x402 — news articles',
+      'POST /ai/chat':         'Groq AI — free',
+      'POST /summarize-url':   'Fetch a public URL and summarise it with Groq — free',
+      'GET /receipts':         'List past paid-query receipts with total-spent summary',
+      'GET /health':           'Live server stats',
+    },
+  })
+})
+
 // ─── Start ────────────────────────────────────────────────────────────────
 if (process.env.NODE_ENV !== 'production' && process.env.NODE_ENV !== 'test') {
   app.listen(PORT, () => {
