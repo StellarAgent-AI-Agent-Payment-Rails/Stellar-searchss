@@ -3,6 +3,9 @@ import { readFileSync } from 'fs'
 import { resolve, dirname } from 'path'
 import { fileURLToPath } from 'url'
 
+import { loadRateLimitConfig } from '../server/rateLimitConfig.js'
+import { rateLimitGuard } from './rateLimit.js'
+
 const CACHE_SECONDS = 5
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
@@ -10,7 +13,12 @@ const { version: APP_VERSION } = JSON.parse(
   readFileSync(resolve(__dirname, '../package.json'), 'utf-8'),
 )
 
+const rateLimitConfig = loadRateLimitConfig()
+const limited = rateLimitGuard('GET /api/health', rateLimitConfig.health, rateLimitConfig)
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
+  if (await limited(req, res)) return
+
   const NETWORK = process.env.STELLAR_NETWORK || 'stellar:testnet'
   const FACILITATOR_URL = process.env.FACILITATOR_URL || 'https://www.x402.org/facilitator'
   const SERPER_API_KEY = process.env.SERPER_API_KEY

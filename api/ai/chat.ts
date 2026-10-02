@@ -1,27 +1,17 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
 import Groq from 'groq-sdk'
 
+import { loadRateLimitConfig } from '../../server/rateLimitConfig.js'
+import { rateLimitGuard } from '../rateLimit.js'
+
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY! })
 
-const GROQ_MODEL = 'llama-3.3-70b-versatile'
+const rateLimitConfig = loadRateLimitConfig()
+const limited = rateLimitGuard('POST /api/ai/chat', rateLimitConfig.aiChat, rateLimitConfig)
 
-type ChatMessage = { role: 'system' | 'user' | 'assistant'; content: string }
-
-// The Vercel body helper throws when the request contains malformed JSON,
-// which would otherwise surface as an unhandled 500 instead of a 400.
-function readMessages(req: VercelRequest): ChatMessage[] | null {
-  try {
-    const { messages } = (req.body ?? {}) as { messages?: ChatMessage[] }
-    return messages?.length ? messages : null
-  } catch {
-    return null
-  }
-}
-
-// Mirrors server/index.ts POST /ai/chat: streams Server-Sent Events when the
-// client asks for them (Accept header or ?stream=1), otherwise returns the
-// full completion as JSON for callers that don't support SSE.
 export default async function handler(req: VercelRequest, res: VercelResponse) {
+  if (await limited(req, res)) return
+
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' })
   }

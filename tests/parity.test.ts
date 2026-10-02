@@ -1,10 +1,27 @@
-import { describe, test, beforeAll as before, afterAll as after } from 'vitest';
+// Run by CI as `npx tsx --test tests/parity.test.ts`, i.e. under node:test —
+// not Vitest. Importing from 'vitest' here throws "Vitest failed to access its
+// internal state" outside a Vitest worker.
+import { describe, test, before as before, after as after } from 'node:test';
 import assert from 'node:assert';
 import http, { Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
-import { createApp } from '../server/app';
-import healthHandler from '../api/health';
-import searchHandler from '../api/search';
+
+// server/index.ts only calls app.listen() when NODE_ENV is neither
+// 'production' nor 'test', so pin it before the import to keep the port free.
+process.env.NODE_ENV = 'test';
+
+// server/index.ts constructs the Groq client at module scope and throws
+// without a key, so supply placeholders. The parity cases below never reach
+// Groq; they only compare Express and serverless responses with each other.
+process.env.GROQ_API_KEY ||= 'test-groq-key';
+process.env.SERPER_API_KEY ||= 'test-serper-key';
+process.env.STELLAR_RECEIVING_ADDRESS ||=
+  'GAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWHF';
+
+
+const { createApp } = await import('../server/app');
+const healthHandler = (await import('../api/health')).default;
+const searchHandler = (await import('../api/search')).default;
 
 type ServerlessHandler = (req: any, res: any) => unknown;
 

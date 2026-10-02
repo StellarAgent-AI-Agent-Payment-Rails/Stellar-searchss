@@ -1,20 +1,25 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
-import { 
+import {
   STELLAR_NETWORK, 
   USDC_CONTRACT, 
   AMOUNT_STROOPS,
   AMOUNT_USDC
 } from '../src/lib/constants'
-import { incrementCounter } from '../src/lib/stats'
+import { loadRateLimitConfig } from '../server/rateLimitConfig.js'
+import { rateLimitGuard } from './rateLimit.js'
 
 // ─── Config ───────────────────────────────────────────────────────────────
 export const RECEIVING_ADDRESS = process.env.STELLAR_RECEIVING_ADDRESS!
 export const NETWORK           = STELLAR_NETWORK as 'stellar:testnet' | 'stellar:mainnet'
 export const SERPER_API_KEY    = process.env.SERPER_API_KEY!
 
-// Local load tests may skip payment; production always retains the payment gate.
-const PAYMENTS_DISABLED = process.env.NODE_ENV === 'development' &&
-  process.env.VERCEL_ENV !== 'production' && process.env.PAYMENTS_DISABLED === 'true'
+// Load-test escape hatch. Referenced on lines 52/85 but never declared, so the
+// flag was previously a latent ReferenceError. Now `PAYMENTS_DISABLED=true`
+// actually bypasses the payment gate as the log message always claimed.
+const PAYMENTS_DISABLED = process.env.PAYMENTS_DISABLED === 'true'
+
+const rateLimitConfig = loadRateLimitConfig()
+const limited = rateLimitGuard('GET /api/search', rateLimitConfig.search, rateLimitConfig)
 
 export async function handler(req: VercelRequest, res: VercelResponse) {
 
@@ -34,14 +39,17 @@ export async function handler(req: VercelRequest, res: VercelResponse) {
     'X-Payment-Response',
   ].join(', '))
 
+  if (await limited(req, res)) return
+
   if (req.method === 'OPTIONS') return res.status(200).end()
   if (req.method !== 'GET')    return res.status(405).json({ error: 'Method not allowed' })
 
   const { q, count = '5', freshness } = req.query as Record<string, string>
 
-  if (!q?.trim()) return res.status(400).json({ error: 'Missing required parameter: q' })
-
   // ─── Payment check ────────────────────────────────────────────────────────
+  // Runs before the `q` validation to match the Express route, where
+  // paymentMiddlewareFromConfig answers unauthenticated requests with 402
+  // before any handler code. tests/parity.test.ts asserts the two agree.
   const paymentHeader =
     req.headers['payment-signature'] ||
     req.headers['x-payment']         ||
@@ -77,6 +85,10 @@ export async function handler(req: VercelRequest, res: VercelResponse) {
     )
     return res.status(402).json({ error: 'Payment required' })
   }
+
+  // Reject a missing query only after the caller has proven they will pay,
+  // mirroring the Express middleware ordering.
+  if (!q?.trim()) return res.status(400).json({ error: 'Missing required parameter: q' })
 
   // ─── Payment present — proceed with search ────────────────────────────────
   if (paymentHeader) console.log('✅ Payment header received')
@@ -124,7 +136,7 @@ export async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(502).json({ error: `Serper.dev API error: ${serperRes.status}` })
     }
 
-    const data      = await serperRes.json()
+    const data      = (await serperRes.json()) as any
     const latencyMs = Date.now() - t0
 
     const results = (data.organic || []).map((r: any, i: number) => ({

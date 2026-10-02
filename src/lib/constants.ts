@@ -13,9 +13,11 @@ const getEnv = (key: string, fallback: string) => {
   if (typeof process !== 'undefined' && process.env && process.env[key]) {
     return process.env[key]
   }
-  // @ts-ignore
+  // Vite statically replaces `import.meta.env` at build time; the computed key
+  // defeats its analysis, so the index access needs suppressing.
+  // @ts-expect-error -- import.meta.env is Vite-injected and not typed by tsc
   if (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env[`VITE_${key}`]) {
-    // @ts-ignore
+    // @ts-expect-error -- same computed-key limitation as above
     return import.meta.env[`VITE_${key}`]
   }
   return fallback

@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, lazy, Suspense } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import { motion, AnimatePresence, MotionConfig } from 'framer-motion'
 import { AnimatedBackground, Navbar, LiveTicker, Footer } from './components/layout'
 import { GroqAssistant }                       from './components/ai'
@@ -55,10 +55,16 @@ export default function App() {
   }, [])
 
   const {
-    wallet, transactions, txLoading,
+    wallet, transactions, txLoading, txLoadingMore, txHasMore, loadMoreTransactions,
     connect, disconnect, refresh,
   } = useFreighterWallet()
 
+  const loadMore = useCallback(() => {
+    if (wallet.publicKey) void loadMoreTransactions(wallet.publicKey)
+  }, [wallet.publicKey, loadMoreTransactions])
+
+  // Lifted so the floating GroqAssistant can read the last completed search
+  // and pre-populate context (issue #57).
   const { session, search, reset, retry } = useSearch(
     wallet.connected ? wallet.publicKey : null
   )
@@ -116,40 +122,41 @@ export default function App() {
         <LiveTicker walletConnected={wallet.connected} />
 
         <main id="main-content" className="flex-1" tabIndex={-1}>
-          <Suspense fallback={<PageSkeleton />}>
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={page}
-                initial={{ opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -8 }}
-                transition={{ duration: 0.2 }}
-              >
-                {page === 'search' && (
-                  <SearchPage
-                    wallet={wallet}
-                    onConnectWallet={connect}
-                    session={session}
-                    search={search}
-                    reset={reset}
-                    retry={retry}
-                    onNavigateFundingGuide={() => navigate('docs', 'get-testnet-usdc')}
-                  />
-                )}
-                {page === 'docs' && <DocsPage />}
-                {page === 'dashboard' && (
-                  <DashboardPage
-                    transactions={transactions}
-                    txLoading={txLoading}
-                    publicKey={wallet.publicKey}
-                    usdcBalance={wallet.usdcBalance}
-                    xlmBalance={wallet.xlmBalance}
-                    onRefresh={refresh}
-                  />
-                )}
-              </motion.div>
-            </AnimatePresence>
-          </Suspense>
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={page}
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.2 }}
+            >
+              {page === 'search' && (
+                <SearchPage
+                  wallet={wallet}
+                  onConnectWallet={connect}
+                  session={session}
+                  search={search}
+                  reset={reset}
+                  retry={retry}
+                  onNavigateFundingGuide={() => navigate('docs', 'get-testnet-usdc')}
+                />
+              )}
+              {page === 'docs' && <DocsPage />}
+              {page === 'dashboard' && (
+                <DashboardPage
+                  transactions={transactions}
+                  txLoading={txLoading}
+                  publicKey={wallet.publicKey}
+                  usdcBalance={wallet.usdcBalance}
+                  xlmBalance={wallet.xlmBalance}
+                  onRefresh={refresh}
+                  hasMore={txHasMore}
+                  onLoadMore={loadMore}
+                  loadingMore={txLoadingMore}
+                />
+              )}
+            </motion.div>
+          </AnimatePresence>
         </main>
 
         <Footer />
