@@ -39,15 +39,13 @@ export function Footer() {
         </div>
         <div className="flex items-center gap-5">
           {LINKS.map(({ label, href }) => (
-            <a
+            <ExternalLink
               key={label}
               href={href}
-              target="_blank"
-              rel="noopener noreferrer"
               className="font-display text-xs text-white/20 hover:text-neon-cyan/60 transition-colors hidden sm:inline"
             >
               {label}
-            </a>
+            </ExternalLink>
           ))}
         </div>
       </div>

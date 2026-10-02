@@ -430,7 +430,7 @@ const data: any = await serperRes.json()
       currency: 'USDC',
       txHash,
       latencyMs,
-      suggestions,
+      suggestions: [],
     }
 
     queryCache.set(cacheKey, { data: responseData, timestamp: Date.now() })
@@ -451,6 +451,43 @@ const data: any = await serperRes.json()
   } catch (err: any) {
     console.error('[search error]', err.message)
     return res.status(500).json({ error: 'Search failed. Check server logs.' })
+  }
+})
+
+// ─── GET /suggestions ─────────────────────────────────────────────────────
+app.get('/suggestions', async (req: Request, res: Response) => {
+  const { q } = req.query as Record<string, string>
+
+  const v = validateQuery(q)
+  if (!v.ok) return res.status(400).json({ error: v.error })
+  const cleanQ = v.cleanQ
+
+  try {
+    const suggCompletion = await groq.chat.completions.create({
+      model: 'qwen/qwen3.8-27b',
+      messages: [
+        {
+          role: 'system',
+          content: 'You are a search assistant. Given a query, return exactly 3 related search queries the user might want to explore next. Output only a JSON array of 3 strings, no explanation.',
+        },
+        {
+          role: 'user',
+          content: `Query: "${cleanQ}"`,
+        },
+      ],
+      max_tokens: 120,
+      temperature: 0.7,
+    })
+    const raw = suggCompletion.choices[0]?.message?.content || '[]'
+    const suggestions = parseSuggestions(raw)
+
+    return res.json({
+      query: cleanQ,
+      suggestions,
+    })
+  } catch (err: any) {
+    console.warn('[suggestions] Groq error:', err.message)
+    return res.json({ query: cleanQ, suggestions: [] })
   }
 })
 
@@ -703,7 +740,7 @@ app.post('/ai/chat', async (req: Request, res: Response) => {
   if (!wantsStream) {
     try {
       const completion = await groq.chat.completions.create({
-        model: 'llama-3.3-70b-versatile',
+        model: 'qwen/qwen3.8-27b',
         messages: groqMessages,
         max_tokens:  512,
         temperature: 0.7,
@@ -743,7 +780,7 @@ app.post('/ai/chat', async (req: Request, res: Response) => {
   try {
     const stream = await groq.chat.completions.create(
       {
-        model: 'llama-3.3-70b-versatile',
+        model: 'qwen/qwen3.8-27b',
         messages: groqMessages,
         max_tokens:  512,
         temperature: 0.7,
@@ -756,7 +793,7 @@ app.post('/ai/chat', async (req: Request, res: Response) => {
       const delta = chunk.choices[0]?.delta?.content
       if (delta) sendEvent('delta', { content: delta })
     }
-    sendEvent('done', { model: 'llama-3.3-70b-versatile' })
+    sendEvent('done', { model: 'qwen/qwen3.8-27b' })
     res.end()
   } catch (err: any) {
     if (controller.signal.aborted) return res.end()

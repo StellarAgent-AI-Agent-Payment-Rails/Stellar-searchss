@@ -9,9 +9,9 @@ import { loadRateLimitConfig } from '../server/rateLimitConfig.js'
 import { rateLimitGuard } from './rateLimit.js'
 
 // ─── Config ───────────────────────────────────────────────────────────────
-const RECEIVING_ADDRESS = process.env.STELLAR_RECEIVING_ADDRESS!
-const NETWORK           = STELLAR_NETWORK as 'stellar:testnet' | 'stellar:mainnet'
-const SERPER_API_KEY    = process.env.SERPER_API_KEY!
+export const RECEIVING_ADDRESS = process.env.STELLAR_RECEIVING_ADDRESS!
+export const NETWORK           = STELLAR_NETWORK as 'stellar:testnet' | 'stellar:mainnet'
+export const SERPER_API_KEY    = process.env.SERPER_API_KEY!
 
 // Load-test escape hatch. Referenced on lines 52/85 but never declared, so the
 // flag was previously a latent ReferenceError. Now `PAYMENTS_DISABLED=true`
@@ -21,7 +21,7 @@ const PAYMENTS_DISABLED = process.env.PAYMENTS_DISABLED === 'true'
 const rateLimitConfig = loadRateLimitConfig()
 const limited = rateLimitGuard('GET /api/search', rateLimitConfig.search, rateLimitConfig)
 
-export default async function handler(req: VercelRequest, res: VercelResponse) {
+export async function handler(req: VercelRequest, res: VercelResponse) {
 
   // ─── CORS ─────────────────────────────────────────────────────────────────
   res.setHeader('Access-Control-Allow-Origin', '*')
@@ -172,3 +172,5 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(500).json({ error: 'Search failed.' })
   }
 }
+
+export default handler

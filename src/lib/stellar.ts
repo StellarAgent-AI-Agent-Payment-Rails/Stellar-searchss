@@ -25,6 +25,16 @@ export function explorerAccountUrl(address: string): string {
   return `${STELLAR_EXPERT_URL}/account/${address}`
 }
 
+/** Stellar Expert asset page for an issued asset, e.g. `USDC-GABC...`. */
+export function explorerAssetUrl(assetCode: string, issuer: string): string {
+  return `${STELLAR_EXPERT_URL}/asset/${assetCode}-${issuer}`
+}
+
+/** Stellar Expert contract page for a Soroban contract id. */
+export function explorerContractUrl(contractId: string): string {
+  return `${STELLAR_EXPERT_URL}/contract/${contractId}`
+}
+
 export function formatTimeAgo(isoString: string): string {
   const diff = Date.now() - new Date(isoString).getTime()
   const s = Math.floor(diff / 1000)

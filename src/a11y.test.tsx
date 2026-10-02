@@ -32,6 +32,7 @@ const wallet: WalletState = {
   xlmBalance: '0',
   usdcBalance: '0',
   loading: false,
+  refreshing: false,
   error: null,
   refreshing: false,
   hint: null,
