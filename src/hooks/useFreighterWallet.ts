@@ -4,7 +4,7 @@
  * Fetches live balances from Stellar Horizon
  */
 
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback, useEffect, useMemo, useRef } from 'react'
 import {
   isConnected,
   requestAccess,
@@ -190,7 +190,7 @@ const [receipts, setReceipts] = useState<Receipt[]>(loadReceipts)
   const [transactionError, setTransactionError] = useState<string | null>(null)
 
   // Fetch real balances from Horizon
-  const fetchBalances = useCallback(async (publicKey: string) => {
+  const fetchBalances = useCallback(async (publicKey: string, fetchId: number) => {
     try {
       const cached = balanceCache.get(publicKey)
       if (cached && Date.now() - cached.ts < BALANCE_CACHE_TTL_MS) {
@@ -255,7 +255,7 @@ console.error('Failed to load account from Horizon:', err)
         fundingRequired: false,
       }))
     }
-  }, [])
+  }, [horizon, usdcIssuer, wallet.network])
 
 // Fetch real transaction history from Horizon (first page)
   const fetchTransactions = useCallback(
