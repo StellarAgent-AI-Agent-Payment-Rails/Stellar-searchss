@@ -68,8 +68,6 @@ export function AnimatedBackground() {
     const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
     if (prefersReducedMotion) return
 
-const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)')
-
     let animId: number
     const matrixChars = '01ABCDEF⬡◈▲⬢x402USDC'.split('')
 
@@ -232,7 +230,6 @@ const renderStatic = () => {
     return () => {
       animationLoop.cleanup()
       window.removeEventListener('resize', resize)
-mediaQuery.removeEventListener('change', handleChange)
       document.removeEventListener('visibilitychange', onVisibility)
     }
   }, [])

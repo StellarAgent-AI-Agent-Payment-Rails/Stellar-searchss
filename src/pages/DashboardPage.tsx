@@ -18,12 +18,12 @@ interface Props {
   usdcBalance: string
   xlmBalance: string
   onRefresh: () => void
-  hasMore: boolean
-  onLoadMore: () => void
-  loadingMore: boolean
+  hasMore?: boolean
+  onLoadMore?: () => void
+  loadingMore?: boolean
 }
 
-export function DashboardPage({ transactions, txLoading, publicKey, usdcBalance, xlmBalance, onRefresh, hasMore, onLoadMore, loadingMore }: Props) {
+export function DashboardPage({ transactions, txLoading, publicKey, usdcBalance, xlmBalance, onRefresh, hasMore = false, onLoadMore = () => {}, loadingMore = false }: Props) {
   const [receipts, setReceipts] = useState<SearchReceipt[]>([])
   const [storeQueryText, setStoreQueryText] = useState(isSearchQueryStorageEnabled)
 

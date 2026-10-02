@@ -16,9 +16,9 @@ const getTickerItems = () => [
 ]
 
 function usePrefersReducedMotion() {
-  const [prefersReducedMotion, setPrefersReducedMotion] = React.useState(false)
+  const [prefersReducedMotion, setPrefersReducedMotion] = useState(false)
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (typeof window === 'undefined' || !window.matchMedia) return
 
     const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)')

@@ -1,4 +1,10 @@
 import { motion } from 'framer-motion'
+import { ExternalLink, GitBranch, Globe, Shield, Zap, Code2, Server } from 'lucide-react'
+import {
+  IS_MAINNET, STELLAR_NETWORK, AMOUNT_USDC, STELLAR_EXPERT_URL, HORIZON_URL,
+  USDC_ISSUER, USDC_CONTRACT, explorerAssetUrl, explorerContractUrl,
+} from '../lib/stellar'
+import { CopyableAddress } from '../components/ui'
 import { CheckCircle2, Coins, Droplets, ExternalLink, GitBranch, Globe, KeyRound, Shield, Wallet, Zap, Code2, Server } from 'lucide-react'
 import { IS_MAINNET, STELLAR_NETWORK, AMOUNT_USDC, STELLAR_EXPERT_URL, HORIZON_URL, USDC_ISSUER_TESTNET } from '../lib/stellar'
 import { FUNDING_URLS } from '../lib/funding'
@@ -297,6 +303,35 @@ export function DocsPage() {
         </div>
       </section>
 
+      {/* Active network assets — verify the exact USDC before signing */}
+      <section className="space-y-5">
+        <div>
+          <span className="font-display text-xs text-neon-cyan/35 tracking-widest">VERIFY WHAT YOU SPEND</span>
+          <h2 className="font-display text-2xl text-white mt-1">Active {networkLabel.toLowerCase()} assets</h2>
+          <p className="text-white/45 text-sm leading-relaxed max-w-2xl">
+            Payments settle in USDC on Stellar {networkLabel.toLowerCase()}. Confirm the exact issuer and Soroban
+            contract this deployment is configured with — copy them or open them on Stellar Expert before you sign.
+          </p>
+        </div>
+        <div className="rounded-2xl overflow-hidden" style={{ border: '1px solid rgba(255,255,255,0.07)' }}>
+          <div
+            className="py-3.5 px-5"
+            style={{ background: 'rgba(6,13,20,0.5)', borderBottom: '1px solid rgba(255,255,255,0.04)' }}
+          >
+            <CopyableAddress
+              label="USDC issuer"
+              value={USDC_ISSUER}
+              href={explorerAssetUrl('USDC', USDC_ISSUER)}
+            />
+          </div>
+          <div className="py-3.5 px-5" style={{ background: 'rgba(6,13,20,0.5)' }}>
+            <CopyableAddress
+              label="USDC contract"
+              value={USDC_CONTRACT}
+              href={explorerContractUrl(USDC_CONTRACT)}
+            />
+          </div>
+        </div>
       {/* Search privacy */}
       <section className="space-y-3" aria-labelledby="search-privacy-heading">
         <div>

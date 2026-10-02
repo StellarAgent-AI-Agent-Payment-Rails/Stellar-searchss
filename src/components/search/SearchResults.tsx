@@ -1,7 +1,10 @@
 import { memo, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ExternalLink, Star, Clock, Sparkles, Search } from 'lucide-react'
+import { ExternalLink as ExternalLinkIcon, Star, Clock, Sparkles, Search } from 'lucide-react'
 import type { SearchResult } from '../../hooks/useSearch'
+import { ExternalLink } from '../ui/ExternalLink'
+
+const MotionExternalLink = motion(ExternalLink)
 
 interface Props {
   results: SearchResult[]

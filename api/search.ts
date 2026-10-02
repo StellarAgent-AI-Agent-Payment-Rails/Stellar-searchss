@@ -13,15 +13,15 @@ import {
 import { incrementCounter } from '../src/lib/stats'
 
 // ─── Config ───────────────────────────────────────────────────────────────
-const RECEIVING_ADDRESS = process.env.STELLAR_RECEIVING_ADDRESS!
-const NETWORK           = STELLAR_NETWORK as 'stellar:testnet' | 'stellar:mainnet'
-const SERPER_API_KEY    = process.env.SERPER_API_KEY!
+export const RECEIVING_ADDRESS = process.env.STELLAR_RECEIVING_ADDRESS!
+export const NETWORK           = STELLAR_NETWORK as 'stellar:testnet' | 'stellar:mainnet'
+export const SERPER_API_KEY    = process.env.SERPER_API_KEY!
 
 // Local load tests may skip payment; production always retains the payment gate.
 const PAYMENTS_DISABLED = process.env.NODE_ENV === 'development' &&
   process.env.VERCEL_ENV !== 'production' && process.env.PAYMENTS_DISABLED === 'true'
 
-export default async function handler(req: VercelRequest, res: VercelResponse) {
+export async function handler(req: VercelRequest, res: VercelResponse) {
 
   // ─── CORS ─────────────────────────────────────────────────────────────────
   res.setHeader('Access-Control-Allow-Origin', '*')
@@ -188,3 +188,5 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(failure.status).json(failure.body)
   }
 }
+
+export default handler
