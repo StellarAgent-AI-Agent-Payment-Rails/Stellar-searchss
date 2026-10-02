@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Wallet, ChevronDown, ExternalLink,
-  Copy, CheckCheck, RefreshCw, LogOut, AlertCircle,
+  Copy, CheckCheck, RefreshCw, LogOut, AlertCircle, X,
 } from 'lucide-react'
 import type { WalletState, StellarTransaction } from '../../hooks/useFreighterWallet'
 import {
@@ -10,22 +10,26 @@ import {
   explorerAccountUrl, explorerTxUrl, formatTimeAgo,
   IS_MAINNET, EXPECTED_WALLET_NETWORK, AMOUNT_USDC, USDC_ISSUER
 } from '../../lib/stellar'
+import type { WalletId, WalletOption } from '../../lib/wallets'
+import { WALLET_OPTIONS } from '../../lib/wallets'
 
 interface Props {
   wallet: WalletState
   transactions: StellarTransaction[]
   txLoading: boolean
   onConnect: () => void
+  onConnectWith: (id: WalletId) => void
   onDisconnect: () => void
   onRefresh: () => void
 }
 
 export function WalletPanel({
   wallet, transactions, txLoading,
-  onConnect, onDisconnect, onRefresh,
+  onConnect, onConnectWith, onDisconnect, onRefresh,
 }: Props) {
   const [open, setOpen]     = useState(false)
   const [copied, setCopied] = useState(false)
+  const [pickerOpen, setPickerOpen] = useState(false)
 
   const isWrongNetwork = wallet.connected && wallet.network !== EXPECTED_WALLET_NETWORK
   const hasTrustline = wallet.hasUsdcTrustline !== false
@@ -41,10 +45,13 @@ export function WalletPanel({
   /* ── Not connected ── */
   if (!wallet.connected) {
     return (
-      <div className="flex flex-col items-start gap-2">
+<div className="relative flex flex-col items-start gap-2">
         <motion.button
-          onClick={onConnect}
+          onClick={() => setPickerOpen(o => !o)}
           disabled={wallet.loading}
+          aria-expanded={pickerOpen}
+          aria-haspopup="dialog"
+          aria-label="Connect wallet"
           className="flex items-center gap-2 px-4 py-2 rounded-lg border border-white/10 font-display text-xs tracking-wider text-white/50 hover:border-neon-cyan/40 hover:text-neon-cyan transition-all disabled:opacity-50"
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
@@ -58,14 +65,53 @@ export function WalletPanel({
           ) : (
             <Wallet className="w-3.5 h-3.5" />
           )}
-          {wallet.loading ? 'CONNECTING...' : 'CONNECT FREIGHTER'}
+          {wallet.loading ? 'CONNECTING...' : 'CONNECT WALLET'}
+          <ChevronDown className={`w-3 h-3 transition-transform ${pickerOpen ? 'rotate-180' : ''}`} />
         </motion.button>
+
         {wallet.hint && (
           <p role="status" className="max-w-xs text-xs text-red-300" aria-live="polite">
             {wallet.hint}
           </p>
         )}
-      </div>
+
+        <AnimatePresence>
+          {pickerOpen && (
+            <>
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="fixed inset-0 z-40 bg-black/60 sm:hidden"
+                onClick={() => setPickerOpen(false)}
+              />
+              <motion.div
+                initial={{ opacity: 0, y: 8, scale: 0.95 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: 8, scale: 0.95 }}
+                role="dialog"
+                aria-label="Choose a wallet"
+                className="fixed inset-x-0 bottom-0 sm:absolute sm:inset-auto sm:right-0 sm:top-full sm:mt-2 z-50 rounded-t-2xl sm:rounded-xl overflow-hidden pb-4 sm:pb-0 w-full sm:w-[320px]"
+                style={{
+                  background: 'rgba(6,13,20,0.95)',
+                  backdropFilter: 'blur(20px)',
+                  border: '1px solid rgba(0,245,255,0.15)',
+                }}
+              >
+                <div className="p-4 border-b border-white/5 flex items-center justify-between">
+                  <span className="font-display text-xs text-white/30 tracking-widest">CHOOSE A WALLET</span>
+                  <button
+                    onClick={() => setPickerOpen(false)}
+                    aria-label="Close wallet picker"
+                    className="p-1 rounded text-white/30 hover:text-white/60"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+
+                <div className="p-2">
+                  {WALLET_OPTIONS.map(w => {
+                    const disabled = !w.supportsSignAuthEntry
     )
   }
 
@@ -122,7 +168,9 @@ export function WalletPanel({
             {/* Header */}
             <div className="p-4 border-b border-white/5">
               <div className="flex items-center justify-between mb-2">
-                <span className="font-display text-xs text-white/30 tracking-widest">FREIGHTER WALLET</span>
+                <span className="font-display text-xs text-white/30 tracking-widest">
+                  {(activeWallet?.name ?? 'WALLET').toUpperCase()}
+                </span>
                 <div className="flex items-center gap-2">
                   <div className={`w-1.5 h-1.5 rounded-full animate-pulse ${isWrongNetwork ? 'bg-red-500' : 'bg-neon-green'}`} />
                   <span className={`font-display text-[10px] tracking-widest uppercase ${isWrongNetwork ? 'text-red-400' : 'text-neon-green/70'}`}>
@@ -281,6 +329,15 @@ export function WalletPanel({
                 className="flex items-center gap-1.5 py-2 px-3 rounded-lg border border-white/10 font-display text-xs text-white/30 hover:text-red-400 hover:border-red-500/30 transition-all"
               >
                 <LogOut className="w-3 h-3" /> Disconnect
+              </button>
+            </div>
+
+            <div className="px-3 pb-3">
+              <button
+                onClick={() => { setOpen(false); setPickerOpen(true) }}
+                className="w-full py-2 rounded-lg border border-white/10 font-display text-[10px] text-white/40 hover:text-neon-cyan hover:border-neon-cyan/30 transition-all uppercase tracking-widest"
+              >
+                Switch wallet
               </button>
             </div>
           </motion.div>

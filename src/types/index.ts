@@ -1,4 +1,4 @@
-export type { WalletState, StellarTransaction } from '../hooks/useFreighterWallet'
+export type { WalletState, StellarTransaction } from '../hooks/useWallet'
 export type { SearchResult, SearchSession } from '../hooks/useSearch'
 
 export interface ApiStat {

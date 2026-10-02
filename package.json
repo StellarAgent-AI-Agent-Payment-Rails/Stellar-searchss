@@ -34,6 +34,7 @@
     "mcp:http": "tsx mcp-server/index.ts --transport http"
   },
   "dependencies": {
+    "@creit.tech/stellar-wallets-kit": "^1.9.0",
     "@modelcontextprotocol/sdk": "^1.0.0",
     "@stellar/freighter-api": "^3.1.0",
     "@stellar/stellar-sdk": "^14.0.0",
