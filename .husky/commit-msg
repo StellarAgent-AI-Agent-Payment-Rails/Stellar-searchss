@@ -1,0 +1,7 @@
+#!/usr/bin/env sh
+. "$(dirname "$0")/_/husky.sh"
+
+npx --no-install commitlint --edit "$1" || {
+  echo "Commit message must follow Conventional Commits, e.g. 'fix(search): handle empty query'." >&2
+  exit 1
+}

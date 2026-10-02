@@ -6,6 +6,7 @@
   "type": "module",
   "scripts": {
     "setup": "bash scripts/setup.sh",
+    "prepare": "husky install",
     "dev": "vite",
     "test": "vitest run",
     "test:watch": "vitest",
@@ -75,7 +76,10 @@
     "typescript": "^5.3.3",
     "vite": "^5.1.0",
     "vitest": "^2.1.9",
-    "vitest-axe": "^0.1.0"
+    "vitest-axe": "^0.1.0",
+    "@commitlint/cli": "^19.8.1",
+    "@commitlint/config-conventional": "^19.8.1",
+    "husky": "^8.0.3"
   },
   "lint-staged": {
     "*.{ts,tsx}": [

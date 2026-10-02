@@ -343,19 +343,18 @@ Use the [Conventional Commits](https://www.conventionalcommits.org/) format:
 
 **Types:** `feat`, `fix`, `docs`, `style`, `refactor`, `test`, `chore`
 
+The scope is optional, so both `fix: ...` and `fix(search): ...` are valid. A
+commit-msg hook checks this format when you commit. The subject may use normal
+punctuation or capitalization; focus on the type and a clear summary.
+
 **Examples:**
 
 ```
-fix(wallet): catch Freighter rejection and set session to error state
-
-Closes #1
+fix: keep search errors visible and retryable
 ```
 
 ```
-feat(search): add localStorage search history with 20-entry limit
-
-Stores { query, timestamp, txHash } entries.
-Closes #9
+feat(ui): prominent persistent network badge + mainnet page indicator (#93)
 ```
 
 ```
