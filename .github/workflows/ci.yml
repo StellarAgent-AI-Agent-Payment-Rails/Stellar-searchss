@@ -78,4 +78,15 @@ jobs:
         run: npm run build
 
       - name: Parity test (Express vs serverless)
-        run: npx vitest run tests/parity.test.ts
+        run: npx tsx --test tests/parity.test.ts
+
+      - name: Unit tests with coverage
+        run: npm run test:coverage
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage-report-node-${{ matrix.node-version }}
+          path: coverage/
+          retention-days: 7
