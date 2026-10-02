@@ -1,4 +1,6 @@
 export { AnimatedBackground } from './AnimatedBackground'
 export { Navbar }            from './Navbar'
+export { NetworkBadge, MainnetIndicator, getNetworkBadgeStyle } from './NetworkBadge'
+export type { NetworkBadgeStyle } from './NetworkBadge'
 export { LiveTicker }        from './LiveTicker'
 export { Footer }            from './Footer'

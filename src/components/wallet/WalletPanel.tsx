@@ -8,7 +8,7 @@ import type { WalletState, StellarTransaction } from '../../hooks/useFreighterWa
 import {
   truncateAddress, truncateHash,
   explorerAccountUrl, explorerTxUrl, formatTimeAgo,
-  IS_MAINNET, EXPECTED_WALLET_NETWORK, AMOUNT_USDC
+  IS_MAINNET, EXPECTED_WALLET_NETWORK, AMOUNT_USDC, USDC_ISSUER
 } from '../../lib/stellar'
 
 interface Props {
@@ -28,6 +28,8 @@ export function WalletPanel({
   const [copied, setCopied] = useState(false)
 
   const isWrongNetwork = wallet.connected && wallet.network !== EXPECTED_WALLET_NETWORK
+  const hasTrustline = wallet.hasUsdcTrustline !== false
+  const needsTrustline = wallet.connected && !wallet.loading && !hasTrustline
 
   const copy = () => {
     if (!wallet.publicKey) return
@@ -39,24 +41,31 @@ export function WalletPanel({
   /* ── Not connected ── */
   if (!wallet.connected) {
     return (
-      <motion.button
-        onClick={onConnect}
-        disabled={wallet.loading}
-        className="flex items-center gap-2 px-4 py-2 rounded-lg border border-white/10 font-display text-xs tracking-wider text-white/50 hover:border-neon-cyan/40 hover:text-neon-cyan transition-all disabled:opacity-50"
-        whileHover={{ scale: 1.02 }}
-        whileTap={{ scale: 0.98 }}
-      >
-        {wallet.loading ? (
-          <motion.div
-            className="w-3.5 h-3.5 rounded-full border border-neon-cyan/40 border-t-neon-cyan"
-            animate={{ rotate: 360 }}
-            transition={{ duration: 0.8, repeat: Infinity, ease: 'linear' }}
-          />
-        ) : (
-          <Wallet className="w-3.5 h-3.5" />
+      <div className="flex flex-col items-start gap-2">
+        <motion.button
+          onClick={onConnect}
+          disabled={wallet.loading}
+          className="flex items-center gap-2 px-4 py-2 rounded-lg border border-white/10 font-display text-xs tracking-wider text-white/50 hover:border-neon-cyan/40 hover:text-neon-cyan transition-all disabled:opacity-50"
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
+        >
+          {wallet.loading ? (
+            <motion.div
+              className="w-3.5 h-3.5 rounded-full border border-neon-cyan/40 border-t-neon-cyan"
+              animate={{ rotate: 360 }}
+              transition={{ duration: 0.8, repeat: Infinity, ease: 'linear' }}
+            />
+          ) : (
+            <Wallet className="w-3.5 h-3.5" />
+          )}
+          {wallet.loading ? 'CONNECTING...' : 'CONNECT FREIGHTER'}
+        </motion.button>
+        {wallet.hint && (
+          <p role="status" className="max-w-xs text-xs text-red-300" aria-live="polite">
+            {wallet.hint}
+          </p>
         )}
-        {wallet.loading ? 'CONNECTING...' : 'CONNECT FREIGHTER'}
-      </motion.button>
+      </div>
     )
   }
 
@@ -80,7 +89,11 @@ export function WalletPanel({
         <span>{truncateAddress(wallet.publicKey!)}</span>
         <span className="text-white/30">·</span>
         <span className={isWrongNetwork ? 'text-red-300' : 'text-neon-amber'}>
-          {isWrongNetwork ? 'WRONG NETWORK' : `${wallet.usdcBalance} USDC`}
+          {isWrongNetwork
+            ? 'WRONG NETWORK'
+            : needsTrustline
+              ? 'NO USDC TRUSTLINE'
+              : `${wallet.usdcBalance} USDC`}
         </span>
         <ChevronDown className={`w-3 h-3 transition-transform ${open ? 'rotate-180' : ''}`} />
       </motion.button>
@@ -152,6 +165,28 @@ export function WalletPanel({
                 </div>
               </div>
 
+              {needsTrustline && (
+                <div className="mt-2 py-2 px-3 rounded-lg bg-neon-amber/5 border border-neon-amber/20">
+                  <p className="font-display text-[10px] text-neon-amber tracking-widest uppercase">
+                    NO USDC TRUSTLINE
+                  </p>
+                  <p className="text-xs text-white/50 mt-1">
+                    This account cannot receive USDC until a trustline is added.
+                  </p>
+                  <p className="font-mono text-[10px] text-white/30 mt-1 break-all">
+                    Issuer: {USDC_ISSUER}
+                  </p>
+                  <a
+                    href="https://developers.stellar.org/docs/encyclopedia/trustlines"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 mt-2 font-display text-[10px] text-neon-cyan/70 hover:text-neon-cyan transition-colors uppercase tracking-widest"
+                  >
+                    Add USDC trustline <ExternalLink className="w-2.5 h-2.5" />
+                  </a>
+                </div>
+              )}
+
               {wallet.error && (
                 <div className="mt-2 flex items-center gap-2 py-1.5 px-2 rounded bg-red-500/10 border border-red-500/20">
                   <AlertCircle className="w-3 h-3 text-red-400 flex-shrink-0" />
@@ -168,10 +203,10 @@ export function WalletPanel({
                 </span>
                 <button
                   onClick={onRefresh}
-                  disabled={txLoading}
+                  disabled={txLoading || wallet.refreshing}
                   className="p-1 text-white/30 hover:text-neon-cyan transition-colors disabled:opacity-50"
                 >
-                  <RefreshCw className={`w-3 h-3 ${txLoading ? 'animate-spin' : ''}`} />
+                  <RefreshCw className={`w-3 h-3 ${wallet.refreshing ? 'animate-spin' : ''}`} />
                 </button>
               </div>
 
@@ -233,7 +268,7 @@ export function WalletPanel({
                 </a>
               ) : (
                 <a
-                  href="https://laboratory.stellar.org/#account-creator?network=test"
+                  href="https://lab.stellar.org/account/fund"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex-1 py-2 rounded-lg border border-neon-cyan/20 text-center font-display text-[10px] text-neon-cyan/70 hover:bg-neon-cyan/5 transition-colors uppercase tracking-widest"

@@ -1,0 +1,68 @@
+name: Release
+
+# Trigger: push a tag like v1.2.3 or v2.0.0-beta.1
+on:
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+'
+      - 'v[0-9]+.[0-9]+.[0-9]+-*'
+
+permissions:
+  contents: write   # needed to create the GitHub Release
+
+jobs:
+  release:
+    name: Create GitHub Release
+    runs-on: ubuntu-latest
+
+    steps:
+      # ── 1. Checkout the tagged commit ──────────────────────────────────
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # full history so we can diff the changelog
+
+      # ── 2. Validate the tag matches package.json version ───────────────
+      - name: Validate version consistency
+        run: |
+          PKG_VERSION="v$(node -p "require('./package.json').version")"
+          TAG_VERSION="${GITHUB_REF_NAME}"
+          if [ "$PKG_VERSION" != "$TAG_VERSION" ]; then
+            echo "❌ Tag ($TAG_VERSION) does not match package.json version ($PKG_VERSION)."
+            echo "   Bump package.json before tagging, or use: npm version <patch|minor|major>"
+            exit 1
+          fi
+          echo "✅ Version consistent: $TAG_VERSION"
+
+      # ── 3. Extract release notes from CHANGELOG.md ─────────────────────
+      #    Grab everything between the first ## [...] heading and the next one.
+      - name: Extract changelog section
+        id: changelog
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"   # strip leading 'v'
+          # awk: print lines between the matching ## heading and the next ##
+          NOTES=$(awk "/^## \[${VERSION}\]/{found=1; next} found && /^## \[/{exit} found{print}" CHANGELOG.md)
+          if [ -z "$NOTES" ]; then
+            NOTES="No changelog entry found for ${VERSION}. Please update CHANGELOG.md."
+          fi
+          # Write to a temp file to preserve newlines for the next step
+          echo "$NOTES" > /tmp/release_notes.md
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      # ── 4. Set up Node (needed only for the version-check step above) ──
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      # ── 5. Create the GitHub Release ───────────────────────────────────
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: "StellarSearch ${{ github.ref_name }}"
+          body_path: /tmp/release_notes.md
+          draft: false
+          prerelease: ${{ contains(github.ref_name, '-') }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

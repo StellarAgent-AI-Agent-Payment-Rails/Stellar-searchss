@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-labelledby="title desc">
+  <title id="title">StellarSearch</title>
+  <desc id="desc">Pay-per-query AI search settled on Stellar</desc>
+  <rect width="1200" height="630" fill="#060d14"/>
+  <circle cx="1030" cy="80" r="260" fill="#00f5ff" opacity=".08"/>
+  <circle cx="180" cy="570" r="300" fill="#ffb800" opacity=".06"/>
+  <path d="M0 510 C220 430 390 590 620 500 S1010 430 1200 500" fill="none" stroke="#00f5ff" stroke-opacity=".18" stroke-width="2"/>
+  <text x="100" y="245" fill="#00f5ff" font-family="Arial, sans-serif" font-size="76" font-weight="700">STELLARSEARCH.</text>
+  <text x="105" y="320" fill="#ffffff" fill-opacity=".75" font-family="Arial, sans-serif" font-size="30">Pay-per-query AI search on Stellar</text>
+  <rect x="105" y="385" width="330" height="58" rx="12" fill="#00f5ff" fill-opacity=".12" stroke="#00f5ff" stroke-opacity=".5"/>
+  <text x="135" y="423" fill="#00f5ff" font-family="monospace" font-size="22">0.001 USDC / QUERY</text>
+  <text x="105" y="540" fill="#ffffff" fill-opacity=".38" font-family="monospace" font-size="18">SEARCH · PAY · GET</text>
+</svg>

@@ -1,6 +1,11 @@
 /**
  * constants.ts
- * Centralized Stellar network constants for both Frontend and Backend.
+ * Centralized Stellar network constants for Frontend and Backend.
+ *
+ * The single source of truth lives in `shared/constants.ts` (kept free of
+ * Vite build-tool globals so Node processes can import it too). This module
+ * re-exports it so the frontend's public API (`src/lib/stellar.ts` and every
+ * component) is unchanged.
  */
 
 // Use process.env for Node.js and import.meta.env for Vite
@@ -34,6 +39,12 @@ export const STELLAR_EXPERT_URL = IS_MAINNET ? STELLAR_EXPERT_MAINNET : STELLAR_
 export const USDC_ISSUER_TESTNET = 'GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5'
 export const USDC_ISSUER_MAINNET = 'GA5ZSEJYB37JRC5AVCIA5MOP4RHTM335X2KGX3IHOJAPP5RE34K4KZVN'
 export const USDC_ISSUER = IS_MAINNET ? USDC_ISSUER_MAINNET : USDC_ISSUER_TESTNET
+
+// USDC Asset Code
+export const USDC_ASSET_CODE = 'USDC'
+
+// Trustline instructions
+export const TRUSTLINE_INSTRUCTIONS_URL = 'https://developers.stellar.org/docs/learn/fundamentals/stellar-data-structures/accounts#trustlines'
 
 // USDC Soroban Contract (for x402)
 export const USDC_CONTRACT_TESTNET = 'CBIELTK6YBZJU5UP2WWQEUCYKLPU6AUNZ2BQ4WWFEIE3USCIHMXQDAMA'
