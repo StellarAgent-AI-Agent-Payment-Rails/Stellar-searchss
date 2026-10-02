@@ -8,7 +8,7 @@ import type { WalletState, StellarTransaction } from '../../hooks/useFreighterWa
 import {
   truncateAddress, truncateHash,
   explorerAccountUrl, explorerTxUrl, formatTimeAgo,
-  IS_MAINNET, EXPECTED_WALLET_NETWORK, AMOUNT_USDC
+  IS_MAINNET, EXPECTED_WALLET_NETWORK, AMOUNT_USDC, USDC_ISSUER
 } from '../../lib/stellar'
 import type { WalletId, WalletOption } from '../../lib/wallets'
 import { WALLET_OPTIONS } from '../../lib/wallets'
@@ -32,12 +32,8 @@ export function WalletPanel({
   const [pickerOpen, setPickerOpen] = useState(false)
 
   const isWrongNetwork = wallet.connected && wallet.network !== EXPECTED_WALLET_NETWORK
-  const activeWallet: WalletOption | undefined = WALLET_OPTIONS.find(w => w.id === wallet.walletId)
-
-  const handlePick = (id: WalletId) => {
-    setPickerOpen(false)
-    onConnectWith(id)
-  }
+  const hasTrustline = wallet.hasUsdcTrustline !== false
+  const needsTrustline = wallet.connected && !wallet.loading && !hasTrustline
 
   const copy = () => {
     if (!wallet.publicKey) return
@@ -139,7 +135,11 @@ export function WalletPanel({
         <span>{truncateAddress(wallet.publicKey!)}</span>
         <span className="text-white/30">·</span>
         <span className={isWrongNetwork ? 'text-red-300' : 'text-neon-amber'}>
-          {isWrongNetwork ? 'WRONG NETWORK' : `${wallet.usdcBalance} USDC`}
+          {isWrongNetwork
+            ? 'WRONG NETWORK'
+            : needsTrustline
+              ? 'NO USDC TRUSTLINE'
+              : `${wallet.usdcBalance} USDC`}
         </span>
         <ChevronDown className={`w-3 h-3 transition-transform ${open ? 'rotate-180' : ''}`} />
       </motion.button>
@@ -212,6 +212,28 @@ export function WalletPanel({
                   <p className="font-display text-white/25 mt-0.5" style={{ fontSize: '9px' }}>for gas fees</p>
                 </div>
               </div>
+
+              {needsTrustline && (
+                <div className="mt-2 py-2 px-3 rounded-lg bg-neon-amber/5 border border-neon-amber/20">
+                  <p className="font-display text-[10px] text-neon-amber tracking-widest uppercase">
+                    NO USDC TRUSTLINE
+                  </p>
+                  <p className="text-xs text-white/50 mt-1">
+                    This account cannot receive USDC until a trustline is added.
+                  </p>
+                  <p className="font-mono text-[10px] text-white/30 mt-1 break-all">
+                    Issuer: {USDC_ISSUER}
+                  </p>
+                  <a
+                    href="https://developers.stellar.org/docs/encyclopedia/trustlines"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 mt-2 font-display text-[10px] text-neon-cyan/70 hover:text-neon-cyan transition-colors uppercase tracking-widest"
+                  >
+                    Add USDC trustline <ExternalLink className="w-2.5 h-2.5" />
+                  </a>
+                </div>
+              )}
 
               {wallet.error && (
                 <div className="mt-2 flex items-center gap-2 py-1.5 px-2 rounded bg-red-500/10 border border-red-500/20">

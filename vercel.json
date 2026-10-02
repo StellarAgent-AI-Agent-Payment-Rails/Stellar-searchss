@@ -1,5 +1,6 @@
 {
   "$schema": "https://openapi.vercel.com/v1/vercel.json",
+  "$comment": "CSP is enforced via the headers below. Start in report-only mode by setting CSP_REPORT_ONLY=true in the Vercel project environment and collect violations before flipping it off.",
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
   "installCommand": "npm install",
@@ -12,6 +13,25 @@
     {
       "source": "/((?!.*\\..).*)",
       "destination": "/index.html"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "Content-Security-Policy",
+          "value": "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: blob: https://fonts.gstatic.com https://encrypted-tbn0.gstatic.com https://encrypted-tbn1.gstatic.com https://encrypted-tbn2.gstatic.com https://encrypted-tbn3.gstatic.com https://serpapi.com https://www.serpapi.com; font-src 'self' https://fonts.gstatic.com data:; connect-src 'self' https://horizon.stellar.org https://api.stellarsearch.dev https://fonts.googleapis.com https://fonts.gstatic.com https://encrypted-tbn0.gstatic.com https://encrypted-tbn1.gstatic.com https://encrypted-tbn2.gstatic.com https://encrypted-tbn3.gstatic.com https://serpapi.com https://www.serpapi.com"
+        },
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "Referrer-Policy",
+          "value": "strict-origin-when-cross-origin"
+        }
+      ]
     }
   ]
 }

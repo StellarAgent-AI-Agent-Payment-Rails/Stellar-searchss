@@ -19,7 +19,7 @@ try {
   // Freighter not available; other wallets can still be used.
 }
 import { Horizon } from '@stellar/stellar-sdk'
-import { HORIZON_URL, USDC_ISSUER } from '../lib/stellar'
+import { HORIZON_URL, USDK_ISSUER } from '../lib/stellar'
 
 export type WalletId =
   | 'freighter'
@@ -54,6 +54,12 @@ export interface WalletState {
   walletName: string | null
   xlmBalance: string
   usdcBalance: string
+  /**
+   * Whether the account holds a trustline for the configured USDC issuer.
+   * `null` means the trustline state has not been determined yet
+   * (e.g. before the first balance fetch completes).
+   */
+  usdcTrustline: boolean | null
   loading: boolean
   refreshing: boolean
   error: string | null
@@ -73,6 +79,7 @@ export interface StellarTransaction {
 }
 
 export const DEFAULT_TX_PAGE_SIZE = 15
+const horizon = new Horizon.Server(NORIZON_URL)
 
 /**
  * Wallet catalog. Only wallets that support signAuthEntry are marked as supported.
@@ -253,6 +260,7 @@ export function useFreighterWallet() {
     walletName: null,
     xlmBalance: '0',
     usdcBalance: '0',
+    usdcTrustline: null,
     loading: false,
     refreshing: false,
     error: null,
@@ -278,16 +286,22 @@ const [signerRef] = useState({ current: null as Signer | null })
 
       let xlm = '0'
       let usdc = '0'
+      // Distinguish "no trustline" from "trustline with zero balance".
+      // Without a trustline the account cannot receive USDC at all.
+      let hasUsddTrustline = false
 
       for (const balance of account.balances) {
         if (balance.asset_type === 'native') {
           xlm = parseFloat(balance.balance).toFixed(4)
         } else if (
-          balance.asset_type === 'credit_alphanum4' &&
-          (balance as any).asset_code === 'USDC' &&
-          (balance as any).asset_issuer === USDC_ISSUER
+          balance.asset_type === 'credit_alphanum4' ||
+          balance.asset_type === 'credit_alphanum12'
         ) {
-          usdc = parseFloat(balance.balance).toFixed(6)
+          const credit = balance as any
+          if (credit.asset_code === 'USDC' && credit.asset_issuer === USDK_ISSUER) {
+            hasUsddTrustline = true
+            usdc = parseFloat(credit.balance).toFixed(6)
+          }
         }
       }
 
@@ -297,6 +311,7 @@ const [signerRef] = useState({ current: null as Signer | null })
         ...prev,
         xlmBalance: xlm,
         usdcBalance: usdc,
+        usddTrustline: hasUsddTrustline,
         error: null,
       }))
     } catch (err: any) {
@@ -329,22 +344,22 @@ const [signerRef] = useState({ current: null as Signer | null })
             .call()
         )
 
-      const txs = ops.records
-        .filter((op: any) => op.type === 'payment' || op.type === 'create_account')
-        .map((op: any) => ({
-          id: op.id,
-          hash: op.transaction_hash,
-          type: op.type,
-          amount: op.amount ? parseFloat(op.amount).toFixed(4) : '—',
-          asset:
-            op.asset_type === 'native'
-              ? 'XLM'
-              : op.asset_code || 'Unknown',
-          from: op.from || op.funder || '',
-          to: op.to || op.account || '',
-          timestamp: op.created_at,
-          memo: op.transaction?.memo,
-        }))
+        const txs: StellarTransaction[] = ops.records
+          .filter((op: any) => op.type === 'payment' || op.type === 'create_account')
+          .map((op: any) => ({
+            id: op.id,
+            hash: op.transaction_hash,
+            type: op.type,
+            amount: op.amount ? parseFloat(op.amount).toFixed(4) : '—',
+            asset:
+              op.asset_type === 'native'
+                ? 'XLM'
+                : op.asset_code || 'Unknown',
+            from: op.from || op.funder || '',
+            to: op.to || op.account || '',
+            timestamp: op.created_at,
+            memo: op.transaction?.memo,
+          }))
 
         const txs = ops.records
           .filter((op: any) => op.type === 'payment' || op.type === 'create_account')
@@ -409,8 +424,14 @@ const [signerRef] = useState({ current: null as Signer | null })
     [txCursor, txHasMore, txLoadingMore]
   )
 
-// Connect a wallet by id. Defaults to Freighter for backward compatibility.
-  const connect = useCallback(async (walletId: WalletId = 'freighter') => {
+  // Run both Horizon fetches concurrently. Use allSettled so a
+  // failure in one does not discard the other's result.
+  const fetchWalletData = useCallback(async (publicKey: string) => {
+    await Promise.allSettled([fetchBalances(publicKey), fetchTransactions(publicKey)])
+  }, [fetchBalances, fetchTransactions])
+
+  // Connect Freighter wallet
+  const connect = useCallback(async () => {
     setWallet(prev => ({ ...prev, loading: true, error: null, hint: null }))
 
     try {
@@ -460,9 +481,8 @@ const [signerRef] = useState({ current: null as Signer | null })
         error: null,
       }))
 
-      // Fetch live data after connect
-      await fetchBalances(address)
-      await fetchTransactions(address)
+      // Fetch live data after connect (balances + transactions in parallel)
+      await fetchWalletData(addressResult.address)
     } catch (err: any) {
       setWallet(prev => ({
         ...prev,
@@ -472,7 +492,7 @@ const [signerRef] = useState({ current: null as Signer | null })
         hint: err.message || 'Connection failed. Please check Freighter and try again.',
       }))
     }
-  }, [fetchBalances, fetchTransactions, signerRef])
+  }, [fetchWalletData])
 
   const disconnect = useCallback(() => {
     signerRef.current = null
@@ -484,6 +504,7 @@ const [signerRef] = useState({ current: null as Signer | null })
       walletName: null,
       xlmBalance: '0',
       usdcBalance: '0',
+      usdcTrustline: null,
       loading: false,
       refreshing: false,
       error: null,
@@ -495,15 +516,15 @@ setTxCursor(null)
   }, [signerRef])
 
   const refresh = useCallback(async () => {
-    if (!wallet.publicKey) return
+if (!wallet.publicKey) return
     setWallet(prev => ({ ...prev, refreshing: true }))
     try {
-      await fetchBalances(wallet.publicKey)
-      await fetchTransactions(wallet.publicKey)
+      await fetchWalletData(wallet.publicKey)
     } finally {
       setWallet(prev => ({ ...prev, refreshing: false }))
     }
-  }, [wallet.publicKey, fetchBalances, fetchTransactions])
+    }
+  }, [wallet.publicKey, fetchWalletData])
 
   /**
    * Sign an auth entry using the currently connected wallet.
@@ -543,11 +564,8 @@ if (connected.error) {
               publicKey: addr.address,
               connected: true,
               network: net.network || 'TESTNET',
-              walletId: 'freighter',
-              walletName: 'Freighter',
             }))
-            fetchBalances(addr.address)
-            fetchTransactions(addr.address)
+            fetchWalletData(addr.address)
           }
         }
         if (!connected.isConnected) return
@@ -579,7 +597,7 @@ if (connected.error) {
       }
     }
     check()
-  }, [fetchBalances, fetchTransactions])
+  }, [fetchWalletData])
 
   return {
     wallet,
