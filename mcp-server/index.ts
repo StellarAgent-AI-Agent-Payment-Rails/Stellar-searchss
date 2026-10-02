@@ -867,7 +867,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
   }
 
   return { content: [{ type: 'text' as const, text: `Unknown tool: ${name}` }], isError: true }
-}
+})
 
 // ─── Resources ────────────────────────────────────────────────────────────
 // Server stats are reference data, so a client can list and read them directly

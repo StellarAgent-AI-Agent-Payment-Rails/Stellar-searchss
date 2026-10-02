@@ -26,6 +26,8 @@ module.exports = {
     '@typescript-eslint/no-explicit-any': 'warn',
     '@typescript-eslint/no-console': 'off',
     'no-console': 'off',
+    // `while (true) { ... break }` is an intentional pattern in the SSE readers.
+    'no-constant-condition': ['error', { checkLoops: false }],
   },
   ignorePatterns: ['dist', 'node_modules', '*.config.js', '*.config.c', '/*.config.js'],
   overrides: [

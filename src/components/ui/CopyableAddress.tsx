@@ -40,7 +40,7 @@ export function CopyableAddress({
 
   return (
     <div className={`flex items-center justify-between gap-3 min-w-0 ${className}`}>
-      <span className="font-display text-[10px] tracking-wider uppercase text-white/30 flex-shrink-0">
+      <span className="font-display text-[10px] tracking-wider uppercase text-white/60 flex-shrink-0">
         {label}
       </span>
       <div className="flex items-center gap-1.5 min-w-0">
@@ -52,7 +52,7 @@ export function CopyableAddress({
           onClick={copy}
           aria-label={`Copy ${label}`}
           title={`Copy ${label}`}
-          className="p-1 rounded text-white/30 hover:text-neon-cyan transition-colors flex-shrink-0"
+          className="p-1 rounded text-white/60 hover:text-neon-cyan transition-colors flex-shrink-0"
         >
           {copied ? (
             <CheckCheck className="w-3.5 h-3.5 text-neon-green" />
@@ -67,7 +67,7 @@ export function CopyableAddress({
             rel="noopener noreferrer"
             aria-label={`View ${label} on Stellar Expert`}
             title={`View ${label} on Stellar Expert`}
-            className="p-1 rounded text-white/30 hover:text-neon-cyan transition-colors flex-shrink-0"
+            className="p-1 rounded text-white/60 hover:text-neon-cyan transition-colors flex-shrink-0"
           >
             <ExternalLink className="w-3.5 h-3.5" />
           </a>

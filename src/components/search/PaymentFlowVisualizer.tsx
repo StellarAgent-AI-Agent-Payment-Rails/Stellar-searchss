@@ -47,7 +47,7 @@ export function PaymentFlowVisualizer({ session }: Props) {
     >
       {/* Header */}
       <div className="flex items-center justify-between">
-        <span className="font-display text-xs text-white/30 tracking-widest">x402 PAYMENT FLOW</span>
+        <span className="font-display text-xs text-white/60 tracking-widest">x402 PAYMENT FLOW</span>
         {session.status === 'complete' && <span className="font-display text-xs text-neon-green">✓ SETTLED</span>}
         {session.status === 'error'    && <span className="font-display text-xs text-red-400">✗ FAILED</span>}
       </div>
@@ -86,7 +86,7 @@ export function PaymentFlowVisualizer({ session }: Props) {
                   ) : stepFailed ? (
                     <span style={{ color: '#ef4444' }} className="text-xs font-bold">✗</span>
                   ) : (
-                    <span style={{ color: stepActive ? step.color : 'rgba(255,255,255,0.25)' }} className="text-xs">
+                    <span style={{ color: stepActive ? step.color : 'rgba(255,255,255,0.6)' }} className="text-xs">
                       {step.icon}
                     </span>
                   )}
@@ -103,12 +103,12 @@ export function PaymentFlowVisualizer({ session }: Props) {
                   <p className="font-display text-xs" style={{
                     color: stepFailed ? '#ef4444'
                       : stepDone || stepActive ? step.color
-                      : 'rgba(255,255,255,0.25)',
+                      : 'rgba(255,255,255,0.6)',
                     fontSize: '10px',
                   }}>
                     {step.label}
                   </p>
-                  <p className="text-white/20 hidden sm:block" style={{ fontSize: '9px' }}>{step.sub}</p>
+                  <p className="text-white/60 hidden sm:block" style={{ fontSize: '9px' }}>{step.sub}</p>
                 </div>
               </div>
             )
@@ -132,7 +132,7 @@ export function PaymentFlowVisualizer({ session }: Props) {
               transition={{ duration: 0.7, repeat: Infinity }}
             />
           )}
-          <p className="font-display text-xs text-white/50">
+          <p className="font-display text-xs text-white/60">
             {isSearching && `→ Step ${session.step ?? 1}/${TOTAL_STEPS}: ${STEPS[activeIdx]?.label} — ${STEPS[activeIdx]?.sub}...`}
             {isComplete  && `✓ Payment settled — ${session.results.length} results in ${session.durationMs}ms`}
             {isError     && `✗ ${session.error}`}
@@ -148,7 +148,7 @@ export function PaymentFlowVisualizer({ session }: Props) {
           className="space-y-2"
         >
           <div className="flex items-center justify-between py-2 px-3 rounded bg-neon-green/5 border border-neon-green/20">
-            <span className="font-display text-xs text-neon-green/50">TX HASH</span>
+            <span className="font-display text-xs text-neon-green/70">TX HASH</span>
             <a
               href={explorerTxUrl(session.txHash)}
               target="_blank"
@@ -166,7 +166,7 @@ export function PaymentFlowVisualizer({ session }: Props) {
                 ['STATUS',  'SETTLED'],
               ] as [string, string][]).map(([k, v]) => (
                 <div key={k} className="py-1.5 px-2 rounded bg-white/4 text-center">
-                  <p className="font-display text-white/25" style={{ fontSize: '8px' }}>{k}</p>
+                  <p className="font-display text-white/60" style={{ fontSize: '8px' }}>{k}</p>
                   <p className="font-display text-neon-cyan" style={{ fontSize: '10px' }}>{v}</p>
                 </div>
               ))}

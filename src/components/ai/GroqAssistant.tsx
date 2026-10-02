@@ -271,11 +271,11 @@ export function GroqAssistant({ lastSearch }: Props = {}) {
               <div className="flex items-center gap-2">
                 <Bot className="w-4 h-4 text-neon-cyan" />
                 <span className="font-display text-xs text-neon-cyan tracking-wider">GROQ AI</span>
-                <span className="font-display text-xs text-white/25 hidden sm:inline">· Llama 3</span>
+                <span className="font-display text-xs text-white/60 hidden sm:inline">· Llama 3</span>
               </div>
               <button
                 onClick={() => setOpen(false)}
-                className="text-white/30 hover:text-white/60 transition-colors"
+                className="text-white/60 hover:text-white/60 transition-colors"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -334,7 +334,7 @@ export function GroqAssistant({ lastSearch }: Props = {}) {
                   onKeyDown={e => e.key === 'Enter' && !e.shiftKey && send()}
                   placeholder="Ask anything..."
                   disabled={loading}
-                  className="flex-1 bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-xs text-white placeholder:text-white/25 outline-none focus:border-neon-cyan/30 disabled:opacity-50"
+                  className="flex-1 bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-xs text-white placeholder:text-white/60 outline-none focus:border-neon-cyan/30 disabled:opacity-50"
                   style={{ caretColor: '#00f5ff' }}
                 />
                 <button

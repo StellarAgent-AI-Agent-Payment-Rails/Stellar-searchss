@@ -54,12 +54,12 @@ const ResultRow = memo(function ResultRow({ result }: ResultRowProps) {
             >
               {result.source}
             </span>
-            <div className="flex items-center gap-1 text-neon-amber/60">
+            <div className="flex items-center gap-1 text-neon-amber/70">
               <Star className="w-3 h-3 fill-current" />
               <span className="font-display text-xs">{(result.relevanceScore * 100).toFixed(0)}%</span>
             </div>
             {result.publishedAt && (
-              <div className="flex items-center gap-1 text-white/25">
+              <div className="flex items-center gap-1 text-white/60">
                 <Clock className="w-3 h-3" />
                 <span className="font-display text-xs">{result.publishedAt}</span>
               </div>
@@ -70,16 +70,16 @@ const ResultRow = memo(function ResultRow({ result }: ResultRowProps) {
             {result.title}
           </h3>
 
-          <p className="font-mono text-xs mb-2 truncate" style={{ color: 'rgba(0,245,255,0.35)' }}>
+          <p className="font-mono text-xs mb-2 truncate" style={{ color: 'rgba(0,245,255,0.7)' }}>
             {result.url}
           </p>
 
-          <p className="text-white/45 text-xs leading-relaxed line-clamp-2">
+          <p className="text-white/60 text-xs leading-relaxed line-clamp-2">
             {result.description}
           </p>
         </div>
 
-        <div className="flex-shrink-0 w-7 h-7 rounded-lg flex items-center justify-center border border-white/8 text-white/25 group-hover:text-neon-cyan group-hover:border-neon-cyan/30 transition-all mt-0.5">
+        <div className="flex-shrink-0 w-7 h-7 rounded-lg flex items-center justify-center border border-white/8 text-white/60 group-hover:text-neon-cyan group-hover:border-neon-cyan/30 transition-all mt-0.5">
           <ExternalLink className="w-3.5 h-3.5" />
         </div>
       </div>
@@ -270,7 +270,7 @@ export function SearchResults({ results, query, isLoading, isImageSearch }: Prop
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-3">
       <div className="flex items-center justify-between gap-3 flex-wrap">
-        <p className="font-display text-xs text-white/35 tracking-widest" aria-live="polite">
+        <p className="font-display text-xs text-white/60 tracking-widest" aria-live="polite">
           {results.length} RESULTS · SERPER.DEV · PAID VIA x402
         </p>
         <div className="flex items-center gap-3">

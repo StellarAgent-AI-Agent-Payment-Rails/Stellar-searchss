@@ -10,6 +10,15 @@ export function isSearchQueryStorageEnabled(): boolean {
   }
 }
 
+/** Remove all locally stored payment receipts. */
+export function clearReceipts(): void {
+  try {
+    localStorage.removeItem(RECEIPTS_STORAGE_KEY)
+  } catch (error) {
+    console.warn('Unable to clear local receipts:', error)
+  }
+}
+
 /** Save the user's preference and erase query text already saved in receipts when disabled. */
 export function setSearchQueryStorageEnabled(enabled: boolean): void {
   try {

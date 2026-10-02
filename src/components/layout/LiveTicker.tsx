@@ -55,7 +55,7 @@ export function LiveTicker({ walletConnected }: Props) {
         {doubled.map(([k, v], idx) => (
           <div key={idx} className="inline-flex items-center gap-2 px-6">
             <span
-              className="font-display text-neon-cyan/30 tracking-widest"
+              className="font-display text-neon-cyan/70 tracking-widest"
               style={{ fontSize: '10px' }}
             >
               {k}
@@ -66,7 +66,7 @@ export function LiveTicker({ walletConnected }: Props) {
             >
               {v}
             </span>
-            <span className="text-neon-cyan/15">↗</span>
+            <span className="text-neon-cyan/70">↗</span>
           </div>
         ))}
       </div>
