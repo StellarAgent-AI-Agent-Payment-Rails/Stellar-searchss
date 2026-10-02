@@ -5,6 +5,7 @@ import express, { Request, Response } from 'express'
 import compression from 'compression'
 import cors from 'cors'
 import dotenv from 'dotenv'
+import helmet from 'helmet'
 import { readFileSync } from 'fs'
 import { resolve, dirname } from 'path'
 import { fileURLToPath } from 'url'
@@ -22,6 +23,7 @@ import { paymentMiddlewareFromConfig } from '@x402/express'
 import { ExactStellarScheme } from '@x402/stellar/exact/server'
 import { HTTPFacilitatorClient } from '@x402/core/server'
 import logger from './logger'
+import { warnOnMissingFields } from './serperSchema'
 import { fetchPageText, UrlSummaryError } from './urlSummary'
 import {
   STELLAR_NETWORK,
@@ -136,20 +138,60 @@ app.use(compression({
 }))
 app.use(express.json())
 
-// Rate limiting must sit in front of the x402 payment middleware and every
-// route so unauthenticated floods are rejected before any paid work happens.
-const rateLimitConfig = loadRateLimitConfig()
-const rateLimiters = installRateLimiting(app, rateLimitConfig)
+// ─── Content Security Policy ─────────────────────────────────────────────
+// Origins the app actually needs:
+//   - 'self'                 — the app bundle and its own API
+//   - Horizon (STELLAR_NETWORK dependent) — Stellar RPC/Horizon calls
+//   - Serper image CDNs      — remote thumbnails/full images from image search
+//   - Groq API               — AI chat (server-side only, but kept for safety)
+// Inline styles are disallowed; the design must move styles into stylesheets.
+const CSP_DIRECTIVES = {
+  defaultSrc:     ["'self'"],
+  scriptSrc:      ["'self'"],
+  styleSrc:       ["'self'"],
+  imgSrc:         [
+    "'self'",
+    'data:',
+    'https://*.serper.dev',
+    'https://*.googleusercontent.com',
+    'https://*.gstatic.com',
+    'https://*.ggpht.com',
+  ],
+  connectSrc:     [
+    "'self'",
+    HORIZON_URL,
+    'https://*.serper.dev',
+    'https://api.groq.com',
+  ],
+  fontSrc:        ["'self'", 'data:'],
+  objectSrc:      ["'none'"],
+  baseUri:        ["'self'"],
+  frameAncestors: ["'none'"],
+  formAction:     ["'self'"],
+  upgradeInsecureRequests: [],
+}
 
-// /summarize-url is free but triggers an outbound fetch, and unlike /ai/chat it
-// has no dedicated scope in rateLimitConfig.ts. It is additionally protected by
-// the dependency-free fixed-window limiter from upstream. /ai/chat is already
-// covered by rateLimiters.aiChat above, so it is deliberately not re-limited.
-const summarizeUrlLimiter = createRateLimiter({
+// Start in report-only mode; flip to enforce via CSP_ENFORCE=1 once the
+// violation reports are clean.
+const cspEnforced = process.env.CSP_ENFORCE === '1'
+app.use(
+  helmet({
+    contentSecurityPolicy: cspEnforced
+      ? { useDefaults: false, directives: CSP_DIRECTIVES }
+      : { useDefaults: false, directives: CSP_DIRECTIVES, reportOnly: true },
+    crossOriginEmbedderPolicy: false,
+    crossOriginResourcePolicy: { policy: 'cross-origin' },
+  }),
+)
+
+// ─── Rate limiting (free, cost-bearing endpoints) ─────────────────────────
+// /ai/chat and /summarize-url are free but each triggers a Groq call (and the
+// latter a network fetch), so they are the abuse-prone surface. Limits are
+// keyed per client IP so one caller cannot starve the rest.
+const freeRouteLimiter = createRateLimiter({
   windowMs: Number(process.env.RATE_LIMIT_WINDOW_MS) || 60_000,
   max: Number(process.env.SUMMARIZE_URL_RATE_LIMIT_MAX) || 30,
 })
-
 // ─── x402 payment guard on /search ───────────────────────────────────────
 // paymentMiddlewareFromConfig is the recommended API per official Stellar docs.
 // It uses the Coinbase public facilitator (no API key needed for testnet).
@@ -312,7 +354,8 @@ app.get('/search', async (req: Request, res: Response) => {
       return res.status(502).json({ error: `Serper.dev API error: ${serperRes.status}` })
     }
 
-    const data: any = await serperRes.json()
+const data: any = await serperRes.json()
+    warnOnMissingFields('search', data, ['organic'])
     const latencyMs = Date.now() - t0
 
     stats.totalQueries++
@@ -320,6 +363,7 @@ app.get('/search', async (req: Request, res: Response) => {
     stats.latencies.push(latencyMs)
     if (stats.latencies.length > 200) stats.latencies.shift()
 
+    warnOnMissingFields('search.organic', data.organic, ['title', 'link', 'snippet'])
     const results = (data.organic || []).map((r: any, i: number) => ({
       id: String(i + 1),
       title: r.title || 'No title',
@@ -466,7 +510,8 @@ app.get('/images', async (req: Request, res: Response) => {
       return res.status(502).json({ error: `Serper.dev API error: ${serperRes.status}` })
     }
 
-    const data: any = await serperRes.json()
+const data: any = await serperRes.json()
+    warnOnMissingFields('images', data, ['images'])
     const latencyMs = Date.now() - t0
 
     stats.totalQueries++
@@ -474,6 +519,7 @@ app.get('/images', async (req: Request, res: Response) => {
     stats.latencies.push(latencyMs)
     if (stats.latencies.length > 200) stats.latencies.shift()
 
+    warnOnMissingFields('images.images', data.images, ['title', 'imageUrl', 'link', 'imageWidth', 'imageHeight'])
     const results = (data.images || []).map((r: any, i: number) => ({
       id: String(i + 1),
       title: r.title || 'No title',
@@ -574,7 +620,8 @@ app.get('/news', async (req: Request, res: Response) => {
       return res.status(502).json({ error: `Serper.dev API error: ${serperRes.status}` })
     }
 
-    const data: any = await serperRes.json()
+const data: any = await serperRes.json()
+    warnOnMissingFields('news', data, ['news'])
     const latencyMs = Date.now() - t0
 
     stats.totalQueries++
@@ -582,6 +629,7 @@ app.get('/news', async (req: Request, res: Response) => {
     stats.latencies.push(latencyMs)
     if (stats.latencies.length > 200) stats.latencies.shift()
 
+    warnOnMissingFields('news.news', data.news, ['title', 'link', 'snippet', 'source', 'date'])
     const results = (data.news || []).map((r: any, i: number) => ({
       id: String(i + 1),
       title: r.title || 'No title',

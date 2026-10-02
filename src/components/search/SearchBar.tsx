@@ -53,9 +53,11 @@ export function SearchBar({
       )}
 
       <div className="relative group">
-        {/* Glow ring on focus */}
+        {/* Decorative glow ring only — the real keyboard indicator is the
+            :focus-visible outline on the input/button below. */}
         <div
-          className={`absolute -inset-px rounded-2xl opacity-0 group-focus-within:opacity-100 transition-opacity blur-sm ${isWrongNetwork ? 'bg-red-500/20' : ''
+          aria-hidden="true"
+          className={`pointer-events-none absolute -inset-px rounded-2xl opacity-0 group-focus-within:opacity-100 transition-opacity blur-sm ${isWrongNetwork ? 'bg-red-500/20' : ''
             }`}
           style={!isWrongNetwork ? { background: 'linear-gradient(135deg, rgba(0,245,255,0.2), rgba(14,165,233,0.2), rgba(0,245,255,0.2))' } : {}}
         />
@@ -78,14 +80,14 @@ export function SearchBar({
             defaultValue={defaultQuery}
             placeholder={isWrongNetwork ? 'Switch network to search...' : "Search anything — pay per query, not per month..."}
             disabled={isSearching || isWrongNetwork}
-            className="flex-1 min-w-0 bg-transparent text-white placeholder:text-white/20 text-sm outline-none disabled:opacity-50"
+            className="flex-1 min-w-0 bg-transparent text-white placeholder:text-white/20 text-sm rounded-md disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#00f5ff]"
             style={{ caretColor: isWrongNetwork ? '#ef4444' : '#00f5ff' }}
           />
 
           <motion.button
             type="submit"
             disabled={isSearching || isWrongNetwork}
-            className="flex-shrink-0 flex items-center gap-2 px-4 py-2 rounded-xl font-display text-xs tracking-wider transition-all disabled:opacity-40"
+            className="flex-shrink-0 flex items-center gap-2 px-4 py-2 rounded-xl font-display text-xs tracking-wider transition-all disabled:opacity-40 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#00f5ff]"
             style={{
               background: isSearching || isWrongNetwork ? 'transparent' : 'rgba(0,245,255,0.12)',
               border: '1px solid',

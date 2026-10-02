@@ -1,0 +1,35 @@
+{
+  "searchParameters": {
+    "q": "Stellar blockchain",
+    "num": 5,
+    "type": "images"
+  },
+  "images": [
+    {
+      "title": "Stellar Logo",
+      "imageUrl": "https://stellar.org/images/logo.png",
+      "imageWidth": 1200,
+      "imageHeight": 630,
+      "thumbnailUrl": "https://stellar.org/images/thumb.png",
+      "thumbnailWidth": 300,
+      "thumbnailHeight": 158,
+      "source": "stellar.org",
+      "link": "https://stellar.org/",
+      "domain": "stellar.org",
+      "position": 1
+    },
+    {
+      "title": "Stellar Network",
+      "imageUrl": "https://example.cdn/stellar-network.png",
+      "imageWidth": 800,
+      "imageHeight": 400,
+      "thumbnailUrl": "https://example.cdn/stellar-thumb.png",
+      "thumbnailWidth": 200,
+      "thumbnailHeight": 100,
+      "source": "example.com",
+      "link": "https://example.com/stellar",
+      "domain": "example.com",
+      "position": 2
+    }
+  ]
+}

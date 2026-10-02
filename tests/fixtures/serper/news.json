@@ -1,0 +1,27 @@
+{
+  "searchParameters": {
+    "q": "Stellar blockchain",
+    "num": 5,
+    "type": "news"
+  },
+  "news": [
+    {
+      "title": "Stellar Partners with MoneyGram",
+      "link": "https://news.example.com/stellar-moneygram",
+      "snippet": "Stellar announced a new partnership to enable cross-border payments.",
+      "date": "Apr 15, 2024",
+      "source": "news.example.com",
+      "imageUrl": "https://news.example.com/images/stellar.png",
+      "position": 1
+    },
+    {
+      "title": "Stellar Upgrade to Protocol 20",
+      "link": "https://news.example.com/stellar-protocol-20",
+      "snippet": "The Stellar network has upgraded to Protocol 20 bringing smart contracts.",
+      "date": "May 20, 2024",
+      "source": "news.example.com",
+      "imageUrl": "https://news.example.com/images/protocol20.png",
+      "position": 2
+    }
+  ]
+}
