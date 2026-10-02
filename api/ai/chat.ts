@@ -1,9 +1,13 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
 import Groq from 'groq-sdk'
+import {
+  buildErrorResponse,
+  resolveRequestId,
+} from '../../src/lib/apiError'
 
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY! })
 
-const GROQ_MODEL = 'llama-3.3-70b-versatile'
+const GROQ_CHAT_MODEL = 'llama-3.3-70b-versatile'
 
 type ChatMessage = { role: 'system' | 'user' | 'assistant'; content: string }
 
@@ -18,9 +22,6 @@ function readMessages(req: VercelRequest): ChatMessage[] | null {
   }
 }
 
-// Mirrors server/index.ts POST /ai/chat: streams Server-Sent Events when the
-// client asks for them (Accept header or ?stream=1), otherwise returns the
-// full completion as JSON for callers that don't support SSE.
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' })
@@ -40,14 +41,22 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     ...messages,
   ]
 
+  // `query` and `headers` are absent on some minimal/invoked-locally request
+  // objects, so read both defensively rather than assuming Vercel's shape.
   const wantsStream =
-    (req.headers.accept || '').includes('text/event-stream') ||
-    req.query.stream === '1'
+    (req.headers?.accept || '').includes('text/event-stream') ||
+    req.query?.stream === '1'
+
+  // Correlation token: echoed to the client and used in the server log so a
+  // user-reported failure maps to a single server-side entry. Resolved before
+  // either response path so both the header and the error body carry it.
+  const requestId = resolveRequestId(req.headers?.['x-request-id'])
+  res.setHeader('X-Request-Id', requestId)
 
   if (!wantsStream) {
     try {
       const completion = await groq.chat.completions.create({
-        model: GROQ_MODEL,
+        model: GROQ_CHAT_MODEL,
         messages: groqMessages,
         max_tokens: 512,
         temperature: 0.7,
@@ -55,9 +64,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       const content = completion.choices[0]?.message?.content || 'No response.'
       return res.json({ content, model: completion.model })
-    } catch (err: any) {
-      console.error('[groq error]', err.message)
-      return res.status(500).json({ error: `Groq AI error: ${err.message}` })
+    } catch (err: unknown) {
+      // The raw Groq SDK message may contain model identifiers and request
+      // fragments, so it is logged server-side only. The client receives a
+      // generic message plus the correlation ID.
+      const failure = buildErrorResponse({
+        error: err,
+        requestId,
+        operation: 'groq.chat.completions',
+        provider: 'groq',
+        publicMessage: 'The AI assistant is temporarily unavailable. Please try again shortly.',
+        code: 'ai_unavailable',
+        status: 500,
+        meta: { model: GROQ_CHAT_MODEL, mode: 'vercel-json' },
+      })
+      return res.status(failure.status).json(failure.body)
     }
   }
 
@@ -78,42 +99,37 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     res.write(`data: ${JSON.stringify(data)}\n\n`)
   }
 
-  // Abort the Groq stream when the client disconnects mid-response. The
-  // request's own 'close' event fires as soon as its body is consumed, so
-  // disconnects are detected on the response instead: ServerResponse emits
-  // 'close' with writableEnded === false only when the client went away
-  // before the response completed. Vercel additionally surfaces disconnects
-  // as request errors when supportsCancellation is enabled (vercel.json).
-  const controller = new AbortController()
-  res.on('close', () => {
-    if (!res.writableEnded) controller.abort()
-  })
-  req.on('error', () => controller.abort())
-
   try {
-    const stream = await groq.chat.completions.create(
-      {
-        model: GROQ_MODEL,
-        messages: groqMessages,
-        max_tokens: 512,
-        temperature: 0.7,
-        stream: true,
-      },
-      { signal: controller.signal },
-    )
+    const completion = await groq.chat.completions.create({
+      model: GROQ_CHAT_MODEL,
+      messages: [
+        {
+          role: 'system',
+          content:
+            'You are StellarSearch AI, a concise research assistant. Help users craft better search queries and understand results. Keep responses under 200 words.',
+        },
+        ...messages,
+      ],
+      max_tokens: 512,
+      temperature: 0.7,
+    })
 
-    let model = GROQ_MODEL
-    for await (const chunk of stream) {
-      const delta = chunk.choices[0]?.delta?.content
-      if (chunk.model) model = chunk.model
-      if (delta) sendEvent('delta', { content: delta })
-    }
-    sendEvent('done', { model })
-    res.end()
-  } catch (err: any) {
-    if (controller.signal.aborted) return res.end()
-    console.error('[groq stream error]', err.message)
-    sendEvent('error', { error: `Groq AI error: ${err.message}` })
-    res.end()
+    const content = completion.choices[0]?.message?.content || 'No response.'
+    return res.json({ content, model: completion.model })
+  } catch (err: unknown) {
+    // The raw Groq SDK message may contain model identifiers and request
+    // fragments, so it is logged server-side only. The client receives a
+    // generic message plus the correlation ID.
+    const failure = buildErrorResponse({
+      error: err,
+      requestId,
+      operation: 'groq.chat.completions',
+      provider: 'groq',
+      publicMessage: 'The AI assistant is temporarily unavailable. Please try again shortly.',
+      code: 'ai_unavailable',
+      status: 500,
+      meta: { model: GROQ_CHAT_MODEL, mode: 'vercel-json' },
+    })
+    return res.status(failure.status).json(failure.body)
   }
 }

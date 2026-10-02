@@ -56,6 +56,7 @@ export default function App() {
 
   const {
     wallet, transactions, txLoading,
+    txLoadingMore, txHasMore, loadMoreTransactions,
     connect, disconnect, refresh,
   } = useFreighterWallet()
 
@@ -116,40 +117,43 @@ export default function App() {
         <LiveTicker walletConnected={wallet.connected} />
 
         <main id="main-content" className="flex-1" tabIndex={-1}>
-          <Suspense fallback={<PageSkeleton />}>
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={page}
-                initial={{ opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -8 }}
-                transition={{ duration: 0.2 }}
-              >
-                {page === 'search' && (
-                  <SearchPage
-                    wallet={wallet}
-                    onConnectWallet={connect}
-                    session={session}
-                    search={search}
-                    reset={reset}
-                    retry={retry}
-                    onNavigateFundingGuide={() => navigate('docs', 'get-testnet-usdc')}
-                  />
-                )}
-                {page === 'docs' && <DocsPage />}
-                {page === 'dashboard' && (
-                  <DashboardPage
-                    transactions={transactions}
-                    txLoading={txLoading}
-                    publicKey={wallet.publicKey}
-                    usdcBalance={wallet.usdcBalance}
-                    xlmBalance={wallet.xlmBalance}
-                    onRefresh={refresh}
-                  />
-                )}
-              </motion.div>
-            </AnimatePresence>
-          </Suspense>
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={page}
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.2 }}
+            >
+              {page === 'search' && (
+                <SearchPage
+                  wallet={wallet}
+                  onConnectWallet={connect}
+                  session={session}
+                  search={search}
+                  reset={reset}
+                  retry={retry}
+                  onNavigateFundingGuide={() => navigate('docs', 'get-testnet-usdc')}
+                />
+              )}
+              {page === 'docs' && <DocsPage />}
+              {page === 'dashboard' && (
+                <DashboardPage
+                  transactions={transactions}
+                  txLoading={txLoading}
+                  publicKey={wallet.publicKey}
+                  usdcBalance={wallet.usdcBalance}
+                  xlmBalance={wallet.xlmBalance}
+                  onRefresh={refresh}
+                  hasMore={txHasMore}
+                  loadingMore={txLoadingMore}
+                  onLoadMore={() => {
+                    if (wallet.publicKey) void loadMoreTransactions(wallet.publicKey)
+                  }}
+                />
+              )}
+            </motion.div>
+          </AnimatePresence>
         </main>
 
         <Footer />

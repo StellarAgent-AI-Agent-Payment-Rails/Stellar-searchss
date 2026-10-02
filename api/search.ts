@@ -4,7 +4,12 @@ import {
   USDC_CONTRACT, 
   AMOUNT_STROOPS,
   AMOUNT_USDC
-} from '../src/lib/constants'
+} from '../shared/constants.js'
+import {
+  buildErrorResponse,
+  buildUpstreamUnavailableResponse,
+  resolveRequestId,
+} from '../src/lib/apiError'
 import { incrementCounter } from '../src/lib/stats'
 
 // ─── Config ───────────────────────────────────────────────────────────────
@@ -32,16 +37,22 @@ export async function handler(req: VercelRequest, res: VercelResponse) {
   res.setHeader('Access-Control-Expose-Headers', [
     'PAYMENT-REQUIRED',
     'X-Payment-Response',
+    'X-Request-Id',
   ].join(', '))
 
   if (req.method === 'OPTIONS') return res.status(200).end()
   if (req.method !== 'GET')    return res.status(405).json({ error: 'Method not allowed' })
 
+  // Correlation token echoed to the client and attached to server-side logs.
+  const requestId = resolveRequestId(req.headers['x-request-id'])
+  res.setHeader('X-Request-Id', requestId)
+
   const { q, count = '5', freshness } = req.query as Record<string, string>
 
-  if (!q?.trim()) return res.status(400).json({ error: 'Missing required parameter: q' })
-
   // ─── Payment check ────────────────────────────────────────────────────────
+  // Ordering matters for parity with server/index.ts: there the x402 guard is
+  // middleware, so it answers 402 before the route handler ever validates `q`.
+  // Validating `q` first here would return 400 where Express returns 402.
   const paymentHeader =
     req.headers['payment-signature'] ||
     req.headers['x-payment']         ||
@@ -77,6 +88,8 @@ export async function handler(req: VercelRequest, res: VercelResponse) {
     )
     return res.status(402).json({ error: 'Payment required' })
   }
+
+  if (!q?.trim()) return res.status(400).json({ error: 'Missing required parameter: q' })
 
   // ─── Payment present — proceed with search ────────────────────────────────
   if (paymentHeader) console.log('✅ Payment header received')
@@ -120,8 +133,15 @@ export async function handler(req: VercelRequest, res: VercelResponse) {
 
     if (!serperRes.ok) {
       const errText = await serperRes.text()
-      console.error('[serper]', serperRes.status, errText)
-      return res.status(502).json({ error: `Serper.dev API error: ${serperRes.status}` })
+      const failure = buildUpstreamUnavailableResponse({
+        error: new Error(`Serper.dev responded ${serperRes.status}: ${errText}`),
+        requestId,
+        operation: 'serper.search',
+        provider: 'serper',
+        publicMessage: 'Search is temporarily unavailable. Please try again shortly.',
+        meta: { status: serperRes.status, responseBody: errText.slice(0, 2000) },
+      })
+      return res.status(failure.status).json(failure.body)
     }
 
     const data      = await serperRes.json()
@@ -155,9 +175,17 @@ export async function handler(req: VercelRequest, res: VercelResponse) {
       latencyMs,
     })
 
-  } catch (err: any) {
-    console.error('[search error]', err.message)
-    return res.status(500).json({ error: 'Search failed.' })
+  } catch (err: unknown) {
+    const failure = buildErrorResponse({
+      error: err,
+      requestId,
+      operation: 'search',
+      provider: 'internal',
+      publicMessage: 'Search failed. Please try again later.',
+      code: 'search_failed',
+      status: 500,
+    })
+    return res.status(failure.status).json(failure.body)
   }
 }
 

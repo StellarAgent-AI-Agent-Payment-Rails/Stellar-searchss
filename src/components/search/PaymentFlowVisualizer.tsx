@@ -1,5 +1,5 @@
-import { m, AnimatePresence } from 'framer-motion'
-import { ExternalLink } from 'lucide-react'
+import { motion, AnimatePresence } from 'framer-motion'
+import ExternalLink from 'lucide-react/dist/esm/icons/external-link'
 import type { SearchSession } from '../../hooks/useSearch'
 import { explorerTxUrl, truncateHash } from '../../lib/stellar'
 
@@ -34,7 +34,7 @@ export function PaymentFlowVisualizer({ session }: Props) {
   const doneCount  = isComplete ? TOTAL_STEPS : activeIdx
 
   return (
-    <m.div
+    <motion.div
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -16 }}
@@ -63,7 +63,7 @@ export function PaymentFlowVisualizer({ session }: Props) {
 
             return (
               <div key={step.label} className="flex flex-col items-center gap-2 flex-1">
-                <m.div
+                <motion.div
                   className="w-10 h-10 rounded-full flex items-center justify-center text-sm border relative"
                   animate={{
                     borderColor: stepFailed ? '#ef4444'
@@ -77,7 +77,7 @@ export function PaymentFlowVisualizer({ session }: Props) {
                   }}
                 >
                   {stepDone ? (
-                    <m.span
+                    <motion.span
                       initial={{ scale: 0 }}
                       animate={{ scale: 1 }}
                       style={{ color: step.color }}
@@ -91,14 +91,14 @@ export function PaymentFlowVisualizer({ session }: Props) {
                     </span>
                   )}
                   {stepActive && (
-                    <m.div
+                    <motion.div
                       className="absolute inset-0 rounded-full border"
                       style={{ borderColor: step.color }}
                       animate={{ scale: [1, 1.8], opacity: [0.8, 0] }}
                       transition={{ duration: 1, repeat: Infinity }}
                     />
                   )}
-                </m.div>
+                </motion.div>
                 <div className="text-center">
                   <p className="font-display text-xs" style={{
                     color: stepFailed ? '#ef4444'
@@ -118,7 +118,7 @@ export function PaymentFlowVisualizer({ session }: Props) {
 
       {/* Status message */}
       <AnimatePresence mode="wait">
-        <m.div
+        <motion.div
           key={session.status}
           initial={{ opacity: 0, x: -8 }}
           animate={{ opacity: 1, x: 0 }}
@@ -126,7 +126,7 @@ export function PaymentFlowVisualizer({ session }: Props) {
           className="flex items-center gap-3 py-2.5 px-3 rounded-lg bg-white/4 border border-white/5"
         >
           {session.status === 'searching' && (
-            <m.div
+            <motion.div
               className="w-2 h-2 rounded-full bg-neon-cyan flex-shrink-0"
               animate={{ opacity: [1, 0.2, 1] }}
               transition={{ duration: 0.7, repeat: Infinity }}
@@ -137,12 +137,12 @@ export function PaymentFlowVisualizer({ session }: Props) {
             {isComplete  && `✓ Payment settled — ${session.results.length} results in ${session.durationMs}ms`}
             {isError     && `✗ ${session.error}`}
           </p>
-        </m.div>
+        </motion.div>
       </AnimatePresence>
 
       {/* TX hash */}
       {session.status === 'complete' && session.txHash && (
-        <m.div
+        <motion.div
           initial={{ opacity: 0, height: 0 }}
           animate={{ opacity: 1, height: 'auto' }}
           className="space-y-2"
@@ -172,8 +172,8 @@ export function PaymentFlowVisualizer({ session }: Props) {
               ))}
             </div>
           )}
-        </m.div>
+        </motion.div>
       )}
-    </m.div>
+    </motion.div>
   )
 }

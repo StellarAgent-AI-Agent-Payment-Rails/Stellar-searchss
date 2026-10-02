@@ -224,6 +224,7 @@ export function SearchResults({ results, query, isLoading, isImageSearch }: Prop
         const reader  = res.body.getReader()
         const decoder = new TextDecoder('utf-8')
         let   buffer  = ''
+        // eslint-disable-next-line no-constant-condition -- loop exits via `done`
         while (true) {
           const { value, done } = await reader.read()
           if (done) break

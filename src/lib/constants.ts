@@ -9,15 +9,14 @@
  */
 
 // Use process.env for Node.js and import.meta.env for Vite
-const getEnv = (key: string, fallback: string) => {
-  if (typeof process !== 'undefined' && process.env && process.env[key]) {
-    return process.env[key]
-  }
-  // @ts-ignore
-  if (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env[`VITE_${key}`]) {
-    // @ts-ignore
-    return import.meta.env[`VITE_${key}`]
-  }
+const getEnv = (key: string, fallback: string): string => {
+  const fromProcess =
+    typeof process !== 'undefined' && process.env ? process.env[key] : undefined
+  if (fromProcess) return fromProcess
+
+  const fromVite = import.meta.env?.[`VITE_${key}`]
+  if (fromVite) return fromVite
+
   return fallback
 }
 

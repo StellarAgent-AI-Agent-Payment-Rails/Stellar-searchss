@@ -69,7 +69,7 @@ export function AnimatedBackground() {
     if (prefersReducedMotion) return
 
     let animId: number
-    const matrixChars = '01ABCDEFx402USDC'.split('')
+    const matrixChars = '01ABCDEF⬡◈▲⬢x402USDC'.split('')
 
     const resize = () => {
       canvas.width = window.innerWidth

@@ -61,17 +61,20 @@ test: {
       output: {
         manualChunks(id) {
           if (!id) return
-          if (id.includes('node_modules/recharts') || id.includes('node_modules/d3-')) {
-            return 'vendor-charts'
-          }
-          if (id.includes('node_modules/@stellar')) {
-            return 'vendor-stellar'
-          }
-          if (id.includes('node_modules/framer-motion')) {
-            return 'vendor-framer-motion'
-          }
-          if (id.includes('node_modules/lucide-react')) {
-            return 'vendor-lucide'
+          if (id.includes('node_modules')) {
+            if (id.match(/[\\/]node_modules[\\/](react|react-dom|scheduler)[\\/]/)) {
+              return 'vendor-react'
+            }
+            if (id.includes('node_modules/framer-motion')) {
+              return 'vendor-framer-motion'
+            }
+            if (id.includes('node_modules/lucide-react')) {
+              return 'vendor-lucide'
+            }
+            if (id.includes('node_modules/@stellar')) {
+              return 'vendor-stellar'
+            }
+            return 'vendor'
           }
         },
       },
