@@ -14,12 +14,39 @@ import {
 
 describe('isNonPublicAddress', () => {
   const blocked = [
-    '127.0.0.1', '127.1.2.3', '10.0.0.5', '172.16.0.1', '172.31.255.255', '192.168.1.10',
-    '169.254.169.254', '100.64.0.1', '0.0.0.0', '224.0.0.1', '255.255.255.255', '198.18.0.1',
-    '::1', '::', 'fe80::1', 'fc00::1', 'fd12:3456::1', 'ff02::1', '::ffff:127.0.0.1',
-    '::ffff:10.0.0.1', '::ffff:7f00:1', '64:ff9b::a9fe:a9fe', '2001:db8::1', 'not-an-ip',
+    '127.0.0.1',
+    '127.1.2.3',
+    '10.0.0.5',
+    '172.16.0.1',
+    '172.31.255.255',
+    '192.168.1.10',
+    '169.254.169.254',
+    '100.64.0.1',
+    '0.0.0.0',
+    '224.0.0.1',
+    '255.255.255.255',
+    '198.18.0.1',
+    '::1',
+    '::',
+    'fe80::1',
+    'fc00::1',
+    'fd12:3456::1',
+    'ff02::1',
+    '::ffff:127.0.0.1',
+    '::ffff:10.0.0.1',
+    '::ffff:7f00:1',
+    '64:ff9b::a9fe:a9fe',
+    '2001:db8::1',
+    'not-an-ip',
   ]
-  const allowed = ['8.8.8.8', '1.1.1.1', '93.184.216.34', '172.32.0.1', '2606:4700:4700::1111', '::ffff:8.8.8.8']
+  const allowed = [
+    '8.8.8.8',
+    '1.1.1.1',
+    '93.184.216.34',
+    '172.32.0.1',
+    '2606:4700:4700::1111',
+    '::ffff:8.8.8.8',
+  ]
 
   for (const ip of blocked) it(`blocks ${ip}`, () => assert.equal(isNonPublicAddress(ip), true))
   for (const ip of allowed) it(`allows ${ip}`, () => assert.equal(isNonPublicAddress(ip), false))
@@ -27,7 +54,10 @@ describe('isNonPublicAddress', () => {
 
 describe('parsePublicUrl', () => {
   const rejects = (raw: unknown, code: string) => {
-    assert.throws(() => parsePublicUrl(raw), (err: unknown) => err instanceof UrlSummaryError && err.code === code)
+    assert.throws(
+      () => parsePublicUrl(raw),
+      (err: unknown) => err instanceof UrlSummaryError && err.code === code,
+    )
   }
 
   it('accepts public http(s) URLs', () => {
@@ -52,9 +82,17 @@ describe('parsePublicUrl', () => {
   })
   it('rejects internal hosts and literal private IPs', () => {
     for (const raw of [
-      'http://localhost/', 'http://api.localhost/', 'http://printer.local/', 'http://db.internal/',
-      'http://127.0.0.1/', 'http://169.254.169.254/latest/meta-data/', 'http://10.1.2.3/',
-      'http://[::1]/', 'http://[::ffff:127.0.0.1]/', 'http://0x7f000001/', 'http://2130706433/',
+      'http://localhost/',
+      'http://api.localhost/',
+      'http://printer.local/',
+      'http://db.internal/',
+      'http://127.0.0.1/',
+      'http://169.254.169.254/latest/meta-data/',
+      'http://10.1.2.3/',
+      'http://[::1]/',
+      'http://[::ffff:127.0.0.1]/',
+      'http://0x7f000001/',
+      'http://2130706433/',
     ]) {
       rejects(raw, 'URL_ADDRESS_NOT_ALLOWED')
     }
@@ -92,7 +130,9 @@ describe('fetchPageText', () => {
   const routes: Record<string, (res: http.ServerResponse) => void> = {
     '/page': (res) => {
       res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' })
-      res.end('<html><head><title>Public page</title></head><body><p>Stellar is a network.</p></body></html>')
+      res.end(
+        '<html><head><title>Public page</title></head><body><p>Stellar is a network.</p></body></html>',
+      )
     },
     '/big': (res) => {
       res.writeHead(200, { 'Content-Type': 'text/plain' })
@@ -117,7 +157,15 @@ describe('fetchPageText', () => {
   }
 
   before(async () => {
-    server = http.createServer((req, res) => (routes[req.url ?? ''] ?? ((r) => { r.writeHead(404); r.end() }))(res))
+    server = http.createServer((req, res) =>
+      (
+        routes[req.url ?? ''] ??
+        ((r) => {
+          r.writeHead(404)
+          r.end()
+        })
+      )(res),
+    )
     await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve))
     port = (server.address() as AddressInfo).port
   })
@@ -147,7 +195,10 @@ describe('fetchPageText', () => {
 
   it('refuses a hostname that resolves to a private address (DNS rebinding)', async () => {
     await assert.rejects(
-      fetchPageText(`http://public.test:${port}/page`, { lookup: fakeDns, allowedPorts: new Set([port]) }),
+      fetchPageText(`http://public.test:${port}/page`, {
+        lookup: fakeDns,
+        allowedPorts: new Set([port]),
+      }),
       (err: unknown) => err instanceof UrlSummaryError && err.code === 'URL_ADDRESS_NOT_ALLOWED',
     )
   })
@@ -178,7 +229,10 @@ describe('fetchPageText', () => {
   })
 
   it('caps the download size and marks the page truncated', async () => {
-    const page = await fetchPageText(`http://public.test:${port}/big`, { ...asPublic(), maxBytes: 1_000 })
+    const page = await fetchPageText(`http://public.test:${port}/big`, {
+      ...asPublic(),
+      maxBytes: 1_000,
+    })
     assert.equal(page.truncated, true)
     assert.ok(page.text.length <= 1_000)
   })

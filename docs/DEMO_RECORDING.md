@@ -17,14 +17,14 @@ x402 flow actually works end to end.
 Record one uninterrupted take, ideally 2–3 minutes, covering the six states the
 UI already tracks (see `src/components/search/PaymentFlowVisualizer.tsx`):
 
-1. **Connect** — click *Connect Freighter* and approve in the extension. The
+1. **Connect** — click _Connect Freighter_ and approve in the extension. The
    header shows your address and live USDC balance.
-2. **Search** — type a query and hit *SEARCH*.
-3. **402** — the `x402 PAYMENT FLOW` panel marks *Request* and then
-   *402 Received* (`GET /search` returned `HTTP 402 Payment Required`).
+2. **Search** — type a query and hit _SEARCH_.
+3. **402** — the `x402 PAYMENT FLOW` panel marks _Request_ and then
+   _402 Received_ (`GET /search` returned `HTTP 402 Payment Required`).
 4. **Sign** — the Freighter popup appears for a Soroban auth entry; approve it.
-   The *Sign* step lights up.
-5. **Settle** — *Retry* and *Facilitate* run; the panel shows `✓ SETTLED`, the
+   The _Sign_ step lights up.
+5. **Settle** — _Retry_ and _Facilitate_ run; the panel shows `✓ SETTLED`, the
    `TX HASH` row, and `PAID 0.001 USDC / NETWORK TESTNET / STATUS SETTLED`.
 6. **Results** — real Serper.dev results render. Click the `TX HASH` link to
    open the transaction on Stellar Expert and let the explorer page load on
@@ -38,15 +38,15 @@ UI already tracks (see `src/components/search/PaymentFlowVisualizer.tsx`):
 
 ## Prerequisites
 
-| Requirement | Notes |
-|---|---|
-| Node.js ≥ 18, npm ≥ 9 | See [CONTRIBUTING.md](../CONTRIBUTING.md) |
-| `SERPER_API_KEY` | Real Google results — <https://serper.dev> |
-| `GROQ_API_KEY` | AI assistant — <https://console.groq.com/keys> |
-| `OPENZEPPELIN_API_KEY` | x402 facilitator — <https://channels.openzeppelin.com/testnet/gen> |
-| `STELLAR_RECEIVING_ADDRESS` | Testnet keypair that receives the 0.001 USDC |
-| Freighter + funded testnet wallet | USDC trustline added and testnet USDC claimed |
-| Screen recorder | OBS, Kap, ScreenToGif, QuickTime, or Loom |
+| Requirement                       | Notes                                                              |
+| --------------------------------- | ------------------------------------------------------------------ |
+| Node.js ≥ 18, npm ≥ 9             | See [CONTRIBUTING.md](../CONTRIBUTING.md)                          |
+| `SERPER_API_KEY`                  | Real Google results — <https://serper.dev>                         |
+| `GROQ_API_KEY`                    | AI assistant — <https://console.groq.com/keys>                     |
+| `OPENZEPPELIN_API_KEY`            | x402 facilitator — <https://channels.openzeppelin.com/testnet/gen> |
+| `STELLAR_RECEIVING_ADDRESS`       | Testnet keypair that receives the 0.001 USDC                       |
+| Freighter + funded testnet wallet | USDC trustline added and testnet USDC claimed                      |
+| Screen recorder                   | OBS, Kap, ScreenToGif, QuickTime, or Loom                          |
 
 ---
 
@@ -88,7 +88,7 @@ npm run test:search "Stellar blockchain"
   hard to follow.
 - Keep the console open in a second window — the `useSearch` logs
   (`🚀 Initial request` → `💰 402 received` → `🔐 Freighter popup` → `✅ Search
-  complete!`) make the flow easy to follow and prove each step.
+complete!`) make the flow easy to follow and prove each step.
 
 ## 4. Export and compress
 

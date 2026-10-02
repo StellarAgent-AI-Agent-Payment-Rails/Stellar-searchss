@@ -50,8 +50,7 @@ interface BadgeProps {
  * Rendered on every page (see `Navbar`) and never hidden on small screens.
  */
 export function NetworkBadge({ isMainnet = IS_MAINNET }: BadgeProps) {
-  const { label, className, iconClassName, ariaLabel, network } =
-    getNetworkBadgeStyle(isMainnet)
+  const { label, className, iconClassName, ariaLabel, network } = getNetworkBadgeStyle(isMainnet)
   const Icon = isMainnet ? AlertTriangle : Globe
 
   return (

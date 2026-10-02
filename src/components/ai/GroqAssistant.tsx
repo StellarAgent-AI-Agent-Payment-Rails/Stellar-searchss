@@ -23,11 +23,11 @@ const SYSTEM_INTRO: Message = {
     "Hi! I'm your AI research assistant powered by Groq (Llama 3). I can help you craft better search queries, summarise results, or explain topics. Each search costs 0.001 USDC on Stellar. What would you like to research?",
 }
 
-const SERVER_URL = (import.meta as any).env?.VITE_SERVER_URL ?? (
-  typeof window !== 'undefined' && window.location.origin.includes('vercel.app')
+const SERVER_URL =
+  (import.meta as any).env?.VITE_SERVER_URL ??
+  (typeof window !== 'undefined' && window.location.origin.includes('vercel.app')
     ? `${window.location.origin}/api`
-    : 'http://localhost:3001'
-)
+    : 'http://localhost:3001')
 
 // Parse an SSE stream from `/ai/chat` and invoke `onDelta` for each token.
 // Stops cleanly on `event: done` or `event: error`.
@@ -35,9 +35,9 @@ async function consumeSSE(
   body: ReadableStream<Uint8Array>,
   onDelta: (delta: string) => void,
 ): Promise<void> {
-  const reader  = body.getReader()
+  const reader = body.getReader()
   const decoder = new TextDecoder('utf-8')
-  let   buffer  = ''
+  let buffer = ''
 
   while (true) {
     const { value, done } = await reader.read()
@@ -51,7 +51,7 @@ async function consumeSSE(
       buffer = buffer.slice(blankLine + 2)
 
       let event = 'message'
-      let data  = ''
+      let data = ''
       for (const line of rawEvent.split('\n')) {
         if (line.startsWith('event:')) event = line.slice(6).trim()
         else if (line.startsWith('data:')) data += line.slice(5).trim()
@@ -62,7 +62,9 @@ async function consumeSSE(
         try {
           const { content } = JSON.parse(data) as { content?: string }
           if (content) onDelta(content)
-        } catch { /* malformed chunk; skip */ }
+        } catch {
+          /* malformed chunk; skip */
+        }
       } else if (event === 'done') {
         return
       } else if (event === 'error') {
@@ -80,9 +82,10 @@ async function consumeSSE(
 // Build a system message that gives Groq context from the user's most recent
 // paid search so follow-up questions can be answered without re-asking.
 function buildSearchContextMessage(s: LastSearch): Message {
-  const top = s.results.slice(0, 3).map((r, i) =>
-    `${i + 1}. ${r.title} — ${r.url}\n   ${r.description}`
-  ).join('\n')
+  const top = s.results
+    .slice(0, 3)
+    .map((r, i) => `${i + 1}. ${r.title} — ${r.url}\n   ${r.description}`)
+    .join('\n')
   return {
     role: 'system',
     content:
@@ -94,14 +97,14 @@ function buildSearchContextMessage(s: LastSearch): Message {
 }
 
 export function GroqAssistant({ lastSearch }: Props = {}) {
-  const [open, setOpen]         = useState(false)
+  const [open, setOpen] = useState(false)
   const [messages, setMessages] = useState<Message[]>([SYSTEM_INTRO])
-  const [input, setInput]       = useState('')
-  const [loading, setLoading]   = useState(false)
-  const bottomRef               = useRef<HTMLDivElement>(null)
-  const contextInjectedFor      = useRef<string | null>(null)
-  const panelRef                = useRef<HTMLDivElement>(null)
-  const triggerRef              = useRef<HTMLButtonElement>(null)
+  const [input, setInput] = useState('')
+  const [loading, setLoading] = useState(false)
+  const bottomRef = useRef<HTMLDivElement>(null)
+  const contextInjectedFor = useRef<string | null>(null)
+  const panelRef = useRef<HTMLDivElement>(null)
+  const triggerRef = useRef<HTMLButtonElement>(null)
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -135,8 +138,8 @@ export function GroqAssistant({ lastSearch }: Props = {}) {
         return
       }
 
-      const first  = focusable[0]
-      const last   = focusable[focusable.length - 1]
+      const first = focusable[0]
+      const last = focusable[focusable.length - 1]
       const active = document.activeElement
       const inside = panel.contains(active)
 
@@ -166,7 +169,7 @@ export function GroqAssistant({ lastSearch }: Props = {}) {
     if (!open || !lastSearch || !lastSearch.results.length) return
     if (contextInjectedFor.current === lastSearch.query) return
     contextInjectedFor.current = lastSearch.query
-    setMessages(prev => [...prev, buildSearchContextMessage(lastSearch)])
+    setMessages((prev) => [...prev, buildSearchContextMessage(lastSearch)])
   }, [open, lastSearch])
 
   const send = async () => {
@@ -178,10 +181,10 @@ export function GroqAssistant({ lastSearch }: Props = {}) {
     setLoading(true)
 
     // Insert a placeholder assistant message we'll stream tokens into.
-    setMessages(prev => [...prev, { role: 'assistant', content: '' }])
+    setMessages((prev) => [...prev, { role: 'assistant', content: '' }])
 
     const payload = JSON.stringify({
-      messages: history.map(m => ({ role: m.role, content: m.content })),
+      messages: history.map((m) => ({ role: m.role, content: m.content })),
     })
 
     try {
@@ -197,8 +200,8 @@ export function GroqAssistant({ lastSearch }: Props = {}) {
 
       const isSSE = res.headers.get('content-type')?.includes('text/event-stream')
       if (isSSE && res.body) {
-        await consumeSSE(res.body, delta => {
-          setMessages(prev => {
+        await consumeSSE(res.body, (delta) => {
+          setMessages((prev) => {
             const next = [...prev]
             const last = next[next.length - 1]
             if (last?.role === 'assistant') {
@@ -210,14 +213,14 @@ export function GroqAssistant({ lastSearch }: Props = {}) {
       } else {
         // Non-streaming fallback: server returned JSON.
         const data = await res.json()
-        setMessages(prev => {
+        setMessages((prev) => {
           const next = [...prev]
           next[next.length - 1] = { role: 'assistant', content: data.content ?? 'No response.' }
           return next
         })
       }
     } catch (err: any) {
-      setMessages(prev => {
+      setMessages((prev) => {
         const next = [...prev]
         next[next.length - 1] = {
           role: 'assistant',
@@ -271,7 +274,9 @@ export function GroqAssistant({ lastSearch }: Props = {}) {
               <div className="flex items-center gap-2">
                 <Bot className="w-4 h-4 text-neon-cyan" />
                 <span className="font-display text-xs text-neon-cyan tracking-wider">GROQ AI</span>
-                <span className="font-display text-xs text-white/25 hidden sm:inline">· Llama 3</span>
+                <span className="font-display text-xs text-white/25 hidden sm:inline">
+                  · Llama 3
+                </span>
               </div>
               <button
                 onClick={() => setOpen(false)}
@@ -283,34 +288,36 @@ export function GroqAssistant({ lastSearch }: Props = {}) {
 
             {/* Messages */}
             <div className="flex-1 overflow-y-auto p-3 space-y-3">
-              {messages.filter(m => m.role !== 'system').map((msg, i) => (
-                <m.div
-                  key={i}
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
-                >
-                  <div
-                    className="max-w-[85%] rounded-xl px-3 py-2 text-xs leading-relaxed"
-                    style={{
-                      background: msg.role === 'user'
-                        ? 'rgba(0,245,255,0.15)'
-                        : 'rgba(255,255,255,0.05)',
-                      border: msg.role === 'user'
-                        ? '1px solid rgba(0,245,255,0.3)'
-                        : '1px solid rgba(255,255,255,0.07)',
-                      color: msg.role === 'user' ? '#00f5ff' : 'rgba(255,255,255,0.7)',
-                    }}
+              {messages
+                .filter((m) => m.role !== 'system')
+                .map((msg, i) => (
+                  <m.div
+                    key={i}
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
                   >
-                    {msg.content}
-                  </div>
-                </m.div>
-              ))}
+                    <div
+                      className="max-w-[85%] rounded-xl px-3 py-2 text-xs leading-relaxed"
+                      style={{
+                        background:
+                          msg.role === 'user' ? 'rgba(0,245,255,0.15)' : 'rgba(255,255,255,0.05)',
+                        border:
+                          msg.role === 'user'
+                            ? '1px solid rgba(0,245,255,0.3)'
+                            : '1px solid rgba(255,255,255,0.07)',
+                        color: msg.role === 'user' ? '#00f5ff' : 'rgba(255,255,255,0.7)',
+                      }}
+                    >
+                      {msg.content}
+                    </div>
+                  </m.div>
+                ))}
 
               {loading && (
                 <div className="flex justify-start">
                   <div className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white/5 border border-white/7">
-                    {[0, 1, 2].map(j => (
+                    {[0, 1, 2].map((j) => (
                       <m.div
                         key={j}
                         className="w-1.5 h-1.5 rounded-full bg-neon-cyan/60"
@@ -330,8 +337,8 @@ export function GroqAssistant({ lastSearch }: Props = {}) {
                 <input
                   type="text"
                   value={input}
-                  onChange={e => setInput(e.target.value)}
-                  onKeyDown={e => e.key === 'Enter' && !e.shiftKey && send()}
+                  onChange={(e) => setInput(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && send()}
                   placeholder="Ask anything..."
                   disabled={loading}
                   className="flex-1 bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-xs text-white placeholder:text-white/25 outline-none focus:border-neon-cyan/30 disabled:opacity-50"

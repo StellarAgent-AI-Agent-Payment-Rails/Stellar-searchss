@@ -69,7 +69,14 @@ describe('page accessibility smoke checks', () => {
 
   it('checks the dashboard page', async () => {
     const { container } = render(
-      <DashboardPage transactions={[]} txLoading={false} publicKey={null} usdcBalance="0" xlmBalance="0" onRefresh={() => undefined} />,
+      <DashboardPage
+        transactions={[]}
+        txLoading={false}
+        publicKey={null}
+        usdcBalance="0"
+        xlmBalance="0"
+        onRefresh={() => undefined}
+      />,
     )
     await expectNoUnlistedCriticalViolations('dashboard', container)
   })

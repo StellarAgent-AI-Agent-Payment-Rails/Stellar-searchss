@@ -77,7 +77,7 @@ describe('POST /ai/chat SSE and fallback', () => {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Accept': 'text/event-stream',
+        Accept: 'text/event-stream',
       },
       body: JSON.stringify({
         messages: [{ role: 'user', content: 'Hello SSE' }],
@@ -106,7 +106,7 @@ describe('POST /ai/chat SSE and fallback', () => {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Accept': 'application/json',
+        Accept: 'application/json',
       },
       body: JSON.stringify({
         messages: [{ role: 'user', content: 'Hello JSON' }],
@@ -116,7 +116,7 @@ describe('POST /ai/chat SSE and fallback', () => {
     assert.equal(res.status, 200)
     assert.ok(res.headers.get('content-type')?.includes('application/json'))
 
-    const json = await res.json() as any
+    const json = (await res.json()) as any
     assert.equal(json.content, 'JSON response content')
     assert.equal(json.model, 'llama-3.3-70b-versatile')
   })
@@ -130,7 +130,7 @@ describe('POST /ai/chat SSE and fallback', () => {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Accept': 'text/event-stream',
+        Accept: 'text/event-stream',
       },
       body: JSON.stringify({
         messages: [{ role: 'user', content: 'Trigger error' }],
@@ -172,7 +172,7 @@ describe('POST /ai/chat SSE and fallback', () => {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Accept': 'text/event-stream',
+        Accept: 'text/event-stream',
       },
       body: JSON.stringify({
         messages: [{ role: 'user', content: 'Disconnect test' }],
@@ -187,6 +187,10 @@ describe('POST /ai/chat SSE and fallback', () => {
 
     await upstreamAbort
 
-    assert.equal(upstreamAborted, true, 'Upstream Groq stream should be aborted on client disconnect')
+    assert.equal(
+      upstreamAborted,
+      true,
+      'Upstream Groq stream should be aborted on client disconnect',
+    )
   })
 })

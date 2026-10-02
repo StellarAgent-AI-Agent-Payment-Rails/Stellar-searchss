@@ -1,23 +1,23 @@
-import { describe, test, beforeAll as before, afterAll as after } from 'vitest';
-import assert from 'node:assert';
-import http, { Server } from 'node:http';
-import type { AddressInfo } from 'node:net';
-import { createApp } from '../server/app';
-import healthHandler from '../api/health';
-import searchHandler from '../api/search';
+import { describe, test, beforeAll as before, afterAll as after } from 'vitest'
+import assert from 'node:assert'
+import http, { Server } from 'node:http'
+import type { AddressInfo } from 'node:net'
+import { createApp } from '../server/app'
+import healthHandler from '../api/health'
+import searchHandler from '../api/search'
 
-type ServerlessHandler = (req: any, res: any) => unknown;
+type ServerlessHandler = (req: any, res: any) => unknown
 
 type ParityCase = {
-  name: string;
-  method: 'GET' | 'POST';
-  expressPath: string;
-  serverlessPath: string;
-  handler: ServerlessHandler;
-  compareFields: string[];
-  body?: unknown;
-  headers?: Record<string, string>;
-};
+  name: string
+  method: 'GET' | 'POST'
+  expressPath: string
+  serverlessPath: string
+  handler: ServerlessHandler
+  compareFields: string[]
+  body?: unknown
+  headers?: Record<string, string>
+}
 
 const cases: ParityCase[] = [
   {
@@ -62,76 +62,73 @@ const cases: ParityCase[] = [
     handler: searchHandler,
     compareFields: [],
   },
-];
+]
 
 interface ResponseSnapshot {
-  status: number;
-  body: unknown;
+  status: number
+  body: unknown
 }
 
 function normalizeBody(raw: string, contentType: string | undefined): unknown {
   if (contentType && contentType.includes('application/json')) {
     try {
-      return JSON.parse(raw);
+      return JSON.parse(raw)
     } catch {
-      return raw;
+      return raw
     }
   }
-  if (raw === '') return null;
+  if (raw === '') return null
   try {
-    return JSON.parse(raw);
+    return JSON.parse(raw)
   } catch {
-    return raw;
+    return raw
   }
 }
 
 function listen(server: Server): Promise<AddressInfo> {
   return new Promise((resolve, reject) => {
-    server.once('error', reject);
+    server.once('error', reject)
     server.listen(0, '127.0.0.1', () => {
-      const addr = server.address();
+      const addr = server.address()
       if (!addr || typeof addr === 'string') {
-        reject(new Error('Failed to bind test server'));
-        return;
+        reject(new Error('Failed to bind test server'))
+        return
       }
-      resolve(addr);
-    });
-  });
+      resolve(addr)
+    })
+  })
 }
 
 function close(server: Server): Promise<void> {
   return new Promise((resolve, reject) => {
-    server.close((err) => (err ? reject(err) : resolve()));
-  });
+    server.close((err) => (err ? reject(err) : resolve()))
+  })
 }
 
-async function callExpress(
-  baseUrl: string,
-  testCase: ParityCase,
-): Promise<ResponseSnapshot> {
-  const headers: Record<string, string> = { ...testCase.headers };
-  let body: string | undefined;
+async function callExpress(baseUrl: string, testCase: ParityCase): Promise<ResponseSnapshot> {
+  const headers: Record<string, string> = { ...testCase.headers }
+  let body: string | undefined
   if (testCase.body !== undefined) {
-    body = typeof testCase.body === 'string' ? testCase.body : JSON.stringify(testCase.body);
+    body = typeof testCase.body === 'string' ? testCase.body : JSON.stringify(testCase.body)
   }
   const res = await fetch(new URL(testCase.expressPath, baseUrl), {
     method: testCase.method,
     headers,
     body,
-  });
-  const raw = await res.text();
+  })
+  const raw = await res.text()
   return {
     status: res.status,
     body: normalizeBody(raw, res.headers.get('content-type') ?? undefined),
-  };
+  }
 }
 
 async function callServerless(testCase: ParityCase): Promise<ResponseSnapshot> {
-  const url = new URL(testCase.serverlessPath, 'http://localhost');
-  const headers: Record<string, string> = { ...testCase.headers };
-  let body: string | undefined;
+  const url = new URL(testCase.serverlessPath, 'http://localhost')
+  const headers: Record<string, string> = { ...testCase.headers }
+  let body: string | undefined
   if (testCase.body !== undefined) {
-    body = typeof testCase.body === 'string' ? testCase.body : JSON.stringify(testCase.body);
+    body = typeof testCase.body === 'string' ? testCase.body : JSON.stringify(testCase.body)
   }
 
   const req = {
@@ -140,81 +137,79 @@ async function callServerless(testCase: ParityCase): Promise<ResponseSnapshot> {
     headers,
     body,
     query: Object.fromEntries(url.searchParams.entries()),
-  };
+  }
 
   const res: any = {
     statusCode: 200,
     headers: {} as Record<string, string>,
     body: '',
     status(code: number) {
-      this.statusCode = code;
-      return this;
+      this.statusCode = code
+      return this
     },
     setHeader(name: string, value: string) {
-      this.headers[name.toLowerCase()] = value;
-      return this;
+      this.headers[name.toLowerCase()] = value
+      return this
     },
     json(data: unknown) {
-      this.body = JSON.stringify(data);
-      return this;
+      this.body = JSON.stringify(data)
+      return this
     },
     send(data: unknown) {
-      this.body = typeof data === 'string' ? data : JSON.stringify(data);
-      return this;
+      this.body = typeof data === 'string' ? data : JSON.stringify(data)
+      return this
     },
     end(data?: unknown) {
       if (data !== undefined) {
-        this.body = typeof data === 'string' ? data : JSON.stringify(data);
+        this.body = typeof data === 'string' ? data : JSON.stringify(data)
       }
-      return this;
+      return this
     },
-  };
+  }
 
-  await testCase.handler(req, res);
+  await testCase.handler(req, res)
 
-  const contentType = res.headers['content-type'];
-  return { status: res.statusCode, body: normalizeBody(res.body, contentType) };
+  const contentType = res.headers['content-type']
+  return { status: res.statusCode, body: normalizeBody(res.body, contentType) }
 }
 
 describe('parity between Express and serverless handlers', () => {
-  let server: Server;
-  let baseUrl: string;
+  let server: Server
+  let baseUrl: string
 
   before(async () => {
-    const app = createApp();
-    server = http.createServer(app);
-    const addr = await listen(server);
-    baseUrl = `http://127.0.0.1:${addr.port}`;
-  });
+    const app = createApp()
+    server = http.createServer(app)
+    const addr = await listen(server)
+    baseUrl = `http://127.0.0.1:${addr.port}`
+  })
 
   after(async () => {
-    if (server) await close(server);
-  });
+    if (server) await close(server)
+  })
 
   for (const testCase of cases) {
     test(`the Express and serverless handlers agree on ${testCase.name}`, async () => {
       const [expressResponse, serverlessResponse] = await Promise.all([
         callExpress(baseUrl, testCase),
         callServerless(testCase),
-      ]);
+      ])
 
       assert.strictEqual(
         serverlessResponse.status,
         expressResponse.status,
         `status code diverged for ${testCase.name}: Express = ${expressResponse.status}, serverless = ${serverlessResponse.status}`,
-      );
+      )
       const comparableBody = (body: unknown) => {
-        if (!body || typeof body !== 'object') return body;
-        const values = body as Record<string, unknown>;
-        return Object.fromEntries(
-          testCase.compareFields.map((field) => [field, values[field]]),
-        );
-      };
+        if (!body || typeof body !== 'object') return body
+        const values = body as Record<string, unknown>
+        return Object.fromEntries(testCase.compareFields.map((field) => [field, values[field]]))
+      }
       assert.deepStrictEqual(
         comparableBody(serverlessResponse.body),
         comparableBody(expressResponse.body),
         `response body diverged for ${testCase.name}`,
-      );
-    });
+      )
+    })
   }
-});
+})

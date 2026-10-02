@@ -1,7 +1,7 @@
 import React from 'react'
 
 export interface ImageResult {
-  id: string| number
+  id: string | number
   thumbnailUrl: string
   title?: string
   width?: number
@@ -43,16 +43,16 @@ const imageStyles: React.CSSProperties = {
  * The animation is defined in the shared stylesheet via the `skeleton` class.
  */
 function SkeletonCell() {
-  return (
-    <div
-      className="skeleton"
-      style={{ ...cellStyles }}
-      aria-hidden="true"
-    />
-  )
+  return <div className="skeleton" style={{ ...cellStyles }} aria-hidden="true" />
 }
 
-function ImageCell({ result, onSelect }: { result: ImageResult; onSelect?: (r: ImageResult) => void }) {
+function ImageCell({
+  result,
+  onSelect,
+}: {
+  result: ImageResult
+  onSelect?: (r: ImageResult) => void
+}) {
   const [loaded, setLoaded] = React.useState(false)
   const [imageFailed, setImageFailed] = React.useState(false)
 
@@ -86,8 +86,8 @@ function ImageCell({ result, onSelect }: { result: ImageResult; onSelect?: (r: I
         referrerPolicy="no-referrer"
         onLoad={() => setLoaded(true)}
         onError={() => {
-          setImageFailed(true);
-          setLoaded(true);
+          setImageFailed(true)
+          setLoaded(true)
         }}
         style={{
           ...imageStyles,

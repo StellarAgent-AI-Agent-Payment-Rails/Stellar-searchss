@@ -1,5 +1,3 @@
-
-
 import crypto from 'node:crypto'
 import express, { Request, Response } from 'express'
 import compression from 'compression'
@@ -23,16 +21,11 @@ import { HTTPFacilitatorClient } from '@x402/core/server'
 import logger from './logger'
 import { warnOnMissingFields } from './serperSchema'
 import { fetchPageText, UrlSummaryError } from './urlSummary'
-import {
-  STELLAR_NETWORK,
-  HORIZON_URL,
-  AMOUNT_USDC,
-  AMOUNT_STROOPS
-} from '../shared/constants.js'
+import { STELLAR_NETWORK, HORIZON_URL, AMOUNT_USDC, AMOUNT_STROOPS } from '../shared/constants.js'
 
 dotenv.config()
 
-const app  = express()
+const app = express()
 const PORT = process.env.PORT || 3001
 
 // ─── In-memory stats ──────────────────────────────────────────────────────
@@ -48,10 +41,10 @@ const stats = {
 // ─── In-memory receipts ───────────────────────────────────────────────────
 export interface Receipt {
   id: string
-  timestamp: string      // ISO-8601
+  timestamp: string // ISO-8601
   type: 'search' | 'images' | 'news'
   query: string
-  amountUsdc: string     // e.g. "0.001"
+  amountUsdc: string // e.g. "0.001"
   currency: 'USDC'
   network: string
   txHash: string | null
@@ -93,14 +86,14 @@ const MAX_SUGGESTION_LENGTH = 120
 
 // ─── Config ───────────────────────────────────────────────────────────────
 const RECEIVING_ADDRESS = process.env.STELLAR_RECEIVING_ADDRESS!
-const FACILITATOR_URL   = process.env.FACILITATOR_URL   || 'https://www.x402.org/facilitator'
-const NETWORK           = STELLAR_NETWORK as 'stellar:testnet' | 'stellar:mainnet'
-const SERPER_API_KEY    = process.env.SERPER_API_KEY!
-const GROQ_API_KEY      = process.env.GROQ_API_KEY!
+const FACILITATOR_URL = process.env.FACILITATOR_URL || 'https://www.x402.org/facilitator'
+const NETWORK = STELLAR_NETWORK as 'stellar:testnet' | 'stellar:mainnet'
+const SERPER_API_KEY = process.env.SERPER_API_KEY!
+const GROQ_API_KEY = process.env.GROQ_API_KEY!
 
 if (!RECEIVING_ADDRESS) console.warn('⚠  STELLAR_RECEIVING_ADDRESS not set')
-if (!SERPER_API_KEY)    console.warn('⚠  SERPER_API_KEY not set')
-if (!GROQ_API_KEY)      console.warn('⚠  GROQ_API_KEY not set')
+if (!SERPER_API_KEY) console.warn('⚠  SERPER_API_KEY not set')
+if (!GROQ_API_KEY) console.warn('⚠  GROQ_API_KEY not set')
 
 // ─── Banner helpers ───────────────────────────────────────────────────────
 // Truncate a Stellar address for display, matching the UI's truncateAddress
@@ -123,15 +116,20 @@ const groq = new Groq({ apiKey: GROQ_API_KEY })
 
 // ─── Middleware ───────────────────────────────────────────────────────────
 app.use(cors(buildCorsOptions()))
-app.use(compression({
-  // SSE must remain uncompressed so each event is delivered immediately.
-  filter: (req, res) => {
-    if (req.path === '/ai/chat' || res.getHeader('Content-Type')?.toString().includes('text/event-stream')) {
-      return false
-    }
-    return compression.filter(req, res)
-  },
-}))
+app.use(
+  compression({
+    // SSE must remain uncompressed so each event is delivered immediately.
+    filter: (req, res) => {
+      if (
+        req.path === '/ai/chat' ||
+        res.getHeader('Content-Type')?.toString().includes('text/event-stream')
+      ) {
+        return false
+      }
+      return compression.filter(req, res)
+    },
+  }),
+)
 app.use(express.json())
 
 // ─── Content Security Policy ─────────────────────────────────────────────
@@ -142,10 +140,10 @@ app.use(express.json())
 //   - Groq API               — AI chat (server-side only, but kept for safety)
 // Inline styles are disallowed; the design must move styles into stylesheets.
 const CSP_DIRECTIVES = {
-  defaultSrc:     ["'self'"],
-  scriptSrc:      ["'self'"],
-  styleSrc:       ["'self'"],
-  imgSrc:         [
+  defaultSrc: ["'self'"],
+  scriptSrc: ["'self'"],
+  styleSrc: ["'self'"],
+  imgSrc: [
     "'self'",
     'data:',
     'https://*.serper.dev',
@@ -153,17 +151,12 @@ const CSP_DIRECTIVES = {
     'https://*.gstatic.com',
     'https://*.ggpht.com',
   ],
-  connectSrc:     [
-    "'self'",
-    HORIZON_URL,
-    'https://*.serper.dev',
-    'https://api.groq.com',
-  ],
-  fontSrc:        ["'self'", 'data:'],
-  objectSrc:      ["'none'"],
-  baseUri:        ["'self'"],
+  connectSrc: ["'self'", HORIZON_URL, 'https://*.serper.dev', 'https://api.groq.com'],
+  fontSrc: ["'self'", 'data:'],
+  objectSrc: ["'none'"],
+  baseUri: ["'self'"],
   frameAncestors: ["'none'"],
-  formAction:     ["'self'"],
+  formAction: ["'self'"],
   upgradeInsecureRequests: [],
 }
 
@@ -191,13 +184,15 @@ const freeRouteLimiter = createRateLimiter({
 // ─── x402 payment guard on /search ───────────────────────────────────────
 // paymentMiddlewareFromConfig is the recommended API per official Stellar docs.
 // It uses the Coinbase public facilitator (no API key needed for testnet).
-const x402Accepts = [{
-  scheme:  'exact',
-  price:   parseFloat(AMOUNT_USDC),
-  amount:  AMOUNT_STROOPS,
-  network: NETWORK,
-  payTo:   RECEIVING_ADDRESS,
-}]
+const x402Accepts = [
+  {
+    scheme: 'exact',
+    price: parseFloat(AMOUNT_USDC),
+    amount: AMOUNT_STROOPS,
+    network: NETWORK,
+    payTo: RECEIVING_ADDRESS,
+  },
+]
 
 const x402Routes = {
   'GET /search': {
@@ -222,24 +217,24 @@ const schemes = [{ network: NETWORK, server: new ExactStellarScheme() }]
 // ─── Payment Logging Middleware ──────────────────────────────────────────
 app.use((req, res, next) => {
   if (req.path === '/search') {
-    const { q } = req.query as Record<string, string>;
-    const truncatedQ = q ? String(q).substring(0, 50) : '';
+    const { q } = req.query as Record<string, string>
+    const truncatedQ = q ? String(q).substring(0, 50) : ''
 
     res.on('finish', () => {
-      let paymentStatus = 'error';
-      if (res.statusCode === 200) paymentStatus = 'paid';
-      else if (res.statusCode === 402) paymentStatus = '402';
+      let paymentStatus = 'error'
+      if (res.statusCode === 200) paymentStatus = 'paid'
+      else if (res.statusCode === 402) paymentStatus = '402'
 
       logger.info('Payment attempt', {
         timestamp: new Date().toISOString(),
         ip: req.ip,
         query: truncatedQ,
         paymentStatus: paymentStatus,
-      });
-    });
+      })
+    })
   }
-  next();
-});
+  next()
+})
 
 app.use(paymentMiddlewareFromConfig(x402Routes, facilitatorClient, schemes))
 
@@ -302,7 +297,11 @@ app.get('/search', async (req: Request, res: Response) => {
 
   const t0 = Date.now()
 
-  const cacheKey = getCacheKey('search', cleanQ, { count, freshness, suggestions: req.query.suggestions as string })
+  const cacheKey = getCacheKey('search', cleanQ, {
+    count,
+    freshness,
+    suggestions: req.query.suggestions as string,
+  })
   const cached = queryCache.get(cacheKey)
   if (cached && Date.now() - cached.timestamp < CACHE_TTL_MS) {
     stats.cacheHits++
@@ -324,9 +323,9 @@ app.get('/search', async (req: Request, res: Response) => {
     // Add freshness filter if provided (Serper supports date filters)
     if (freshness) {
       const dateFilters: Record<string, string> = {
-        'pd': 'qdr:d',  // past day
-        'pw': 'qdr:w',  // past week
-        'pm': 'qdr:m',  // past month
+        pd: 'qdr:d', // past day
+        pw: 'qdr:w', // past week
+        pm: 'qdr:m', // past month
       }
       if (dateFilters[freshness]) {
         requestBody.tbs = dateFilters[freshness]
@@ -348,7 +347,7 @@ app.get('/search', async (req: Request, res: Response) => {
       return res.status(502).json({ error: `Serper.dev API error: ${serperRes.status}` })
     }
 
-const data: any = await serperRes.json()
+    const data: any = await serperRes.json()
     warnOnMissingFields('search', data, ['organic'])
     const latencyMs = Date.now() - t0
 
@@ -363,7 +362,13 @@ const data: any = await serperRes.json()
       title: r.title || 'No title',
       url: r.link,
       description: r.snippet || '',
-      source: (() => { try { return new URL(r.link).hostname.replace('www.', '') } catch { return r.link } })(),
+      source: (() => {
+        try {
+          return new URL(r.link).hostname.replace('www.', '')
+        } catch {
+          return r.link
+        }
+      })(),
       relevanceScore: Math.max(0.5, 1 - i * 0.06),
       publishedAt: r.date || undefined,
     }))
@@ -418,7 +423,8 @@ app.get('/suggestions', async (req: Request, res: Response) => {
       messages: [
         {
           role: 'system',
-          content: 'You are a search assistant. Given a query, return exactly 3 related search queries the user might want to explore next. Output only a JSON array of 3 strings, no explanation.',
+          content:
+            'You are a search assistant. Given a query, return exactly 3 related search queries the user might want to explore next. Output only a JSON array of 3 strings, no explanation.',
         },
         {
           role: 'user',
@@ -473,9 +479,9 @@ app.get('/images', async (req: Request, res: Response) => {
     // Add freshness filter if provided (Serper supports date filters)
     if (freshness) {
       const dateFilters: Record<string, string> = {
-        'pd': 'qdr:d',  // past day
-        'pw': 'qdr:w',  // past week
-        'pm': 'qdr:m',  // past month
+        pd: 'qdr:d', // past day
+        pw: 'qdr:w', // past week
+        pm: 'qdr:m', // past month
       }
       if (dateFilters[freshness]) {
         requestBody.tbs = dateFilters[freshness]
@@ -497,7 +503,7 @@ app.get('/images', async (req: Request, res: Response) => {
       return res.status(502).json({ error: `Serper.dev API error: ${serperRes.status}` })
     }
 
-const data: any = await serperRes.json()
+    const data: any = await serperRes.json()
     warnOnMissingFields('images', data, ['images'])
     const latencyMs = Date.now() - t0
 
@@ -506,14 +512,26 @@ const data: any = await serperRes.json()
     stats.latencies.push(latencyMs)
     if (stats.latencies.length > 200) stats.latencies.shift()
 
-    warnOnMissingFields('images.images', data.images, ['title', 'imageUrl', 'link', 'imageWidth', 'imageHeight'])
+    warnOnMissingFields('images.images', data.images, [
+      'title',
+      'imageUrl',
+      'link',
+      'imageWidth',
+      'imageHeight',
+    ])
     const results = (data.images || []).map((r: any, i: number) => ({
       id: String(i + 1),
       title: r.title || 'No title',
       imageUrl: r.imageUrl,
       thumbnailUrl: r.thumbnailUrl || r.imageUrl,
       sourceUrl: r.link,
-      source: (() => { try { return new URL(r.link).hostname.replace('www.', '') } catch { return r.link } })(),
+      source: (() => {
+        try {
+          return new URL(r.link).hostname.replace('www.', '')
+        } catch {
+          return r.link
+        }
+      })(),
       width: r.imageWidth,
       height: r.imageHeight,
     }))
@@ -583,9 +601,9 @@ app.get('/news', async (req: Request, res: Response) => {
 
     if (freshness) {
       const dateFilters: Record<string, string> = {
-        'pd': 'qdr:d',
-        'pw': 'qdr:w',
-        'pm': 'qdr:m',
+        pd: 'qdr:d',
+        pw: 'qdr:w',
+        pm: 'qdr:m',
       }
       if (dateFilters[freshness]) {
         requestBody.tbs = dateFilters[freshness]
@@ -607,7 +625,7 @@ app.get('/news', async (req: Request, res: Response) => {
       return res.status(502).json({ error: `Serper.dev API error: ${serperRes.status}` })
     }
 
-const data: any = await serperRes.json()
+    const data: any = await serperRes.json()
     warnOnMissingFields('news', data, ['news'])
     const latencyMs = Date.now() - t0
 
@@ -622,7 +640,15 @@ const data: any = await serperRes.json()
       title: r.title || 'No title',
       url: r.link,
       snippet: r.snippet || '',
-      source: r.source || (() => { try { return new URL(r.link).hostname.replace('www.', '') } catch { return r.link } })(),
+      source:
+        r.source ||
+        (() => {
+          try {
+            return new URL(r.link).hostname.replace('www.', '')
+          } catch {
+            return r.link
+          }
+        })(),
       publishedAt: r.date || undefined,
       imageUrl: r.imageUrl || undefined,
     }))
@@ -675,8 +701,7 @@ app.post('/ai/chat', freeRouteLimiter, async (req: Request, res: Response) => {
   }
 
   const wantsStream =
-    (req.headers.accept || '').includes('text/event-stream') ||
-    req.query.stream === '1'
+    (req.headers.accept || '').includes('text/event-stream') || req.query.stream === '1'
 
   const groqMessages = [
     {
@@ -692,7 +717,7 @@ app.post('/ai/chat', freeRouteLimiter, async (req: Request, res: Response) => {
       const completion = await groq.chat.completions.create({
         model: 'qwen/qwen3.8-27b',
         messages: groqMessages,
-        max_tokens:  512,
+        max_tokens: 512,
         temperature: 0.7,
       })
 
@@ -732,7 +757,7 @@ app.post('/ai/chat', freeRouteLimiter, async (req: Request, res: Response) => {
       {
         model: 'qwen/qwen3.8-27b',
         messages: groqMessages,
-        max_tokens:  512,
+        max_tokens: 512,
         temperature: 0.7,
         stream: true,
       },
@@ -765,7 +790,11 @@ app.post('/summarize-url', freeRouteLimiter, async (req: Request, res: Response)
   let task = 'Summarise the page in a few short paragraphs, then list the key points.'
   if (instruction !== undefined) {
     if (typeof instruction !== 'string' || instruction.length > MAX_INSTRUCTION_LENGTH) {
-      return res.status(400).json({ error: `instruction must be a string of at most ${MAX_INSTRUCTION_LENGTH} characters` })
+      return res
+        .status(400)
+        .json({
+          error: `instruction must be a string of at most ${MAX_INSTRUCTION_LENGTH} characters`,
+        })
     }
     const clean = instruction.replace(/[\x00-\x1F\x7F]/g, ' ').trim()
     if (clean) task = clean
@@ -793,7 +822,9 @@ app.post('/summarize-url', freeRouteLimiter, async (req: Request, res: Response)
             '<page>',
             page.text,
             '</page>',
-          ].filter((line, i) => line !== '' || i === 3).join('\n'),
+          ]
+            .filter((line, i) => line !== '' || i === 3)
+            .join('\n'),
         },
       ],
       max_tokens: 600,
@@ -851,9 +882,7 @@ app.get('/receipts', (req: Request, res: Response) => {
     filtered = filtered.slice(0, n)
   }
 
-  const totalSpentUsdc = filtered
-    .reduce((sum, r) => sum + parseFloat(r.amountUsdc), 0)
-    .toFixed(6)
+  const totalSpentUsdc = filtered.reduce((sum, r) => sum + parseFloat(r.amountUsdc), 0).toFixed(6)
 
   return res.json({
     receipts: filtered,
@@ -870,22 +899,24 @@ app.get('/health', (req: Request, res: Response) => {
     : 0
 
   const up = Math.floor((Date.now() - stats.startTime) / 1000)
-  const uptime = up < 60 ? `${up}s` : up < 3600 ? `${Math.floor(up / 60)}m` : `${Math.floor(up / 3600)}h`
+  const uptime =
+    up < 60 ? `${up}s` : up < 3600 ? `${Math.floor(up / 60)}m` : `${Math.floor(up / 3600)}h`
 
   const payload = {
-    status:                    'ok',
-    version:                   APP_VERSION,
-    network:                   NETWORK,
-    pricePerQuery:             '0.001 USDC',
-    protocol:                  'x402',
-    facilitator:               FACILITATOR_URL,
-    totalQueries:              stats.totalQueries,
-    totalUsdcSettled:          stats.totalUsdcSettled.toFixed(4),
-    avgLatencyMs:              avg,
-    cacheHitRate:              stats.totalQueries > 0 ? (stats.cacheHits / stats.totalQueries).toFixed(2) : '0.00',
+    status: 'ok',
+    version: APP_VERSION,
+    network: NETWORK,
+    pricePerQuery: '0.001 USDC',
+    protocol: 'x402',
+    facilitator: FACILITATOR_URL,
+    totalQueries: stats.totalQueries,
+    totalUsdcSettled: stats.totalUsdcSettled.toFixed(4),
+    avgLatencyMs: avg,
+    cacheHitRate:
+      stats.totalQueries > 0 ? (stats.cacheHits / stats.totalQueries).toFixed(2) : '0.00',
     uptime,
-    serperApiConfigured:       !!SERPER_API_KEY,
-    groqApiConfigured:         !!GROQ_API_KEY,
+    serperApiConfigured: !!SERPER_API_KEY,
+    groqApiConfigured: !!GROQ_API_KEY,
     receivingAddressConfigured: !!RECEIVING_ADDRESS,
   }
 
@@ -909,17 +940,17 @@ app.get('/health', (req: Request, res: Response) => {
 // ─── GET / ────────────────────────────────────────────────────────────────
 app.get('/', (_req: Request, res: Response) => {
   res.json({
-    name:        'StellarSearch',
-    version:     APP_VERSION,
+    name: 'StellarSearch',
+    version: APP_VERSION,
     description: 'Pay-per-query web search for AI agents via x402 on Stellar',
     endpoints: {
       'GET /search?q=<query>': '0.001 USDC via x402',
       'GET /images?q=<query>': '0.001 USDC via x402 — image results',
-      'GET /news?q=<query>':   '0.001 USDC via x402 — news articles',
-      'POST /ai/chat':         'Groq AI — free',
-      'POST /summarize-url':   'Fetch a public URL and summarise it with Groq — free',
-      'GET /receipts':         'List past paid-query receipts with total-spent summary',
-      'GET /health':           'Live server stats',
+      'GET /news?q=<query>': '0.001 USDC via x402 — news articles',
+      'POST /ai/chat': 'Groq AI — free',
+      'POST /summarize-url': 'Fetch a public URL and summarise it with Groq — free',
+      'GET /receipts': 'List past paid-query receipts with total-spent summary',
+      'GET /health': 'Live server stats',
     },
   })
 })
@@ -931,7 +962,7 @@ if (process.env.NODE_ENV !== 'production' && process.env.NODE_ENV !== 'test') {
     console.log(`   Network:     ${NETWORK}`)
     console.log(`   Facilitator: ${FACILITATOR_URL}`)
     console.log(`   Serper:      ${SERPER_API_KEY ? '✓' : '✗ MISSING'}`)
-    console.log(`   Groq:        ${GROQ_API_KEY  ? '✓' : '✗ MISSING'}`)
+    console.log(`   Groq:        ${GROQ_API_KEY ? '✓' : '✗ MISSING'}`)
     console.log(`   Receiving:   ${displayAddress(RECEIVING_ADDRESS)}`)
     console.log(`   ${getCorsStartupMessage()}\n`)
   })

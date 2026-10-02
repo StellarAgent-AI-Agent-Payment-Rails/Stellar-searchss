@@ -41,8 +41,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   ]
 
   const wantsStream =
-    (req.headers.accept || '').includes('text/event-stream') ||
-    req.query.stream === '1'
+    (req.headers.accept || '').includes('text/event-stream') || req.query.stream === '1'
 
   if (!wantsStream) {
     try {

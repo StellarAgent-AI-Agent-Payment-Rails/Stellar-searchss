@@ -1,10 +1,10 @@
 import { describe, it, expect, vi } from 'vitest'
-import { 
-  truncateAddress, 
-  truncateHash, 
-  explorerTxUrl, 
-  explorerAccountUrl, 
-  formatTimeAgo 
+import {
+  truncateAddress,
+  truncateHash,
+  explorerTxUrl,
+  explorerAccountUrl,
+  formatTimeAgo,
 } from './stellar'
 
 describe('stellar utilities', () => {

@@ -3,6 +3,7 @@
 This guide provides a step-by-step checklist to safely transition your Stellar-searchss application from the Stellar Testnet to Mainnet.
 
 > **⚠️ WARNING - CRITICAL RISKS**
+>
 > - **Real Money:** Mainnet operations involve real funds. Mistakes, such as transferring to the wrong address, can result in permanent financial loss.
 > - **Different Assets:** Testnet USDC is **not** the same as Mainnet USDC. You must use actual USDC on the Stellar Mainnet.
 > - **Irreversible Actions:** Blockchain transactions cannot be reversed once confirmed.
@@ -24,7 +25,7 @@ Before switching your environment variables, ensure your Mainnet accounts are fu
 
 Testnet and Mainnet rely on completely different smart contracts and RPC endpoints.
 
-- [ ] **Update `.env` Variables:** 
+- [ ] **Update `.env` Variables:**
   - Change `STELLAR_NETWORK` (or equivalent) to `mainnet`.
   - Update `RPC_URL` to point to a reliable Mainnet Soroban RPC provider.
   - Replace testnet secret keys with your secured Mainnet secret keys.

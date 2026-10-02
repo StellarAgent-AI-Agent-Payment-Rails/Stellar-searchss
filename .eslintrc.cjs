@@ -22,7 +22,10 @@ module.exports = {
   ],
   rules: {
     'react-refresh/only-export-components': 'off',
-    '@typescript-eslint/no-unused-vars': ['warn', { argsIgnorePattern: '^', varsIgnorePattern: '^' }],
+    '@typescript-eslint/no-unused-vars': [
+      'warn',
+      { argsIgnorePattern: '^', varsIgnorePattern: '^' },
+    ],
     '@typescript-eslint/no-explicit-any': 'warn',
     '@typescript-eslint/no-console': 'off',
     'no-console': 'off',
@@ -35,4 +38,4 @@ module.exports = {
       parserOptions: { sourceType: 'script' },
     },
   ],
-};
+}

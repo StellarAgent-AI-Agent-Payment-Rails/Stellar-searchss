@@ -1,6 +1,6 @@
 name: Payment flow problem
 about: Report a problem with sending, receiving or swapping payments
-labels: ["bug", "payments"]
+labels: ['bug', 'payments']
 body:
   - type: markdown
     attributes:

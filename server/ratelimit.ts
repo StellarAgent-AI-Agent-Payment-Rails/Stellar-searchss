@@ -44,8 +44,7 @@ export function createRateLimiter(options: RateLimitOptions): RateLimiter {
   const { windowMs, max } = options
   const now = options.now ?? (() => Date.now())
   const keyGenerator =
-    options.keyGenerator ??
-    ((req: Request) => req.ip || req.socket?.remoteAddress || 'unknown')
+    options.keyGenerator ?? ((req: Request) => req.ip || req.socket?.remoteAddress || 'unknown')
   const message = options.message ?? 'Too many requests, please try again later.'
 
   const buckets = new Map<string, Bucket>()

@@ -11,7 +11,7 @@
 
 StellarSearch sells a single unit of value — one web, image, or news search query — for a fixed
 on-chain price of `0.001 USDC` on the Stellar network. There is **no account, no session, and no
-API key**; the payment *is* the authentication.
+API key**; the payment _is_ the authentication.
 
 That design removes an entire class of credential-management bugs, but it inverts the usual
 failure mode. In a conventional API, the danger is a requester who cannot pay. In an x402 API, the
@@ -22,7 +22,7 @@ This document therefore exists to answer three questions precisely:
 
 1. **Where are the trust boundaries** between the client, the backend, the facilitator, and the
    Stellar network?
-2. **What is each party trusted to assert**, and what must the server verify *independently* rather
+2. **What is each party trusted to assert**, and what must the server verify _independently_ rather
    than take on faith?
 3. **Which attacks have been considered**, and for each: is it mitigated, planned, or explicitly
    accepted?
@@ -37,13 +37,13 @@ This document therefore exists to answer three questions precisely:
 
 ### How to read the risk ratings
 
-| Rating | Meaning |
-| --- | --- |
-| **Critical** | Directly yields unpaid resource delivery or loss of funds. |
-| **High** | Materially weakens payment guarantees, or leaks funds/data under realistic conditions. |
-| **Medium** | Requires a secondary condition, or degrades a control rather than removing it. |
-| **Low** | Defense-in-depth or hardening item with limited direct impact. |
-| **Accepted** | Understood, consciously not mitigated at this stage, and recorded in §6. |
+| Rating       | Meaning                                                                                |
+| ------------ | -------------------------------------------------------------------------------------- |
+| **Critical** | Directly yields unpaid resource delivery or loss of funds.                             |
+| **High**     | Materially weakens payment guarantees, or leaks funds/data under realistic conditions. |
+| **Medium**   | Requires a secondary condition, or degrades a control rather than removing it.         |
+| **Low**      | Defense-in-depth or hardening item with limited direct impact.                         |
+| **Accepted** | Understood, consciously not mitigated at this stage, and recorded in §6.               |
 
 ---
 
@@ -90,16 +90,16 @@ This document therefore exists to answer three questions precisely:
 The repository ships **two independent implementations of the paid route**, and they are not
 equivalent.
 
-| | `server/index.ts` (Express) | `api/search.ts` (Vercel) |
-| --- | --- | --- |
-| Payment enforcement | `@x402/express` middleware | **Hand-rolled** |
-| Verifies signature / settles | Yes, via facilitator | **No** |
-| Amount / asset / `payTo` check | Yes, via `deepEqual` on `accepted` | **No** |
-| CORS in production | `ALLOWED_ORIGINS` allowlist | **Hard-coded `*`** |
-| Input length cap | 256 chars (`server/index.ts:118`) | None |
+|                                | `server/index.ts` (Express)        | `api/search.ts` (Vercel) |
+| ------------------------------ | ---------------------------------- | ------------------------ |
+| Payment enforcement            | `@x402/express` middleware         | **Hand-rolled**          |
+| Verifies signature / settles   | Yes, via facilitator               | **No**                   |
+| Amount / asset / `payTo` check | Yes, via `deepEqual` on `accepted` | **No**                   |
+| CORS in production             | `ALLOWED_ORIGINS` allowlist        | **Hard-coded `*`**       |
+| Input length cap               | 256 chars (`server/index.ts:118`)  | None                     |
 
 **`api/search.ts` is not a mirror of the Express server.** It only checks that a `payment-signature`
-header is *present*; any non-empty value — including the literal string `x` — passes and the search
+header is _present_; any non-empty value — including the literal string `x` — passes and the search
 is served. This is tracked as [T-15](#t-15-serverless-route-bypasses-payment-verification-entirely)
 (Critical) and is the single most important item in this document. Until it is fixed, **the Vercel
 deployment must be considered to have no payment enforcement.**
@@ -117,7 +117,7 @@ The network path may be hostile, and `localStorage` (used for receipts in `Dashb
 is writable by any script on the origin.
 
 Everything arriving from this side is attacker-controlled input: `q`, `count`, `freshness`,
-`payment-signature`, and every header. The boundary is crossed by the client *asserting* facts about
+`payment-signature`, and every header. The boundary is crossed by the client _asserting_ facts about
 itself — notably the `accepted` block inside the payment payload, which claims "I agree to pay this
 much, to this address, in this asset, on this network." That assertion is worthless on its own and
 must be checked against server-computed values ([T-02](#t-02-amount-tampering-and-underpayment),
@@ -135,7 +135,7 @@ This is a **data-egress boundary**, not a payment boundary, but it sits inside t
 because the merchant cost is incurred here. The backend sends the user's raw query to two external
 processors and injects the top three Serper snippets into a Groq prompt
 (`server/index.ts:207-231`). Both providers are therefore inside the trust boundary for
-*confidentiality of user queries* and *integrity of returned content*, and neither is inside it for
+_confidentiality of user queries_ and _integrity of returned content_, and neither is inside it for
 payment correctness.
 
 The merchant cost is also incurred at this boundary, and — critically — **before** settlement is
@@ -185,36 +185,36 @@ finalized ledger ([T-11](#t-11-facilitator-reports-success-for-a-transaction-tha
 
 ### 4.1 What each party is trusted for
 
-| Party | Trusted for | Explicitly **not** trusted for |
-| --- | --- | --- |
-| **Client** (`src/`) | Possession of a Stellar private key, evidenced by a valid Soroban auth-entry signature. Intent to complete the payment it is shown. | Amount, asset, `payTo`, network, or any other field it echoes back. Any claim that a prior payment settled. Its own rendering of the payment requirements. |
-| **Backend** (`server/`) | Nothing externally. It is the *source of truth* for price, asset, `payTo`, and network. It owns secrets. | — |
-| **Facilitator** | `isValid` on `POST /verify`; `success` + `transaction` on `POST /settle`; `areFeesSponsored` advertised via `GET /supported`. | Response integrity beyond TLS. Its availability (see [T-08](#t-08-facilitator-unavailability-and-missing-timeouts-on-outbound-calls)). Its silence — an absent `transaction` field is a schema violation, not a success. |
-| **Stellar network** | Final settlement truth: balances, ledger ordering, auth-entry expiry (`maxLedger`), contract identity of the USDC asset. | Nothing further; it *is* the ground truth. |
-| **Serper.dev** | Accuracy of organic search results. | Integrity of snippets as untrusted text fed to an LLM ([T-21](#t-21-prompt-injection-via-search-result-snippets)). |
-| **Groq** | Model output quality. | That it treats injected snippet text as data rather than instructions. |
+| Party                   | Trusted for                                                                                                                         | Explicitly **not** trusted for                                                                                                                                                                                           |
+| ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Client** (`src/`)     | Possession of a Stellar private key, evidenced by a valid Soroban auth-entry signature. Intent to complete the payment it is shown. | Amount, asset, `payTo`, network, or any other field it echoes back. Any claim that a prior payment settled. Its own rendering of the payment requirements.                                                               |
+| **Backend** (`server/`) | Nothing externally. It is the _source of truth_ for price, asset, `payTo`, and network. It owns secrets.                            | —                                                                                                                                                                                                                        |
+| **Facilitator**         | `isValid` on `POST /verify`; `success` + `transaction` on `POST /settle`; `areFeesSponsored` advertised via `GET /supported`.       | Response integrity beyond TLS. Its availability (see [T-08](#t-08-facilitator-unavailability-and-missing-timeouts-on-outbound-calls)). Its silence — an absent `transaction` field is a schema violation, not a success. |
+| **Stellar network**     | Final settlement truth: balances, ledger ordering, auth-entry expiry (`maxLedger`), contract identity of the USDC asset.            | Nothing further; it _is_ the ground truth.                                                                                                                                                                               |
+| **Serper.dev**          | Accuracy of organic search results.                                                                                                 | Integrity of snippets as untrusted text fed to an LLM ([T-21](#t-21-prompt-injection-via-search-result-snippets)).                                                                                                       |
+| **Groq**                | Model output quality.                                                                                                               | That it treats injected snippet text as data rather than instructions.                                                                                                                                                   |
 
 ### 4.2 What the server must verify independently
 
 These are the invariants a payment server owes its merchant. Each row states the check, where it
 currently happens, and the required strength.
 
-| # | Check | Current implementation | Required |
-| --- | --- | --- | --- |
-| V-1 | **Requirement match** — client `accepted` deep-equals the server-computed requirement (scheme, network, amount, asset, `payTo`, `maxTimeoutSeconds`, `extra`) | `x402ResourceServer.findMatchingRequirements` → `deepEqual`, `@x402/core/dist/esm/server/index.mjs:632-647` | **Mandatory, server-side.** Never compare the client's copy against a copy the client also sent. |
-| V-2 | **Signature validity** of the Soroban auth entry | Delegated: `facilitatorClient.verify` → `POST /verify` | **Mandatory**, and the facilitator must be authenticated ([T-07](#t-07-compromised-or-intercepted-facilitator-accepts-forged-payments)). |
-| V-3 | **Amount is exactly the quoted price**, in the quoted asset, on the quoted network | Derived from `parsePrice(0.001)` → `convertToTokenAmount` → `"10000"` stroops, `@x402/stellar/dist/esm/exact/server/index.mjs:37-106`; enforced by V-1 | **Mandatory.** Price is owned by the server, never by the client. |
-| V-4 | **Destination is our own receiving address** | `payTo: RECEIVING_ADDRESS` from `STELLAR_RECEIVING_ADDRESS` (`server/index.ts:46,68`) | **Mandatory.** A mismatch must never be treated as "close enough." |
-| V-5 | **Asset is the expected USDC Soroban contract** | Implicit via V-1; address sourced from `@x402/stellar` internals, *not* from `src/lib/constants.ts` | **Mandatory and explicit.** See the address disagreement in [T-25](#t-25-usdc-contract-address-disagreement-between-implementations). |
-| V-6 | **Non-replay** — a given auth entry / sequence is consumed at most once | Soroban account sequence + the facilitator; **no server-side nonce cache exists** | **Mandatory.** Currently implicit only ([T-01](#t-01-replay-of-a-captured-payment-header)). |
-| V-7 | **Temporal validity** — auth entry not expired, bounded by `maxLedger` | Client computes `maxLedger = currentLedger + ceil(maxTimeoutSeconds / ledgerCloseTime)`; server sets `maxTimeoutSeconds` (default 300) | **Mandatory**, enforced by the facilitator against on-chain state. |
-| V-8 | **Settlement actually happened** — a transaction reached a finalized ledger with the expected recipient and amount | Trusted from `settle` response: `success` + `transaction` | **Mandatory.** The server must confirm, at minimum, that `transaction` is a non-empty well-formed hash ([T-11](#t-11-facilitator-reports-success-for-a-transaction-that-never-settled)). |
-| V-9 | **Resource delivered only after V-8** | Buffered by `@x402/express` — the handler runs, output is buffered, settlement is attempted, then the buffer is flushed (`@x402/express/dist/esm/index.mjs:197-316`) | **Mandatory.** Buffers are flushed *before* settlement only when `statusCode >= 400` — i.e. error responses are free ([T-20](#t-20-free-service-on-upstream-error-paths)). |
-| V-10 | **Header well-formedness** | `decodePaymentSignatureHeader`: base64 regex → decode → `JSON.parse`. Failures `return null` and are treated as unpaid | **Mandatory.** Fail-closed to 402. Currently correct. |
-| V-11 | **Request sanity** — bounded query length, control-char stripping, clamped `count` | `validateQuery()` (`server/index.ts:123-139`), `MAX_QUERY_LENGTH = 256`, `count` clamped to ≤ 20 | **Mandatory** on both implementations; **absent** in `api/search.ts` ([T-15](#t-15-serverless-route-bypasses-payment-verification-entirely)). |
-| V-12 | **Settlement amount cannot be overridden by the client** | `Settlement-Overrides` response header supported by the library; **not used here** | **Mandatory.** Must remain unset; a client-supplied override would let a payer dictate the amount ([T-12](#t-12-settlement-overrides-header-abuse)). |
+| #    | Check                                                                                                                                                         | Current implementation                                                                                                                                               | Required                                                                                                                                                                                 |
+| ---- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| V-1  | **Requirement match** — client `accepted` deep-equals the server-computed requirement (scheme, network, amount, asset, `payTo`, `maxTimeoutSeconds`, `extra`) | `x402ResourceServer.findMatchingRequirements` → `deepEqual`, `@x402/core/dist/esm/server/index.mjs:632-647`                                                          | **Mandatory, server-side.** Never compare the client's copy against a copy the client also sent.                                                                                         |
+| V-2  | **Signature validity** of the Soroban auth entry                                                                                                              | Delegated: `facilitatorClient.verify` → `POST /verify`                                                                                                               | **Mandatory**, and the facilitator must be authenticated ([T-07](#t-07-compromised-or-intercepted-facilitator-accepts-forged-payments)).                                                 |
+| V-3  | **Amount is exactly the quoted price**, in the quoted asset, on the quoted network                                                                            | Derived from `parsePrice(0.001)` → `convertToTokenAmount` → `"10000"` stroops, `@x402/stellar/dist/esm/exact/server/index.mjs:37-106`; enforced by V-1               | **Mandatory.** Price is owned by the server, never by the client.                                                                                                                        |
+| V-4  | **Destination is our own receiving address**                                                                                                                  | `payTo: RECEIVING_ADDRESS` from `STELLAR_RECEIVING_ADDRESS` (`server/index.ts:46,68`)                                                                                | **Mandatory.** A mismatch must never be treated as "close enough."                                                                                                                       |
+| V-5  | **Asset is the expected USDC Soroban contract**                                                                                                               | Implicit via V-1; address sourced from `@x402/stellar` internals, _not_ from `src/lib/constants.ts`                                                                  | **Mandatory and explicit.** See the address disagreement in [T-25](#t-25-usdc-contract-address-disagreement-between-implementations).                                                    |
+| V-6  | **Non-replay** — a given auth entry / sequence is consumed at most once                                                                                       | Soroban account sequence + the facilitator; **no server-side nonce cache exists**                                                                                    | **Mandatory.** Currently implicit only ([T-01](#t-01-replay-of-a-captured-payment-header)).                                                                                              |
+| V-7  | **Temporal validity** — auth entry not expired, bounded by `maxLedger`                                                                                        | Client computes `maxLedger = currentLedger + ceil(maxTimeoutSeconds / ledgerCloseTime)`; server sets `maxTimeoutSeconds` (default 300)                               | **Mandatory**, enforced by the facilitator against on-chain state.                                                                                                                       |
+| V-8  | **Settlement actually happened** — a transaction reached a finalized ledger with the expected recipient and amount                                            | Trusted from `settle` response: `success` + `transaction`                                                                                                            | **Mandatory.** The server must confirm, at minimum, that `transaction` is a non-empty well-formed hash ([T-11](#t-11-facilitator-reports-success-for-a-transaction-that-never-settled)). |
+| V-9  | **Resource delivered only after V-8**                                                                                                                         | Buffered by `@x402/express` — the handler runs, output is buffered, settlement is attempted, then the buffer is flushed (`@x402/express/dist/esm/index.mjs:197-316`) | **Mandatory.** Buffers are flushed _before_ settlement only when `statusCode >= 400` — i.e. error responses are free ([T-20](#t-20-free-service-on-upstream-error-paths)).               |
+| V-10 | **Header well-formedness**                                                                                                                                    | `decodePaymentSignatureHeader`: base64 regex → decode → `JSON.parse`. Failures `return null` and are treated as unpaid                                               | **Mandatory.** Fail-closed to 402. Currently correct.                                                                                                                                    |
+| V-11 | **Request sanity** — bounded query length, control-char stripping, clamped `count`                                                                            | `validateQuery()` (`server/index.ts:123-139`), `MAX_QUERY_LENGTH = 256`, `count` clamped to ≤ 20                                                                     | **Mandatory** on both implementations; **absent** in `api/search.ts` ([T-15](#t-15-serverless-route-bypasses-payment-verification-entirely)).                                            |
+| V-12 | **Settlement amount cannot be overridden by the client**                                                                                                      | `Settlement-Overrides` response header supported by the library; **not used here**                                                                                   | **Mandatory.** Must remain unset; a client-supplied override would let a payer dictate the amount ([T-12](#t-12-settlement-overrides-header-abuse)).                                     |
 
-> **Design note.** V-1 through V-8 are implemented *for* us by `@x402/core` and `@x402/stellar`
+> **Design note.** V-1 through V-8 are implemented _for_ us by `@x402/core` and `@x402/stellar`
 > (v2.9.0) plus the remote facilitator. This document records the guarantees we are relying on so
 > that a dependency bump is treated as a security change. The `amount: AMOUNT_STROOPS` field at
 > `server/index.ts:69` is currently **ignored** — `parsePrice` honours `amount` only when `price` is
@@ -227,35 +227,35 @@ currently happens, and the required strength.
 
 Ratings describe the state of the code on the reviewed commit, not the theoretical severity.
 
-| ID | Attack | Boundary | Rating | Status |
-| --- | --- | --- | --- | --- |
-| [T-01](#t-01-replay-of-a-captured-payment-header) | Replay of a captured payment header | TB-1 | High | Mitigated by facilitator + Soroban sequence; no server-side nonce cache |
-| [T-02](#t-02-amount-tampering-and-underpayment) | Amount tampering / underpayment | TB-1 | High | **Mitigated** (V-1) |
-| [T-03](#t-03-asset-substitution) | Asset substitution | TB-1 | High | **Mitigated** (V-1), implicit only |
-| [T-04](#t-04-payto-redirection) | `payTo` redirection | TB-1 | High | **Mitigated** (V-1, V-4) |
-| [T-05](#t-05-network-confusion-between-testnet-and-mainnet) | Testnet/mainnet confusion | TB-1, TB-3 | Medium | Partially mitigated |
-| [T-06](#t-06-malformed-or-garbage-payment-header) | Malformed / garbage payment header | TB-1 | Low | **Mitigated** (V-10, fail-closed) |
-| [T-07](#t-07-compromised-or-intercepted-facilitator-accepts-forged-payments) | Compromised or MITM'd facilitator | TB-3 | **Critical** | **Accepted** (§6) |
-| [T-08](#t-08-facilitator-unavailability-and-missing-timeouts-on-outbound-calls) | Facilitator unavailability, no timeout | TB-3 | Medium | Unmitigated |
-| [T-09](#t-09-race-condition-on-concurrent-requests) | Race condition on concurrent requests | TB-1, TB-3 | Medium | Unmitigated |
-| [T-10](#t-10-post-settlement-failure-where-service-is-delivered-and-funds-are-lost) | Post-settlement failure | TB-3, TB-4 | Medium | Unmitigated |
-| [T-11](#t-11-facilitator-reports-success-for-a-transaction-that-never-settled) | Settlement reported but not on-chain | TB-3 | **Critical** | **Accepted** (§6) |
-| [T-12](#t-12-settlement-overrides-header-abuse) | `Settlement-Overrides` abuse | TB-1 | Low | Mitigated (unused) |
-| [T-13](#t-13-nonce-and-sequence-manipulation) | Nonce / sequence manipulation | TB-1 | High | Mitigated by Soroban + facilitator |
-| [T-14](#t-14-expired-or-out-of-window-auth-entry) | Expired auth entry | TB-1, TB-3 | Low | **Mitigated** (V-7) |
-| [T-15](#t-15-serverless-route-bypasses-payment-verification-entirely) | Serverless route bypasses payment | TB-2 | **Critical** | **Unmitigated** |
-| [T-16](#t-16-wildcard-cors-on-the-serverless-route) | Wildcard CORS on serverless route | TB-2 | High | Unmitigated |
-| [T-17](#t-17-unauthenticated-resource-drain-and-no-rate-limiting) | Unauthenticated resource drain | TB-2 | High | Unmitigated |
-| [T-18](#t-18-mcp-server-wallet-abuse) | MCP server wallet abuse | TB-2 | Medium | **Accepted** (§6) |
-| [T-19](#t-19-secret-exposure) | Secret exposure | TB-2 | High | Partially mitigated |
-| [T-20](#t-20-free-service-on-upstream-error-paths) | Free service on error paths | TB-2 | Medium | Mitigated by design (fail-cheap) |
-| [T-21](#t-21-prompt-injection-via-search-result-snippets) | Prompt injection via snippets | TB-2 | Medium | Mitigated by system prompt |
-| [T-22](#t-22-upstream-cost-incurred-before-settlement-is-attempted) | Cost before settlement | TB-2, TB-3 | Medium | **Accepted** (§6) |
-| [T-23](#t-23-front-running-and-mempool-extraction) | Front-running | TB-4 | Info | Not applicable |
-| [T-24](#t-24-user-wallet-compromise-and-key-theft) | User wallet compromise | TB-1 | High | Out of scope (Freighter) |
-| [T-25](#t-25-usdc-contract-address-disagreement-between-implementations) | USDC contract address disagreement | TB-1 | Medium | Unmitigated |
-| [T-26](#t-26-client-records-a-false-receipt) | False receipt recorded | TB-1 | Low | Unmitigated |
-| [T-27](#t-27-resource-exhaustion-on-unpaid-free-endpoints) | Resource exhaustion on free endpoints | TB-2 | High | Unmitigated |
+| ID                                                                                  | Attack                                 | Boundary   | Rating       | Status                                                                  |
+| ----------------------------------------------------------------------------------- | -------------------------------------- | ---------- | ------------ | ----------------------------------------------------------------------- |
+| [T-01](#t-01-replay-of-a-captured-payment-header)                                   | Replay of a captured payment header    | TB-1       | High         | Mitigated by facilitator + Soroban sequence; no server-side nonce cache |
+| [T-02](#t-02-amount-tampering-and-underpayment)                                     | Amount tampering / underpayment        | TB-1       | High         | **Mitigated** (V-1)                                                     |
+| [T-03](#t-03-asset-substitution)                                                    | Asset substitution                     | TB-1       | High         | **Mitigated** (V-1), implicit only                                      |
+| [T-04](#t-04-payto-redirection)                                                     | `payTo` redirection                    | TB-1       | High         | **Mitigated** (V-1, V-4)                                                |
+| [T-05](#t-05-network-confusion-between-testnet-and-mainnet)                         | Testnet/mainnet confusion              | TB-1, TB-3 | Medium       | Partially mitigated                                                     |
+| [T-06](#t-06-malformed-or-garbage-payment-header)                                   | Malformed / garbage payment header     | TB-1       | Low          | **Mitigated** (V-10, fail-closed)                                       |
+| [T-07](#t-07-compromised-or-intercepted-facilitator-accepts-forged-payments)        | Compromised or MITM'd facilitator      | TB-3       | **Critical** | **Accepted** (§6)                                                       |
+| [T-08](#t-08-facilitator-unavailability-and-missing-timeouts-on-outbound-calls)     | Facilitator unavailability, no timeout | TB-3       | Medium       | Unmitigated                                                             |
+| [T-09](#t-09-race-condition-on-concurrent-requests)                                 | Race condition on concurrent requests  | TB-1, TB-3 | Medium       | Unmitigated                                                             |
+| [T-10](#t-10-post-settlement-failure-where-service-is-delivered-and-funds-are-lost) | Post-settlement failure                | TB-3, TB-4 | Medium       | Unmitigated                                                             |
+| [T-11](#t-11-facilitator-reports-success-for-a-transaction-that-never-settled)      | Settlement reported but not on-chain   | TB-3       | **Critical** | **Accepted** (§6)                                                       |
+| [T-12](#t-12-settlement-overrides-header-abuse)                                     | `Settlement-Overrides` abuse           | TB-1       | Low          | Mitigated (unused)                                                      |
+| [T-13](#t-13-nonce-and-sequence-manipulation)                                       | Nonce / sequence manipulation          | TB-1       | High         | Mitigated by Soroban + facilitator                                      |
+| [T-14](#t-14-expired-or-out-of-window-auth-entry)                                   | Expired auth entry                     | TB-1, TB-3 | Low          | **Mitigated** (V-7)                                                     |
+| [T-15](#t-15-serverless-route-bypasses-payment-verification-entirely)               | Serverless route bypasses payment      | TB-2       | **Critical** | **Unmitigated**                                                         |
+| [T-16](#t-16-wildcard-cors-on-the-serverless-route)                                 | Wildcard CORS on serverless route      | TB-2       | High         | Unmitigated                                                             |
+| [T-17](#t-17-unauthenticated-resource-drain-and-no-rate-limiting)                   | Unauthenticated resource drain         | TB-2       | High         | Unmitigated                                                             |
+| [T-18](#t-18-mcp-server-wallet-abuse)                                               | MCP server wallet abuse                | TB-2       | Medium       | **Accepted** (§6)                                                       |
+| [T-19](#t-19-secret-exposure)                                                       | Secret exposure                        | TB-2       | High         | Partially mitigated                                                     |
+| [T-20](#t-20-free-service-on-upstream-error-paths)                                  | Free service on error paths            | TB-2       | Medium       | Mitigated by design (fail-cheap)                                        |
+| [T-21](#t-21-prompt-injection-via-search-result-snippets)                           | Prompt injection via snippets          | TB-2       | Medium       | Mitigated by system prompt                                              |
+| [T-22](#t-22-upstream-cost-incurred-before-settlement-is-attempted)                 | Cost before settlement                 | TB-2, TB-3 | Medium       | **Accepted** (§6)                                                       |
+| [T-23](#t-23-front-running-and-mempool-extraction)                                  | Front-running                          | TB-4       | Info         | Not applicable                                                          |
+| [T-24](#t-24-user-wallet-compromise-and-key-theft)                                  | User wallet compromise                 | TB-1       | High         | Out of scope (Freighter)                                                |
+| [T-25](#t-25-usdc-contract-address-disagreement-between-implementations)            | USDC contract address disagreement     | TB-1       | Medium       | Unmitigated                                                             |
+| [T-26](#t-26-client-records-a-false-receipt)                                        | False receipt recorded                 | TB-1       | Low          | Unmitigated                                                             |
+| [T-27](#t-27-resource-exhaustion-on-unpaid-free-endpoints)                          | Resource exhaustion on free endpoints  | TB-2       | High         | Unmitigated                                                             |
 
 ---
 
@@ -266,7 +266,7 @@ browser extension, a shared machine, a HAR file, or a Referer-style leak — rep
 subsequent request. If a signed auth entry is not single-use, one 0.001 USDC payment yields unlimited
 searches.
 
-**Why it is hard here.** x402's `exact` scheme on Stellar authorizes a *transfer* via a signed
+**Why it is hard here.** x402's `exact` scheme on Stellar authorizes a _transfer_ via a signed
 Soroban auth entry. The payer account's **sequence number** is part of that signature. Replaying an
 auth entry requires re-submitting against a sequence number already consumed, which the network
 rejects, and the facilitator simulates the transaction before submitting — so a spent entry fails
@@ -300,7 +300,7 @@ network, scheme, `maxTimeoutSeconds`, or `extra` produces no match and a 402 wit
 
 **Status: mitigated.** The client's copy of the price is never trusted. Two caveats are recorded in
 §4.2: the redundant `amount` field at `server/index.ts:69` is silently ignored, and the comparison is
-exact-equality on the whole object, so any *future* addition to the requirements object (for example a
+exact-equality on the whole object, so any _future_ addition to the requirements object (for example a
 new `extra` key advertised by the facilitator) is a breaking change for every client.
 
 ---
@@ -308,7 +308,7 @@ new `extra` key advertised by the facilitator) is a breaking change for every cl
 ### T-03 Asset substitution
 
 **Attack.** The client claims agreement to pay in a worthless or attacker-controlled token that
-merely *looks* like USDC, or supplies a different `asset` contract address, thereby paying ~0 in
+merely _looks_ like USDC, or supplies a different `asset` contract address, thereby paying ~0 in
 value while satisfying the header.
 
 **Mitigation.** Covered by the same `deepEqual` as T-02: `asset` is part of the compared object and is
@@ -370,10 +370,10 @@ unhandled exception, or a fail-open path that skips the payment check.
 
 **Mitigation.** `decodePaymentSignatureHeader` validates against
 `/^[A-Za-z0-9+/]*={0,2}$/`, base64-decodes, and `JSON.parse`s. Any throw is caught and the function
-returns `null` (`@x402/core/dist/esm/chunk-JFGRL3BL.mjs:459-469`). A `null` result is treated as *no
-payment supplied*, so the request falls through to a 402. The behaviour is **fail-closed**.
+returns `null` (`@x402/core/dist/esm/chunk-JFGRL3BL.mjs:459-469`). A `null` result is treated as _no
+payment supplied_, so the request falls through to a 402. The behaviour is **fail-closed**.
 
-**Residual risk.** This fail-closed path is exactly what `api/search.ts` does *not* do — it
+**Residual risk.** This fail-closed path is exactly what `api/search.ts` does _not_ do — it
 base64-decodes defensively inside a `try/catch` whose failure is ignored, and serves the search
 anyway. See [T-15](#t-15-serverless-route-bypasses-payment-verification-entirely).
 
@@ -390,13 +390,13 @@ return `{"isValid": true}` for a forged payment and `{"success": true, "transact
 settlement that never occurred. Every request is then served for free, indefinitely, with no trace on
 the ledger.
 
-**Why this is Critical.** The facilitator is the *entire* verification and settlement authority. This
+**Why this is Critical.** The facilitator is the _entire_ verification and settlement authority. This
 repository holds no signing keys and performs no independent signature or ledger check, so there is
 nothing to catch the substitution. The trust is total.
 
 **Existing controls.**
 
-- TLS provides transport integrity and server authentication of the *hostname*.
+- TLS provides transport integrity and server authentication of the _hostname_.
 - Facilitator responses are validated against `verifyResponseSchema` and `settleResponseSchema`; a
   non-conforming response raises `FacilitatorResponseError` rather than being acted on.
 - A facilitator that errors produces HTTP 502, not a served resource.
@@ -436,7 +436,7 @@ after a short budget. Add per-IP rate limiting to bound concurrent in-flight ver
 
 ### T-09 Race condition on concurrent requests
 
-**Attack.** A client fires N simultaneous requests, all carrying the *same* signed payment header,
+**Attack.** A client fires N simultaneous requests, all carrying the _same_ signed payment header,
 hoping to slip several of them through before the sequence number is observed as consumed. This is
 the concurrency-scaled form of [T-01](#t-01-replay-of-a-captured-payment-header).
 
@@ -445,7 +445,7 @@ sequence number, and a second submission with the same sequence is rejected by c
 read-then-write window in our code to race, because we perform no payment-state read of our own.
 
 **Residual risk.** The rejection surfaces as a facilitator `isValid: false` → 402 for the losing
-requests, so correctness holds but *availability* suffers: legitimate concurrent use from a client
+requests, so correctness holds but _availability_ suffers: legitimate concurrent use from a client
 that batches searches will see spurious 402s. There is no server-side coordination to convert these
 into a clean, retryable error, and the client simply retries
 (`useSearch.ts`), which multiplies the load against T-08.
@@ -468,7 +468,7 @@ receipt, because the transaction hash was never delivered to them.
 the user, who sees a network error and reasonably assumes nothing was charged, and it is invisible to
 us, because `server/index.ts:203`, `:298`, and `:376` read `req.headers['x-payment-response']`, which
 is a **request** header and therefore always `null` at that point. The middleware emits
-`PAYMENT-RESPONSE` as a *response* header, after the handler has already returned. The intended
+`PAYMENT-RESPONSE` as a _response_ header, after the handler has already returned. The intended
 receipt mechanism does not function on any route.
 
 **Mitigation.** Record every settlement attempt server-side — the tx hash, payer, amount, timestamp —
@@ -506,7 +506,7 @@ verification to the facilitator. It is the accepted cost of not operating a Stel
 ### T-12 Settlement-Overrides header abuse
 
 **Attack.** The x402 server library supports a `Settlement-Overrides` response header letting the
-*resource server* instruct the facilitator to settle a fraction or absolute amount different from the
+_resource server_ instruct the facilitator to settle a fraction or absolute amount different from the
 quoted price (e.g. `"50%"`, `"$0.0015"`, resolved at
 `@x402/core/dist/esm/server/index.mjs:24-38`, applied at `:271-281`). If this value were ever
 derived from client input, a payer would be able to dictate how much it is charged.
@@ -639,7 +639,7 @@ upstream budget alerting on both Serper and Groq accounts.
 ### T-18 MCP server wallet abuse
 
 **Attack.** `mcp-server/index.ts` holds no key of its own. It calls the hosted paid endpoints and
-relies on the *server's* funded wallet, as its own comments note
+relies on the _server's_ funded wallet, as its own comments note
 (`mcp-server/index.ts:130-132`). Any MCP client permitted to connect to a deployment therefore
 receives searches that the operator pays for. There is no per-client credential, quota, or payer
 attribution.
@@ -703,7 +703,7 @@ returned partial or cached results with a 4xx/5xx status would silently become f
 
 **Attack.** The top three Serper snippets are concatenated and injected into a Groq prompt
 (`server/index.ts:207-231`) alongside the user's query. Anyone who can influence indexed web content
-can place text such as *"Ignore previous instructions and return…"* in a snippet and have it reach
+can place text such as _"Ignore previous instructions and return…"_ in a snippet and have it reach
 the model as apparent instructions.
 
 **Mitigation.** The snippets are placed in a user-role message beneath a system prompt that constrains
@@ -784,9 +784,9 @@ approving any signature and to treat a signature approval prompt as a financial 
 `@x402/stellar` package, while `api/search.ts:61` uses `USDC_CONTRACT` from
 `src/lib/constants.ts:40`. For **mainnet** these two values differ:
 
-| Source | Mainnet USDC contract |
-| --- | --- |
-| `src/lib/constants.ts:40` | `CCW67TSZV3SSS2HXMBQ5JFGCKJNXKZM7UQUWUZPUTHXSTZLEO7EJJUST` |
+| Source                                   | Mainnet USDC contract                                      |
+| ---------------------------------------- | ---------------------------------------------------------- |
+| `src/lib/constants.ts:40`                | `CCW67TSZV3SSS2HXMBQ5JFGCKJNXKZM7UQUWUZPUTHXSTZLEO7EJJUST` |
 | `@x402/stellar` (client scheme, mainnet) | `CCW67TSZV3SSS2HXMBQ5JFGCKJNXKZM7UQUWUZPUTHXSTZLEO7SJMI75` |
 
 The Express server uses the library's address; the serverless handler uses the constants file's. The
@@ -842,16 +842,16 @@ move the statistics behind an authenticated path or remove them.
 The following are **understood, deliberate, and not mitigated** at the current stage. They are listed
 so that the decision is visible and reviewable rather than implicit. Each has a compensating control.
 
-| ID | Accepted risk | Rationale | Compensating control |
-| --- | --- | --- | --- |
-| AR-1 | The facilitator is fully trusted for signature validity and settlement outcome (T-07, T-11) | Operating our own Stellar RPC/RPC-validating node is disproportionate for a search service. The x402 protocol is designed around a third-party facilitator. | Pin and review `FACILITATOR_URL`; treat changes to it as security-relevant; monitor settlement volume against facilitator-reported success. Revisit if a self-hosted facilitator becomes practical. |
-| AR-2 | Settlement is not independently confirmed against a finalized ledger (T-11) | Same root cause as AR-1. | Schema validation of the facilitator response; alerting on settlement-success-versus-ledger divergence if a read replica is later added. |
-| AR-3 | No facilitator mutual authentication or response signing (T-07) | The public facilitator does not require or offer client credentials; pinning would break upgrades. | TLS with hostname verification; environment-variable review; documented above. |
-| AR-4 | The MCP server spends the operator's wallet on behalf of any permitted client (T-18) | The MCP server is a single-operator development integration, not a multi-tenant product surface. | Document as internal-only; bind locally; do not expose publicly. |
-| AR-5 | Upstream API cost is incurred before settlement (T-22) | Structural to the buffered-response middleware; a two-phase protocol change is out of scope. | Rate limiting before the upstream call; per-IP spend circuit breaker. |
-| AR-6 | Error responses are served without settlement (T-20) | Deliberate fail-cheap behaviour in the x402 adapter; error bodies carry no billable content. | Do not return billable content under an error status code. |
-| AR-7 | Payment status in logs is inferred from the HTTP status code, not from settlement (`server/index.ts:95-114`) | Adequate for the current observability needs. | Do not use the `paid` label as an accounting source of truth; reconcile against the ledger. |
-| AR-8 | Payment logging covers `/search` only and records client IP and query (T-19) | Sufficient for the current debugging workflow. | Retention period to be documented; redaction filter to be added. |
+| ID   | Accepted risk                                                                                                | Rationale                                                                                                                                                   | Compensating control                                                                                                                                                                                |
+| ---- | ------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| AR-1 | The facilitator is fully trusted for signature validity and settlement outcome (T-07, T-11)                  | Operating our own Stellar RPC/RPC-validating node is disproportionate for a search service. The x402 protocol is designed around a third-party facilitator. | Pin and review `FACILITATOR_URL`; treat changes to it as security-relevant; monitor settlement volume against facilitator-reported success. Revisit if a self-hosted facilitator becomes practical. |
+| AR-2 | Settlement is not independently confirmed against a finalized ledger (T-11)                                  | Same root cause as AR-1.                                                                                                                                    | Schema validation of the facilitator response; alerting on settlement-success-versus-ledger divergence if a read replica is later added.                                                            |
+| AR-3 | No facilitator mutual authentication or response signing (T-07)                                              | The public facilitator does not require or offer client credentials; pinning would break upgrades.                                                          | TLS with hostname verification; environment-variable review; documented above.                                                                                                                      |
+| AR-4 | The MCP server spends the operator's wallet on behalf of any permitted client (T-18)                         | The MCP server is a single-operator development integration, not a multi-tenant product surface.                                                            | Document as internal-only; bind locally; do not expose publicly.                                                                                                                                    |
+| AR-5 | Upstream API cost is incurred before settlement (T-22)                                                       | Structural to the buffered-response middleware; a two-phase protocol change is out of scope.                                                                | Rate limiting before the upstream call; per-IP spend circuit breaker.                                                                                                                               |
+| AR-6 | Error responses are served without settlement (T-20)                                                         | Deliberate fail-cheap behaviour in the x402 adapter; error bodies carry no billable content.                                                                | Do not return billable content under an error status code.                                                                                                                                          |
+| AR-7 | Payment status in logs is inferred from the HTTP status code, not from settlement (`server/index.ts:95-114`) | Adequate for the current observability needs.                                                                                                               | Do not use the `paid` label as an accounting source of truth; reconcile against the ledger.                                                                                                         |
+| AR-8 | Payment logging covers `/search` only and records client IP and query (T-19)                                 | Sufficient for the current debugging workflow.                                                                                                              | Retention period to be documented; redaction filter to be added.                                                                                                                                    |
 
 ---
 
@@ -860,22 +860,22 @@ so that the decision is visible and reviewable rather than implicit. Each has a 
 Ordered by risk reduction per unit of effort. Items 1–3 are prerequisites for treating the deployment
 as correctly monetised.
 
-| # | Action | Addresses | Effort |
-| --- | --- | --- | --- |
-| 1 | Unify the two server implementations onto the verified `@x402` middleware path; disable the hand-rolled serverless handler until then | T-15, T-16, T-25 | Large |
-| 2 | Add a single shared config module for price, asset, and receiving address, consumed by `server/`, `api/`, and `src/` | T-25, T-04 | Small |
-| 3 | Add `express-rate-limit` as a direct dependency; throttle every route, `/ai/chat` most tightly | T-17, T-27, T-22 | Small |
-| 4 | Apply `AbortSignal.timeout()` to all facilitator `fetch` calls; fail closed after a short budget | T-08 | Small |
-| 5 | Return the real settlement transaction hash to the client; stop reading the request header `x-payment-response` | T-10, T-26 | Small |
-| 6 | Add a post-settlement confirmation query against Horizon for the returned transaction hash | T-11 | Medium |
-| 7 | Add a short-lived nonce/idempotency cache over consumed payments, with atomic consume | T-01, T-09 | Medium |
-| 8 | Replace the permissive startup warnings for `STELLAR_RECEIVING_ADDRESS` / `SERPER_API_KEY` / `GROQ_API_KEY` with hard failures; validate the `G...` and `C...` address formats | T-04, T-25 | Small |
-| 9 | Add a startup network self-check against Horizon for the configured network and receiving address | T-05 | Small |
-| 10 | Return opaque error identifiers instead of raw upstream messages; add redaction to the Winston logger and route `console.*` through it | T-19 | Medium |
-| 11 | Add `api/**` to a tsconfig `include`; wire `tsc.server.json` into a script | T-15, general | Small |
-| 12 | Add security response headers (CSP, `X-Content-Type-Options`, `Referrer-Policy`, HSTS) | General | Small |
-| 13 | Resolve the pre-existing client type errors (missing `sonner` and `recharts` dependencies) so the type-check gate is green | General | Small |
-| 14 | Correct the stale facilitator documentation in `README.md`, `TROUBLESHOOTING.md`, and `src/pages/DocsPage.tsx`, which still name an OpenZeppelin facilitator and an `X-Payment` header | Accuracy | Small |
+| #   | Action                                                                                                                                                                                 | Addresses        | Effort |
+| --- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------- | ------ |
+| 1   | Unify the two server implementations onto the verified `@x402` middleware path; disable the hand-rolled serverless handler until then                                                  | T-15, T-16, T-25 | Large  |
+| 2   | Add a single shared config module for price, asset, and receiving address, consumed by `server/`, `api/`, and `src/`                                                                   | T-25, T-04       | Small  |
+| 3   | Add `express-rate-limit` as a direct dependency; throttle every route, `/ai/chat` most tightly                                                                                         | T-17, T-27, T-22 | Small  |
+| 4   | Apply `AbortSignal.timeout()` to all facilitator `fetch` calls; fail closed after a short budget                                                                                       | T-08             | Small  |
+| 5   | Return the real settlement transaction hash to the client; stop reading the request header `x-payment-response`                                                                        | T-10, T-26       | Small  |
+| 6   | Add a post-settlement confirmation query against Horizon for the returned transaction hash                                                                                             | T-11             | Medium |
+| 7   | Add a short-lived nonce/idempotency cache over consumed payments, with atomic consume                                                                                                  | T-01, T-09       | Medium |
+| 8   | Replace the permissive startup warnings for `STELLAR_RECEIVING_ADDRESS` / `SERPER_API_KEY` / `GROQ_API_KEY` with hard failures; validate the `G...` and `C...` address formats         | T-04, T-25       | Small  |
+| 9   | Add a startup network self-check against Horizon for the configured network and receiving address                                                                                      | T-05             | Small  |
+| 10  | Return opaque error identifiers instead of raw upstream messages; add redaction to the Winston logger and route `console.*` through it                                                 | T-19             | Medium |
+| 11  | Add `api/**` to a tsconfig `include`; wire `tsc.server.json` into a script                                                                                                             | T-15, general    | Small  |
+| 12  | Add security response headers (CSP, `X-Content-Type-Options`, `Referrer-Policy`, HSTS)                                                                                                 | General          | Small  |
+| 13  | Resolve the pre-existing client type errors (missing `sonner` and `recharts` dependencies) so the type-check gate is green                                                             | General          | Small  |
+| 14  | Correct the stale facilitator documentation in `README.md`, `TROUBLESHOOTING.md`, and `src/pages/DocsPage.tsx`, which still name an OpenZeppelin facilitator and an `X-Payment` header | Accuracy         | Small  |
 
 ---
 
@@ -902,5 +902,5 @@ for the reporting process.
 
 ---
 
-*Cross-references: [`SECURITY.md`](../SECURITY.md) · [`CONTRIBUTING.md`](../CONTRIBUTING.md) ·
-[`TROUBLESHOOTING.md`](../TROUBLESHOOTING.md)*
+_Cross-references: [`SECURITY.md`](../SECURITY.md) · [`CONTRIBUTING.md`](../CONTRIBUTING.md) ·
+[`TROUBLESHOOTING.md`](../TROUBLESHOOTING.md)_

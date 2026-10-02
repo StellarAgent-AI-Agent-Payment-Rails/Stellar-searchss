@@ -7,12 +7,12 @@ process.env.SEARCH_API_URL = 'http://localhost:3001'
 process.env.GROQ_API_KEY = 'test-groq-key'
 
 import { listToolsHandler, callToolHandler, server } from './index.js'
-import { 
-  AMOUNT_USDC, 
-  HORIZON_URL, 
-  STELLAR_NETWORK, 
-  STELLAR_EXPERT_URL, 
-  USDC_ISSUER 
+import {
+  AMOUNT_USDC,
+  HORIZON_URL,
+  STELLAR_NETWORK,
+  STELLAR_EXPERT_URL,
+  USDC_ISSUER,
 } from '../src/lib/constants.js'
 
 describe('MCP Server - ListTools', () => {
@@ -23,7 +23,14 @@ describe('MCP Server - ListTools', () => {
     const toolNames = res.tools.map((t) => t.name)
     assert.deepStrictEqual(
       toolNames.sort(),
-      ['ai_summarize', 'check_balance', 'get_search_stats', 'image_search', 'news_search', 'web_search'].sort()
+      [
+        'ai_summarize',
+        'check_balance',
+        'get_search_stats',
+        'image_search',
+        'news_search',
+        'web_search',
+      ].sort(),
     )
 
     for (const tool of res.tools) {
@@ -83,7 +90,7 @@ describe('MCP Server - CallTool Handlers', () => {
             latencyMs: 120,
             count: 2,
           }),
-          { status: 200, headers: { 'Content-Type': 'application/json' } }
+          { status: 200, headers: { 'Content-Type': 'application/json' } },
         )
       }) as typeof globalThis.fetch
 
@@ -108,16 +115,24 @@ describe('MCP Server - CallTool Handlers', () => {
       assert.ok(text.includes('💰 Paid: 0.001 USDC on stellar:testnet'))
       assert.ok(text.includes('⚡ Latency: 120ms'))
       assert.ok(text.includes('📊 2 results'))
-      assert.ok(text.includes('1. **Stellar Documentation**\n   https://developers.stellar.org\n   Official docs for building on Stellar'))
-      assert.ok(text.includes('2. **Stellar Community**\n   https://stellar.org/community\n   Join the Stellar developer ecosystem'))
+      assert.ok(
+        text.includes(
+          '1. **Stellar Documentation**\n   https://developers.stellar.org\n   Official docs for building on Stellar',
+        ),
+      )
+      assert.ok(
+        text.includes(
+          '2. **Stellar Community**\n   https://stellar.org/community\n   Join the Stellar developer ecosystem',
+        ),
+      )
     })
 
     it('handles search server error response gracefully', async () => {
       globalThis.fetch = (async () => {
-        return new Response(
-          JSON.stringify({ error: 'Payment required: insufficient funds' }),
-          { status: 402, headers: { 'Content-Type': 'application/json' } }
-        )
+        return new Response(JSON.stringify({ error: 'Payment required: insufficient funds' }), {
+          status: 402,
+          headers: { 'Content-Type': 'application/json' },
+        })
       }) as typeof globalThis.fetch
 
       const res = await callToolHandler({
@@ -154,7 +169,7 @@ describe('MCP Server - CallTool Handlers', () => {
             latencyMs: 95,
             count: 1,
           }),
-          { status: 200, headers: { 'Content-Type': 'application/json' } }
+          { status: 200, headers: { 'Content-Type': 'application/json' } },
         )
       }) as typeof globalThis.fetch
 
@@ -219,7 +234,7 @@ describe('MCP Server - CallTool Handlers', () => {
             latencyMs: 110,
             count: 2,
           }),
-          { status: 200, headers: { 'Content-Type': 'application/json' } }
+          { status: 200, headers: { 'Content-Type': 'application/json' } },
         )
       }) as typeof globalThis.fetch
 
@@ -275,7 +290,7 @@ describe('MCP Server - CallTool Handlers', () => {
               },
             ],
           }),
-          { status: 200, headers: { 'Content-Type': 'application/json' } }
+          { status: 200, headers: { 'Content-Type': 'application/json' } },
         )
       }) as typeof globalThis.fetch
 
@@ -287,7 +302,10 @@ describe('MCP Server - CallTool Handlers', () => {
       })
 
       assert.strictEqual(res.isError, undefined)
-      assert.strictEqual(res.content[0].text, 'Stellar is an open-source decentralized payment rail.')
+      assert.strictEqual(
+        res.content[0].text,
+        'Stellar is an open-source decentralized payment rail.',
+      )
       assert.ok(interceptedBody)
       assert.ok(interceptedBody.messages.some((m: any) => m.content.includes('condense')))
     })
@@ -301,7 +319,7 @@ describe('MCP Server - CallTool Handlers', () => {
               type: 'rate_limit_error',
             },
           }),
-          { status: 429, headers: { 'Content-Type': 'application/json' } }
+          { status: 429, headers: { 'Content-Type': 'application/json' } },
         )
       }) as typeof globalThis.fetch
 
@@ -337,7 +355,7 @@ describe('MCP Server - CallTool Handlers', () => {
               },
             ],
           }),
-          { status: 200, headers: { 'Content-Type': 'application/json' } }
+          { status: 200, headers: { 'Content-Type': 'application/json' } },
         )
       }) as typeof globalThis.fetch
 
@@ -406,7 +424,7 @@ describe('MCP Server - CallTool Handlers', () => {
             serperApiConfigured: true,
             groqApiConfigured: true,
           }),
-          { status: 200, headers: { 'Content-Type': 'application/json' } }
+          { status: 200, headers: { 'Content-Type': 'application/json' } },
         )
       }) as typeof globalThis.fetch
 
@@ -442,7 +460,11 @@ describe('MCP Server - CallTool Handlers', () => {
       })
 
       assert.strictEqual(res.isError, true)
-      assert.ok(res.content[0].text.includes('Failed to fetch server stats: Server health check returned 502'))
+      assert.ok(
+        res.content[0].text.includes(
+          'Failed to fetch server stats: Server health check returned 502',
+        ),
+      )
     })
   })
 

@@ -20,27 +20,27 @@ The threat model documents the trust boundaries between the **client**, the **ba
 what the server must verify independently; and enumerates 27 concrete attack scenarios with their
 mitigations or explicitly accepted risks.
 
-| Section | Contents |
-| --- | --- |
-| [§2 — System overview](docs/threat-model.md#2-system-overview) | Actors, the payment flow, and the **two divergent server implementations** |
-| [§3 — Trust boundaries](docs/threat-model.md#3-trust-boundaries) | TB-1 client ↔ backend, TB-2 upstream providers, TB-3 backend ↔ facilitator, TB-4 facilitator ↔ Stellar |
-| [§4 — Party trust matrix](docs/threat-model.md#4-party-trust-and-verification-matrix) | What each party is trusted for, and the **V-1…V-12** invariants the server must enforce |
-| [§5 — Attack enumeration](docs/threat-model.md#5-attack-enumeration-and-mitigations) | Replay, amount tampering, race conditions, post-settlement failure, and 23 more |
-| [§6 — Accepted risks](docs/threat-model.md#6-accepted-risks) | Deliberately unmitigated risks (AR-1…AR-8) and their compensating controls |
-| [§7 — Hardening backlog](docs/threat-model.md#7-hardening-backlog) | Prioritised remediation items |
+| Section                                                                               | Contents                                                                                               |
+| ------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| [§2 — System overview](docs/threat-model.md#2-system-overview)                        | Actors, the payment flow, and the **two divergent server implementations**                             |
+| [§3 — Trust boundaries](docs/threat-model.md#3-trust-boundaries)                      | TB-1 client ↔ backend, TB-2 upstream providers, TB-3 backend ↔ facilitator, TB-4 facilitator ↔ Stellar |
+| [§4 — Party trust matrix](docs/threat-model.md#4-party-trust-and-verification-matrix) | What each party is trusted for, and the **V-1…V-12** invariants the server must enforce                |
+| [§5 — Attack enumeration](docs/threat-model.md#5-attack-enumeration-and-mitigations)  | Replay, amount tampering, race conditions, post-settlement failure, and 23 more                        |
+| [§6 — Accepted risks](docs/threat-model.md#6-accepted-risks)                          | Deliberately unmitigated risks (AR-1…AR-8) and their compensating controls                             |
+| [§7 — Hardening backlog](docs/threat-model.md#7-hardening-backlog)                    | Prioritised remediation items                                                                          |
 
 ### Current posture — summary
 
 The highest-severity findings are recorded in the threat model. In brief:
 
-| ID | Finding | Severity | Status |
-| --- | --- | --- | --- |
-| [T-15](docs/threat-model.md#t-15-serverless-route-bypasses-payment-verification-entirely) | The Vercel handler `api/search.ts` checks only that a payment header is *present* — no signature, amount, asset, or settlement verification | **Critical** | **Unmitigated** |
-| [T-07](docs/threat-model.md#t-07-compromised-or-intercepted-facilitator-accepts-forged-payments) | The facilitator is the sole verification and settlement authority, reached with no mutual authentication | **Critical** | Accepted ([AR-1](docs/threat-model.md#6-accepted-risks)) |
-| [T-11](docs/threat-model.md#t-11-facilitator-reports-success-for-a-transaction-that-never-settled) | Settlement success is taken on trust and never confirmed against a finalized ledger | **Critical** | Accepted ([AR-2](docs/threat-model.md#6-accepted-risks)) |
-| [T-16](docs/threat-model.md#t-16-wildcard-cors-on-the-serverless-route) | Hard-coded `Access-Control-Allow-Origin: *` on the serverless route | High | Unmitigated |
-| [T-17](docs/threat-model.md#t-17-unauthenticated-resource-drain-and-no-rate-limiting) | No rate limiting on any route; `/ai/chat` is free and calls the billed Groq API | High | Unmitigated |
-| [T-25](docs/threat-model.md#t-25-usdc-contract-address-disagreement-between-implementations) | The two implementations quote different USDC contract addresses on mainnet | Medium | Unmitigated |
+| ID                                                                                                 | Finding                                                                                                                                     | Severity     | Status                                                   |
+| -------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- | ------------ | -------------------------------------------------------- |
+| [T-15](docs/threat-model.md#t-15-serverless-route-bypasses-payment-verification-entirely)          | The Vercel handler `api/search.ts` checks only that a payment header is _present_ — no signature, amount, asset, or settlement verification | **Critical** | **Unmitigated**                                          |
+| [T-07](docs/threat-model.md#t-07-compromised-or-intercepted-facilitator-accepts-forged-payments)   | The facilitator is the sole verification and settlement authority, reached with no mutual authentication                                    | **Critical** | Accepted ([AR-1](docs/threat-model.md#6-accepted-risks)) |
+| [T-11](docs/threat-model.md#t-11-facilitator-reports-success-for-a-transaction-that-never-settled) | Settlement success is taken on trust and never confirmed against a finalized ledger                                                         | **Critical** | Accepted ([AR-2](docs/threat-model.md#6-accepted-risks)) |
+| [T-16](docs/threat-model.md#t-16-wildcard-cors-on-the-serverless-route)                            | Hard-coded `Access-Control-Allow-Origin: *` on the serverless route                                                                         | High         | Unmitigated                                              |
+| [T-17](docs/threat-model.md#t-17-unauthenticated-resource-drain-and-no-rate-limiting)              | No rate limiting on any route; `/ai/chat` is free and calls the billed Groq API                                                             | High         | Unmitigated                                              |
+| [T-25](docs/threat-model.md#t-25-usdc-contract-address-disagreement-between-implementations)       | The two implementations quote different USDC contract addresses on mainnet                                                                  | Medium       | Unmitigated                                              |
 
 > **Deployment note.** `server/index.ts` (Express) enforces payment via the `@x402` middleware.
 > `api/search.ts` (Vercel) does not. Until [T-15](docs/threat-model.md#t-15-serverless-route-bypasses-payment-verification-entirely)
@@ -131,10 +131,10 @@ These supplement [`CONTRIBUTING.md`](CONTRIBUTING.md); they do not replace it.
 
 ## Related documentation
 
-| Document | Purpose |
-| --- | --- |
+| Document                                       | Purpose                                                           |
+| ---------------------------------------------- | ----------------------------------------------------------------- |
 | [`docs/threat-model.md`](docs/threat-model.md) | Payment flow threat model — trust boundaries, invariants, attacks |
-| [`CONTRIBUTING.md`](CONTRIBUTING.md) | Architecture, boundaries, workflow, and code style |
-| [`TROUBLESHOOTING.md`](TROUBLESHOOTING.md) | Payment-header format spec and common failure modes |
-| [`README.md`](README.md) | Setup, architecture overview, and the payment flow |
-| [`.env.example`](.env.example) | Documented environment variables |
+| [`CONTRIBUTING.md`](CONTRIBUTING.md)           | Architecture, boundaries, workflow, and code style                |
+| [`TROUBLESHOOTING.md`](TROUBLESHOOTING.md)     | Payment-header format spec and common failure modes               |
+| [`README.md`](README.md)                       | Setup, architecture overview, and the payment flow                |
+| [`.env.example`](.env.example)                 | Documented environment variables                                  |

@@ -40,7 +40,10 @@ async function checkUrl(url: string): Promise<CheckResult> {
       url,
       ok,
       status: res.status,
-      note: HEAD_REQUEST_OK.has(url) && res.status >= 400 ? 'service reachable (expected 400 without addr)' : undefined,
+      note:
+        HEAD_REQUEST_OK.has(url) && res.status >= 400
+          ? 'service reachable (expected 400 without addr)'
+          : undefined,
     }
   } catch (err) {
     return { url, ok: false, status: (err as Error).message.slice(0, 80) }
@@ -61,7 +64,9 @@ async function main() {
 
   console.log(`\n${results.length - failed}/${results.length} links OK`)
   if (failed > 0) {
-    console.error(`\n${failed} funding-guide link(s) are broken — update src/lib/funding.ts and README.md.`)
+    console.error(
+      `\n${failed} funding-guide link(s) are broken — update src/lib/funding.ts and README.md.`,
+    )
     process.exit(1)
   }
 }

@@ -33,10 +33,7 @@ const CORS_ALLOWED_HEADERS = [
  * - `PAYMENT-REQUIRED`: sent on 402 responses to describe the payment requirements.
  * - `X-Payment-Response`: sent on successful payment settlement responses.
  */
-const CORS_EXPOSED_HEADERS = [
-  'PAYMENT-REQUIRED',
-  'X-Payment-Response',
-] as const
+const CORS_EXPOSED_HEADERS = ['PAYMENT-REQUIRED', 'X-Payment-Response'] as const
 
 const CORS_METHODS = ['GET', 'POST', 'OPTIONS'] as const
 
@@ -115,21 +112,22 @@ describe('parseAllowedOrigins', () => {
   })
 
   it('parses a single origin', () => {
-    expect(parseAllowedOrigins('https://example.com')).toEqual([
-      'https://example.com',
-    ])
+    expect(parseAllowedOrigins('https://example.com')).toEqual(['https://example.com'])
   })
 
   it('parses multiple comma-separated origins', () => {
-    expect(
-      parseAllowedOrigins('https://a.com,https://b.com,https://c.com'),
-    ).toEqual(['https://a.com', 'https://b.com', 'https://c.com'])
+    expect(parseAllowedOrigins('https://a.com,https://b.com,https://c.com')).toEqual([
+      'https://a.com',
+      'https://b.com',
+      'https://c.com',
+    ])
   })
 
   it('trims whitespace around entries', () => {
-    expect(
-      parseAllowedOrigins('  https://a.com ,  https://b.com  '),
-    ).toEqual(['https://a.com', 'https://b.com'])
+    expect(parseAllowedOrigins('  https://a.com ,  https://b.com  ')).toEqual([
+      'https://a.com',
+      'https://b.com',
+    ])
   })
 
   it('drops empty entries from trailing or repeated commas', () => {

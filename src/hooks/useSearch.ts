@@ -11,21 +11,21 @@
  */
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-import { useState, useCallback, createElement }              from 'react'
-import { toast }                               from 'sonner'
-import { x402Client, x402HTTPClient }          from '@x402/fetch'
-import { ExactStellarScheme }                  from '@x402/stellar/exact/client'
-import { signAuthEntry, getNetworkDetails }    from '@stellar/freighter-api'
-import { Networks }                            from '@stellar/stellar-sdk'
-import { Buffer }                              from 'buffer'
+import { useState, useCallback, createElement } from 'react'
+import { toast } from 'sonner'
+import { x402Client, x402HTTPClient } from '@x402/fetch'
+import { ExactStellarScheme } from '@x402/stellar/exact/client'
+import { signAuthEntry, getNetworkDetails } from '@stellar/freighter-api'
+import { Networks } from '@stellar/stellar-sdk'
+import { Buffer } from 'buffer'
 import { HORIZON_URL, IS_MAINNET, EXPECTED_WALLET_NETWORK, explorerTxUrl } from '../lib/stellar'
 import { RECEIPTS_STORAGE_KEY, isSearchQueryStorageEnabled } from '../lib/searchPrivacy'
 
-const SERVER_URL = (import.meta as any).env?.VITE_SERVER_URL ?? (
-  typeof window !== 'undefined' && window.location.origin.includes('vercel.app') 
+const SERVER_URL =
+  (import.meta as any).env?.VITE_SERVER_URL ??
+  (typeof window !== 'undefined' && window.location.origin.includes('vercel.app')
     ? `${window.location.origin}/api`
-    : 'http://localhost:3001'
-)
+    : 'http://localhost:3001')
 
 export const __test__ = { SERVER_URL }
 // Soroban RPC URLs
@@ -70,211 +70,255 @@ export interface SearchSession {
 
 export function useSearch(walletAddress: string | null = null) {
   const [session, setSession] = useState<SearchSession>({
-    query: '', results: [], txHash: null, paidAmount: null, status: 'idle', suggestions: [], isLoadingSuggestions: false,
+    query: '',
+    results: [],
+    txHash: null,
+    paidAmount: null,
+    status: 'idle',
+    suggestions: [],
+    isLoadingSuggestions: false,
   })
 
-  const search = useCallback(async (query: string, count = 5) => {
-    if (!query.trim()) return
+  const search = useCallback(
+    async (query: string, count = 5) => {
+      if (!query.trim()) return
 
-    setSession({ query, results: [], txHash: null, paidAmount: null, status: 'searching', step: 1, suggestions: [], isLoadingSuggestions: false })
+      setSession({
+        query,
+        results: [],
+        txHash: null,
+        paidAmount: null,
+        status: 'searching',
+        step: 1,
+        suggestions: [],
+        isLoadingSuggestions: false,
+      })
 
-    const t0     = Date.now()
-    const params = new URLSearchParams({ q: query, count: String(count) })
+      const t0 = Date.now()
+      const params = new URLSearchParams({ q: query, count: String(count) })
 
-    const fetchAsyncSuggestions = (q: string) => {
-      fetch(`${SERVER_URL}/suggestions?q=${encodeURIComponent(q)}`)
-        .then(res => (res.ok ? res.json() : null))
-        .then(suggData => {
-          setSession(prev => (prev.query === q ? {
-            ...prev,
-            suggestions: suggData?.suggestions || [],
-            isLoadingSuggestions: false,
-          } : prev))
-        })
-        .catch(err => {
-          console.warn('[suggestions] Async fetch error:', err)
-          setSession(prev => (prev.query === q ? { ...prev, isLoadingSuggestions: false } : prev))
-        })
-    }
-
-    const advance = (step: PaymentStep) =>
-      setSession(prev => ({ ...prev, step }))
-
-    try {
-      if (!walletAddress) throw new Error('Connect your Freighter wallet first.')
-
-      console.log('🔍 Starting search with wallet:', walletAddress)
-
-      // Step 1 — verify Freighter is on correct network
-      const net = await getNetworkDetails()
-      if (net.error)              throw new Error(net.error.message)
-      if (net.network !== EXPECTED_WALLET_NETWORK) {
-        throw new Error(`Switch Freighter to ${EXPECTED_WALLET_NETWORK}. Currently: ${net.network}`)
-      }
-      console.log('✅ Network verified:', net.network)
-
-      // Step 2 — build the signer
-      const passphrase = IS_MAINNET ? Networks.PUBLIC : Networks.TESTNET
-      const signer = {
-        address: walletAddress,
-        signAuthEntry: async (
-          xdr: string,
-          opts?: { networkPassphrase?: string }
-        ): Promise<{ signedAuthEntry: string; signerAddress: string }> => {
-          console.log('🔑 Calling Freighter signAuthEntry...')
-
-          const result = await signAuthEntry(xdr, {
-            networkPassphrase: opts?.networkPassphrase ?? passphrase,
+      const fetchAsyncSuggestions = (q: string) => {
+        fetch(`${SERVER_URL}/suggestions?q=${encodeURIComponent(q)}`)
+          .then((res) => (res.ok ? res.json() : null))
+          .then((suggData) => {
+            setSession((prev) =>
+              prev.query === q
+                ? {
+                    ...prev,
+                    suggestions: suggData?.suggestions || [],
+                    isLoadingSuggestions: false,
+                  }
+                : prev,
+            )
           })
-
-          if (result.error) throw new Error(result.error.message)
-          if (!result.signedAuthEntry) throw new Error('Freighter returned no signedAuthEntry')
-
-          console.log('✅ Freighter signed. Type:', typeof result.signedAuthEntry)
-
-          const raw = result.signedAuthEntry
-          const signedAuthEntry = typeof raw === 'string'
-            ? raw
-            : Buffer.from(raw as unknown as Uint8Array).toString('base64')
-
-          console.log('✅ signedAuthEntry base64 length:', signedAuthEntry.length)
-
-          return { signedAuthEntry, signerAddress: walletAddress }
-        },
+          .catch((err) => {
+            console.warn('[suggestions] Async fetch error:', err)
+            setSession((prev) =>
+              prev.query === q ? { ...prev, isLoadingSuggestions: false } : prev,
+            )
+          })
       }
 
-      // Step 3 — build the x402 client with correct .register() chain
-      const client     = new x402Client().register(
-        'stellar:*',
-        new ExactStellarScheme(signer, { url: SOROBAN_RPC_URL })
-      )
-      const httpClient = new x402HTTPClient(client)
-      console.log('✅ x402 client built')
+      const advance = (step: PaymentStep) => setSession((prev) => ({ ...prev, step }))
 
-      // Flow step 1 — initial request, expect 402
-      advance(1)
-      console.log('🚀 Initial request:', `${SERVER_URL}/search?${params}`)
-      const firstRes = await fetch(`${SERVER_URL}/search?${params}`)
-      console.log('📡 Status:', firstRes.status)
+      try {
+        if (!walletAddress) throw new Error('Connect your Freighter wallet first.')
 
-      if (firstRes.status !== 402) {
-        if (!firstRes.ok) throw new Error(`Server error ${firstRes.status}`)
-        const data = await firstRes.json()
+        console.log('🔍 Starting search with wallet:', walletAddress)
+
+        // Step 1 — verify Freighter is on correct network
+        const net = await getNetworkDetails()
+        if (net.error) throw new Error(net.error.message)
+        if (net.network !== EXPECTED_WALLET_NETWORK) {
+          throw new Error(
+            `Switch Freighter to ${EXPECTED_WALLET_NETWORK}. Currently: ${net.network}`,
+          )
+        }
+        console.log('✅ Network verified:', net.network)
+
+        // Step 2 — build the signer
+        const passphrase = IS_MAINNET ? Networks.PUBLIC : Networks.TESTNET
+        const signer = {
+          address: walletAddress,
+          signAuthEntry: async (
+            xdr: string,
+            opts?: { networkPassphrase?: string },
+          ): Promise<{ signedAuthEntry: string; signerAddress: string }> => {
+            console.log('🔑 Calling Freighter signAuthEntry...')
+
+            const result = await signAuthEntry(xdr, {
+              networkPassphrase: opts?.networkPassphrase ?? passphrase,
+            })
+
+            if (result.error) throw new Error(result.error.message)
+            if (!result.signedAuthEntry) throw new Error('Freighter returned no signedAuthEntry')
+
+            console.log('✅ Freighter signed. Type:', typeof result.signedAuthEntry)
+
+            const raw = result.signedAuthEntry
+            const signedAuthEntry =
+              typeof raw === 'string'
+                ? raw
+                : Buffer.from(raw as unknown as Uint8Array).toString('base64')
+
+            console.log('✅ signedAuthEntry base64 length:', signedAuthEntry.length)
+
+            return { signedAuthEntry, signerAddress: walletAddress }
+          },
+        }
+
+        // Step 3 — build the x402 client with correct .register() chain
+        const client = new x402Client().register(
+          'stellar:*',
+          new ExactStellarScheme(signer, { url: SOROBAN_RPC_URL }),
+        )
+        const httpClient = new x402HTTPClient(client)
+        console.log('✅ x402 client built')
+
+        // Flow step 1 — initial request, expect 402
+        advance(1)
+        console.log('🚀 Initial request:', `${SERVER_URL}/search?${params}`)
+        const firstRes = await fetch(`${SERVER_URL}/search?${params}`)
+        console.log('📡 Status:', firstRes.status)
+
+        if (firstRes.status !== 402) {
+          if (!firstRes.ok) throw new Error(`Server error ${firstRes.status}`)
+          const data = await firstRes.json()
+          setSession({
+            query,
+            results: data.results ?? [],
+            txHash: null,
+            paidAmount: null,
+            status: 'complete',
+            step: 6,
+            durationMs: Date.now() - t0,
+            suggestions: data.suggestions ?? [],
+            isLoadingSuggestions: true,
+          })
+          fetchAsyncSuggestions(query)
+          return
+        }
+
+        // Flow step 2 — parse the PAYMENT-REQUIRED header
+        advance(2)
+        console.log('💰 402 received, parsing payment requirements...')
+        const paymentRequired = httpClient.getPaymentRequiredResponse((name) =>
+          firstRes.headers.get(name),
+        )
+        console.log('💰 Payment requirements:', paymentRequired)
+
+        // Flow step 3 — createPaymentPayload() triggers the Freighter popup (signs auth entry)
+        advance(3)
+        console.log('🔐 Triggering Freighter popup via createPaymentPayload...')
+        const paymentPayload = await client.createPaymentPayload(paymentRequired)
+        console.log('✅ Freighter approved, payload created')
+
+        const paymentHeaders = httpClient.encodePaymentSignatureHeader(paymentPayload)
+        console.log('✅ Payment headers encoded')
+
+        // Flow step 4 — retry with X-PAYMENT header
+        advance(4)
+        console.log('🔄 Retrying with payment...')
+        const paidResPromise = fetch(`${SERVER_URL}/search?${params}`, {
+          headers: paymentHeaders,
+        })
+
+        // Flow step 5 — facilitator settles on Stellar while the retry is in flight
+        advance(5)
+        const paidRes = await paidResPromise
+        console.log('📡 Paid response status:', paidRes.status)
+
+        if (!paidRes.ok) {
+          const text = await paidRes.text()
+          throw new Error(`Payment failed: server returned ${paidRes.status} — ${text}`)
+        }
+
+        const data = await paidRes.json()
+        console.log('✅ Search complete!')
+
+        // Flow step 6 — result received and rendered
         setSession({
-          query, results: data.results ?? [], txHash: null,
-          paidAmount: null, status: 'complete', step: 6, durationMs: Date.now() - t0, suggestions: data.suggestions ?? [],
+          query,
+          results: data.results ?? [],
+          txHash: data.txHash ?? null,
+          paidAmount: data.paidAmount ?? null,
+          status: 'complete',
+          step: 6,
+          durationMs: Date.now() - t0,
+          suggestions: data.suggestions ?? [],
           isLoadingSuggestions: true,
         })
         fetchAsyncSuggestions(query)
-        return
-      }
 
-      // Flow step 2 — parse the PAYMENT-REQUIRED header
-      advance(2)
-      console.log('💰 402 received, parsing payment requirements...')
-      const paymentRequired = httpClient.getPaymentRequiredResponse(
-        (name) => firstRes.headers.get(name)
-      )
-      console.log('💰 Payment requirements:', paymentRequired)
-
-      // Flow step 3 — createPaymentPayload() triggers the Freighter popup (signs auth entry)
-      advance(3)
-      console.log('🔐 Triggering Freighter popup via createPaymentPayload...')
-      const paymentPayload = await client.createPaymentPayload(paymentRequired)
-      console.log('✅ Freighter approved, payload created')
-
-      const paymentHeaders = httpClient.encodePaymentSignatureHeader(paymentPayload)
-      console.log('✅ Payment headers encoded')
-
-      // Flow step 4 — retry with X-PAYMENT header
-      advance(4)
-      console.log('🔄 Retrying with payment...')
-      const paidResPromise = fetch(`${SERVER_URL}/search?${params}`, {
-        headers: paymentHeaders,
-      })
-
-      // Flow step 5 — facilitator settles on Stellar while the retry is in flight
-      advance(5)
-      const paidRes = await paidResPromise
-      console.log('📡 Paid response status:', paidRes.status)
-
-      if (!paidRes.ok) {
-        const text = await paidRes.text()
-        throw new Error(`Payment failed: server returned ${paidRes.status} — ${text}`)
-      }
-
-      const data = await paidRes.json()
-      console.log('✅ Search complete!')
-
-      // Flow step 6 — result received and rendered
-      setSession({
-        query,
-        results:     data.results    ?? [],
-        txHash:      data.txHash     ?? null,
-        paidAmount:  data.paidAmount ?? null,
-        status:      'complete',
-        step:        6,
-        durationMs:  Date.now() - t0,
-        suggestions: data.suggestions ?? [],
-        isLoadingSuggestions: true,
-      })
-      fetchAsyncSuggestions(query)
-
-      if (data.txHash) {
-        toast.success(
-          createElement('div', { role: 'status', 'aria-live': 'polite' }, 
-            `Payment settled: ${data.paidAmount || '0.001'} USDC`
-          ), 
-          {
-            description: 'View transaction on Stellar network',
-            action: {
-              label: 'Explorer',
-              onClick: () => window.open(explorerTxUrl(data.txHash), '_blank')
-            }
-          }
-        )
-      }
-
-      // Persist receipt
-      if (data.txHash) {
-        try {
-          const receiptsRaw = localStorage.getItem(RECEIPTS_STORAGE_KEY)
-          const receipts: SearchReceipt[] = receiptsRaw ? JSON.parse(receiptsRaw) : []
-          
-          const newReceipt: SearchReceipt = {
-            txHash: data.txHash,
-            query: isSearchQueryStorageEnabled() ? query.trim() : '',
-            amount: data.paidAmount || '0.001',
-            timestamp: new Date().toISOString(),
-            network: data.network || 'stellar:testnet',
-          }
-
-          // Keep only last 50 receipts
-          const updated = [newReceipt, ...receipts].slice(0, 50)
-          localStorage.setItem(RECEIPTS_STORAGE_KEY, JSON.stringify(updated))
-          console.log('📄 Receipt persisted')
-        } catch (e) {
-          console.warn('Failed to persist receipt:', e)
+        if (data.txHash) {
+          toast.success(
+            createElement(
+              'div',
+              { role: 'status', 'aria-live': 'polite' },
+              `Payment settled: ${data.paidAmount || '0.001'} USDC`,
+            ),
+            {
+              description: 'View transaction on Stellar network',
+              action: {
+                label: 'Explorer',
+                onClick: () => window.open(explorerTxUrl(data.txHash), '_blank'),
+              },
+            },
+          )
         }
-      }
 
-    } catch (err: any) {
-      console.error('❌ Search failed:', err)
-      const msg = err.message || 'Search failed.'
-      toast.error(
-        createElement('div', { role: 'alert', 'aria-live': 'assertive' }, 'Search Payment Failed'),
-        { description: msg }
-      )
-      setSession(prev => ({
-        ...prev,
-        status: 'error',
-        error:  msg,
-      }))
-    }
-  }, [walletAddress])
+        // Persist receipt
+        if (data.txHash) {
+          try {
+            const receiptsRaw = localStorage.getItem(RECEIPTS_STORAGE_KEY)
+            const receipts: SearchReceipt[] = receiptsRaw ? JSON.parse(receiptsRaw) : []
+
+            const newReceipt: SearchReceipt = {
+              txHash: data.txHash,
+              query: isSearchQueryStorageEnabled() ? query.trim() : '',
+              amount: data.paidAmount || '0.001',
+              timestamp: new Date().toISOString(),
+              network: data.network || 'stellar:testnet',
+            }
+
+            // Keep only last 50 receipts
+            const updated = [newReceipt, ...receipts].slice(0, 50)
+            localStorage.setItem(RECEIPTS_STORAGE_KEY, JSON.stringify(updated))
+            console.log('📄 Receipt persisted')
+          } catch (e) {
+            console.warn('Failed to persist receipt:', e)
+          }
+        }
+      } catch (err: any) {
+        console.error('❌ Search failed:', err)
+        const msg = err.message || 'Search failed.'
+        toast.error(
+          createElement(
+            'div',
+            { role: 'alert', 'aria-live': 'assertive' },
+            'Search Payment Failed',
+          ),
+          { description: msg },
+        )
+        setSession((prev) => ({
+          ...prev,
+          status: 'error',
+          error: msg,
+        }))
+      }
+    },
+    [walletAddress],
+  )
 
   const reset = useCallback(() => {
-    setSession({ query: '', results: [], txHash: null, paidAmount: null, status: 'idle', suggestions: [] })
+    setSession({
+      query: '',
+      results: [],
+      txHash: null,
+      paidAmount: null,
+      status: 'idle',
+      suggestions: [],
+    })
   }, [])
 
   const retry = useCallback(() => {

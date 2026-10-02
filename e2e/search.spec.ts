@@ -77,7 +77,12 @@ async function stubFreighter(page: Page, mode: WalletMode = 'unavailable') {
         }
       })
     },
-    { mode, address: TEST_ADDRESS, network: TEST_NETWORK, passphrase: TEST_PASSPHRASE } satisfies StubOptions,
+    {
+      mode,
+      address: TEST_ADDRESS,
+      network: TEST_NETWORK,
+      passphrase: TEST_PASSPHRASE,
+    } satisfies StubOptions,
   )
 }
 
@@ -89,9 +94,7 @@ test.describe('StellarSearch', () => {
     await expect(page.locator('h1')).toContainText('SEARCH')
     await expect(page.getByLabel('Search query')).toBeVisible()
     await expect(page.getByText('Connect Freighter wallet to search')).toBeVisible()
-    await expect(
-      page.getByRole('button', { name: /CONNECT FREIGHTER TO SEARCH/i }),
-    ).toBeVisible()
+    await expect(page.getByRole('button', { name: /CONNECT FREIGHTER TO SEARCH/i })).toBeVisible()
   })
 
   test('navigates between the search, docs and dashboard pages', async ({ page }) => {
@@ -122,9 +125,7 @@ test.describe('StellarSearch', () => {
 
     // The app must ask for a wallet instead of starting a paid search.
     await expect(page.getByText('Connect Freighter wallet to search')).toBeVisible()
-    await expect(
-      page.getByRole('button', { name: /CONNECT FREIGHTER TO SEARCH/i }),
-    ).toBeVisible()
+    await expect(page.getByRole('button', { name: /CONNECT FREIGHTER TO SEARCH/i })).toBeVisible()
     await expect(input).toHaveValue('stellar blockchain')
     await expect(page.getByText('NEW SEARCH')).toHaveCount(0)
 

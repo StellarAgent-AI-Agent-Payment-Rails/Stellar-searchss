@@ -36,9 +36,8 @@ to the x402 client:
 
 ```ts
 const raw = result.signedAuthEntry
-const signedAuthEntry = typeof raw === 'string'
-  ? raw
-  : Buffer.from(raw as unknown as Uint8Array).toString('base64')
+const signedAuthEntry =
+  typeof raw === 'string' ? raw : Buffer.from(raw as unknown as Uint8Array).toString('base64')
 ```
 
 The `typeof raw === 'string'` guard keeps the code correct across Freighter versions
@@ -50,7 +49,7 @@ aliased in `vite.config.ts` for the browser.
 
 - **`raw.toString()`** — the one-character-looking shortcut that caused the bug.
   Produces `"[object Buffer]"` because `Buffer.prototype.toString` on the raw value
-  yields the default encoding of the *object*, not the bytes. Rejected: broken.
+  yields the default encoding of the _object_, not the bytes. Rejected: broken.
 - **`raw.toString('base64')` directly** — works when the value truly is a `Buffer`,
   but fails if a Freighter version returns a `Uint8Array` (no base64 overload
   guaranteed) or already-encoded string. Rejected: fragile across wallet versions.
@@ -63,7 +62,7 @@ aliased in `vite.config.ts` for the browser.
 - **Easier:** payment flow works on all Freighter versions we support; the guard
   makes future Freighter output-shape changes a non-event.
 - **Harder:** the `as unknown as Uint8Array` cast is ugly and required because
-  Freighter's typings do not discriminate the union. It is *intentional* — do not
+  Freighter's typings do not discriminate the union. It is _intentional_ — do not
   "clean it up".
 - **Accepted risk:** if Freighter ever returns an object that is neither string nor
   `Uint8Array`, we fail at signature-length validation again. The x402 client's

@@ -14,20 +14,22 @@ let draws = 0
 const controller = createAnimationLoopController({
   isVisible: () => visible,
   isReducedMotion: () => reducedMotion,
-  requestFrame: callback => {
+  requestFrame: (callback) => {
     const id = nextFrame++
     callbacks.set(id, callback)
     return id
   },
-  cancelFrame: id => {
+  cancelFrame: (id) => {
     cancelled.push(id)
     callbacks.delete(id)
   },
-  draw: () => { draws++ },
-  addVisibilityListener: listener => visibilityListeners.add(listener),
-  removeVisibilityListener: listener => visibilityListeners.delete(listener),
-  addMotionListener: listener => motionListeners.add(listener),
-  removeMotionListener: listener => motionListeners.delete(listener),
+  draw: () => {
+    draws++
+  },
+  addVisibilityListener: (listener) => visibilityListeners.add(listener),
+  removeVisibilityListener: (listener) => visibilityListeners.delete(listener),
+  addMotionListener: (listener) => motionListeners.add(listener),
+  removeMotionListener: (listener) => motionListeners.delete(listener),
 })
 
 assert.equal(callbacks.size, 1)
@@ -39,22 +41,22 @@ assert.equal(draws, 1)
 assert.equal(callbacks.size, 1)
 
 visible = false
-visibilityListeners.forEach(listener => listener())
+visibilityListeners.forEach((listener) => listener())
 assert.deepEqual(cancelled, [2])
 assert.equal(callbacks.size, 0)
 
 visible = true
-visibilityListeners.forEach(listener => listener())
+visibilityListeners.forEach((listener) => listener())
 assert.equal(callbacks.size, 1)
-visibilityListeners.forEach(listener => listener())
+visibilityListeners.forEach((listener) => listener())
 assert.equal(callbacks.size, 1)
 
 reducedMotion = true
-motionListeners.forEach(listener => listener())
+motionListeners.forEach((listener) => listener())
 assert.equal(callbacks.size, 0)
 
 reducedMotion = false
-motionListeners.forEach(listener => listener())
+motionListeners.forEach((listener) => listener())
 assert.equal(callbacks.size, 1)
 
 controller.cleanup()

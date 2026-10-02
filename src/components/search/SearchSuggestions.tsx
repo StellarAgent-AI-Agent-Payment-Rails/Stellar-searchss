@@ -74,15 +74,15 @@ export function SearchSuggestions({ onSelect, aiSuggestions, isLoading }: Props)
             onClick={() => onSelect(q)}
             className="px-3 py-1.5 rounded-lg text-xs font-display tracking-wide transition-all text-white/40 hover:text-neon-cyan/80"
             style={{ border: '1px solid rgba(255,255,255,0.08)' }}
-            onMouseEnter={e => {
+            onMouseEnter={(e) => {
               const el = e.currentTarget as HTMLButtonElement
               el.style.borderColor = isAi ? 'rgba(255,176,0,0.3)' : 'rgba(0,245,255,0.25)'
-              el.style.background   = isAi ? 'rgba(255,176,0,0.05)' : 'rgba(0,245,255,0.04)'
+              el.style.background = isAi ? 'rgba(255,176,0,0.05)' : 'rgba(0,245,255,0.04)'
             }}
-            onMouseLeave={e => {
+            onMouseLeave={(e) => {
               const el = e.currentTarget as HTMLButtonElement
               el.style.borderColor = 'rgba(255,255,255,0.08)'
-              el.style.background  = 'transparent'
+              el.style.background = 'transparent'
             }}
           >
             {q}

@@ -11,7 +11,10 @@ try {
   const cases = [
     [new Error('fetch failed for https://internal.example.test/search'), 'network/request'],
     [new Error('Invalid API key: sk-live-secret'), 'authentication/configuration'],
-    [new Error('upstream returned https://internal.example.test/api?token=secret'), 'upstream service'],
+    [
+      new Error('upstream returned https://internal.example.test/api?token=secret'),
+      'upstream service',
+    ],
     [new Error('Account not found for invalid address'), 'invalid request'],
     [{ code: 'E_INTERNAL', detail: 'unexpected implementation failure' }, 'unexpected internal'],
   ] as const
@@ -24,7 +27,9 @@ try {
     assert.equal(output.includes('secret'), false)
   }
 
-  const credentialBearingError = new Error('request failed at https://user:password@example.test/?access_token=secret')
+  const credentialBearingError = new Error(
+    'request failed at https://user:password@example.test/?access_token=secret',
+  )
   const result = reportToolError('Search', credentialBearingError)
   assert.equal(result.isError, true)
   assert.equal(result.content[0].text.includes('password'), false)

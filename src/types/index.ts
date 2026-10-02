@@ -41,4 +41,3 @@ export function parseHealthResponse(data: any): HealthResponse {
     receivingAddressConfigured: Boolean(data.receivingAddressConfigured),
   }
 }
-

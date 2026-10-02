@@ -131,7 +131,10 @@ export function isNonPublicAddress(ip: string): boolean {
 // ─── URL validation ──────────────────────────────────────────────────────
 
 /** Parse and check the parts of a URL that don't need DNS. */
-export function parsePublicUrl(raw: unknown, allowedPorts: ReadonlySet<number> = ALLOWED_PORTS): URL {
+export function parsePublicUrl(
+  raw: unknown,
+  allowedPorts: ReadonlySet<number> = ALLOWED_PORTS,
+): URL {
   if (typeof raw !== 'string' || !raw.trim()) {
     throw new UrlSummaryError('Missing required parameter: url', 400, 'URL_REQUIRED')
   }
@@ -150,7 +153,11 @@ export function parsePublicUrl(raw: unknown, allowedPorts: ReadonlySet<number> =
     throw new UrlSummaryError('Only http and https URLs are allowed', 400, 'URL_SCHEME_NOT_ALLOWED')
   }
   if (url.username || url.password) {
-    throw new UrlSummaryError('URLs with credentials are not allowed', 400, 'URL_CREDENTIALS_NOT_ALLOWED')
+    throw new UrlSummaryError(
+      'URLs with credentials are not allowed',
+      400,
+      'URL_CREDENTIALS_NOT_ALLOWED',
+    )
   }
   const port = url.port ? Number(url.port) : url.protocol === 'https:' ? 443 : 80
   if (!allowedPorts.has(port)) {
@@ -163,11 +170,24 @@ export function parsePublicUrl(raw: unknown, allowedPorts: ReadonlySet<number> =
   }
   // Literal IPs can be rejected before any network activity.
   if (net.isIP(host) && isNonPublicAddress(host)) {
-    throw new UrlSummaryError('Refusing to fetch a private or internal address', 403, 'URL_ADDRESS_NOT_ALLOWED')
+    throw new UrlSummaryError(
+      'Refusing to fetch a private or internal address',
+      403,
+      'URL_ADDRESS_NOT_ALLOWED',
+    )
   }
   const lower = host.toLowerCase()
-  if (lower === 'localhost' || lower.endsWith('.localhost') || lower.endsWith('.local') || lower.endsWith('.internal')) {
-    throw new UrlSummaryError('Refusing to fetch a private or internal address', 403, 'URL_ADDRESS_NOT_ALLOWED')
+  if (
+    lower === 'localhost' ||
+    lower.endsWith('.localhost') ||
+    lower.endsWith('.local') ||
+    lower.endsWith('.internal')
+  ) {
+    throw new UrlSummaryError(
+      'Refusing to fetch a private or internal address',
+      403,
+      'URL_ADDRESS_NOT_ALLOWED',
+    )
   }
   return url
 }
@@ -189,12 +209,20 @@ export function createGuardedLookup(
     }
     baseLookup(hostname, { ...options, all: true }, (err: any, addresses: any) => {
       if (err) return callback(err)
-      const list: dns.LookupAddress[] = Array.isArray(addresses) ? addresses : [{ address: addresses, family: 4 }]
+      const list: dns.LookupAddress[] = Array.isArray(addresses)
+        ? addresses
+        : [{ address: addresses, family: 4 }]
       if (list.length === 0) {
         return callback(new UrlSummaryError('Host did not resolve', 502, 'URL_DNS_FAILED'))
       }
       if (list.some((a) => !isAllowed(a.address))) {
-        return callback(new UrlSummaryError('Refusing to fetch a private or internal address', 403, 'URL_ADDRESS_NOT_ALLOWED'))
+        return callback(
+          new UrlSummaryError(
+            'Refusing to fetch a private or internal address',
+            403,
+            'URL_ADDRESS_NOT_ALLOWED',
+          ),
+        )
       }
       if (options?.all) return callback(null, list)
       callback(null, list[0].address, list[0].family)
@@ -242,13 +270,19 @@ function requestOnce(url: URL, opts: Required<FetchOptions>): Promise<http.Incom
       },
       resolve,
     )
-    req.on('timeout', () => req.destroy(new UrlSummaryError('Timed out fetching URL', 504, 'URL_TIMEOUT')))
+    req.on('timeout', () =>
+      req.destroy(new UrlSummaryError('Timed out fetching URL', 504, 'URL_TIMEOUT')),
+    )
     req.on('error', reject)
     req.end()
   })
 }
 
-function readCapped(res: http.IncomingMessage, maxBytes: number, timeoutMs: number): Promise<{ body: Buffer; truncated: boolean }> {
+function readCapped(
+  res: http.IncomingMessage,
+  maxBytes: number,
+  timeoutMs: number,
+): Promise<{ body: Buffer; truncated: boolean }> {
   return new Promise((resolve, reject) => {
     const chunks: Buffer[] = []
     let size = 0
@@ -292,7 +326,10 @@ function readCapped(res: http.IncomingMessage, maxBytes: number, timeoutMs: numb
 }
 
 /** Fetch a public http(s) page, following up to MAX_REDIRECTS redirects. */
-export async function fetchPublicPage(rawUrl: unknown, options: FetchOptions = {}): Promise<FetchedPage> {
+export async function fetchPublicPage(
+  rawUrl: unknown,
+  options: FetchOptions = {},
+): Promise<FetchedPage> {
   const opts: Required<FetchOptions> = {
     isAllowedAddress: options.isAllowedAddress ?? ((a) => !isNonPublicAddress(a)),
     lookup: options.lookup ?? dns.lookup,
@@ -322,9 +359,17 @@ export async function fetchPublicPage(rawUrl: unknown, options: FetchOptions = {
     }
 
     const contentType = String(res.headers['content-type'] || '').toLowerCase()
-    if (!contentType.startsWith('text/html') && !contentType.startsWith('text/plain') && !contentType.startsWith('application/xhtml+xml')) {
+    if (
+      !contentType.startsWith('text/html') &&
+      !contentType.startsWith('text/plain') &&
+      !contentType.startsWith('application/xhtml+xml')
+    ) {
       res.resume()
-      throw new UrlSummaryError(`Unsupported content type: ${contentType || 'unknown'}`, 415, 'URL_UNSUPPORTED_CONTENT')
+      throw new UrlSummaryError(
+        `Unsupported content type: ${contentType || 'unknown'}`,
+        415,
+        'URL_UNSUPPORTED_CONTENT',
+      )
     }
 
     const { body, truncated } = await readCapped(res, opts.maxBytes, opts.timeoutMs)
@@ -335,15 +380,32 @@ export async function fetchPublicPage(rawUrl: unknown, options: FetchOptions = {
 // ─── HTML → text ─────────────────────────────────────────────────────────
 
 const NAMED_ENTITIES: Record<string, string> = {
-  amp: '&', lt: '<', gt: '>', quot: '"', apos: "'", nbsp: ' ',
-  mdash: '—', ndash: '–', hellip: '…', rsquo: '’', lsquo: '‘', rdquo: '”', ldquo: '“', copy: '©',
+  amp: '&',
+  lt: '<',
+  gt: '>',
+  quot: '"',
+  apos: "'",
+  nbsp: ' ',
+  mdash: '—',
+  ndash: '–',
+  hellip: '…',
+  rsquo: '’',
+  lsquo: '‘',
+  rdquo: '”',
+  ldquo: '“',
+  copy: '©',
 }
 
 function decodeEntities(text: string): string {
   return text.replace(/&(#x[0-9a-f]+|#\d+|[a-z]+);/gi, (match, entity: string) => {
     if (entity[0] === '#') {
-      const code = entity[1].toLowerCase() === 'x' ? parseInt(entity.slice(2), 16) : parseInt(entity.slice(1), 10)
-      return Number.isFinite(code) && code > 0 && code <= 0x10ffff ? String.fromCodePoint(code) : match
+      const code =
+        entity[1].toLowerCase() === 'x'
+          ? parseInt(entity.slice(2), 16)
+          : parseInt(entity.slice(1), 10)
+      return Number.isFinite(code) && code > 0 && code <= 0x10ffff
+        ? String.fromCodePoint(code)
+        : match
     }
     return NAMED_ENTITIES[entity.toLowerCase()] ?? match
   })
@@ -361,7 +423,10 @@ export function htmlToText(html: string): string {
   return decodeEntities(
     html
       .replace(/<!--[\s\S]*?-->/g, ' ')
-      .replace(/<(script|style|noscript|svg|template|iframe|head|nav|footer)\b[\s\S]*?<\/\1\s*>/gi, ' ')
+      .replace(
+        /<(script|style|noscript|svg|template|iframe|head|nav|footer)\b[\s\S]*?<\/\1\s*>/gi,
+        ' ',
+      )
       .replace(/<(br|hr)\b[^>]*>/gi, '\n')
       .replace(/<\/(p|div|section|article|li|h[1-6]|tr|blockquote|pre)\s*>/gi, '\n')
       .replace(/<[^>]+>/g, ' '),
@@ -373,11 +438,17 @@ export function htmlToText(html: string): string {
 }
 
 /** Cap text for the model, cutting at a word boundary where possible. */
-export function capForModel(text: string, maxChars = MAX_MODEL_CHARS): { text: string; truncated: boolean } {
+export function capForModel(
+  text: string,
+  maxChars = MAX_MODEL_CHARS,
+): { text: string; truncated: boolean } {
   if (text.length <= maxChars) return { text, truncated: false }
   const cut = text.slice(0, maxChars)
   const lastSpace = cut.lastIndexOf(' ')
-  return { text: (lastSpace > maxChars * 0.8 ? cut.slice(0, lastSpace) : cut) + ' …', truncated: true }
+  return {
+    text: (lastSpace > maxChars * 0.8 ? cut.slice(0, lastSpace) : cut) + ' …',
+    truncated: true,
+  }
 }
 
 export interface PageText {
@@ -388,7 +459,10 @@ export interface PageText {
 }
 
 /** Fetch a public page and return model-ready plain text. */
-export async function fetchPageText(rawUrl: unknown, options: FetchOptions = {}): Promise<PageText> {
+export async function fetchPageText(
+  rawUrl: unknown,
+  options: FetchOptions = {},
+): Promise<PageText> {
   const page = await fetchPublicPage(rawUrl, options)
   const isHtml = !page.contentType.startsWith('text/plain')
   const plain = isHtml ? htmlToText(page.body) : page.body.trim()

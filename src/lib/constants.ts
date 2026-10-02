@@ -44,7 +44,8 @@ export const USDC_ISSUER = IS_MAINNET ? USDC_ISSUER_MAINNET : USDC_ISSUER_TESTNE
 export const USDC_ASSET_CODE = 'USDC'
 
 // Trustline instructions
-export const TRUSTLINE_INSTRUCTIONS_URL = 'https://developers.stellar.org/docs/learn/fundamentals/stellar-data-structures/accounts#trustlines'
+export const TRUSTLINE_INSTRUCTIONS_URL =
+  'https://developers.stellar.org/docs/learn/fundamentals/stellar-data-structures/accounts#trustlines'
 
 // USDC Soroban Contract (for x402)
 export const USDB_CONTRACT_TESTNET = 'CBIELTK6YBZJU5U2WWQEUCYKLPU6AUNZ2B4QWWFEIE3USCIHMXQDAMA'
