@@ -875,6 +875,8 @@ app.get('/health', (req: Request, res: Response) => {
   const payload = {
     status:                    'ok',
     version:                   APP_VERSION,
+    commit:                    process.env.GIT_COMMIT || process.env.VERCEL_GIT_COMMIT_SHA || null,
+    startedAt:                 new Date(stats.startTime).toISOString(),
     network:                   NETWORK,
     pricePerQuery:             '0.001 USDC',
     protocol:                  'x402',

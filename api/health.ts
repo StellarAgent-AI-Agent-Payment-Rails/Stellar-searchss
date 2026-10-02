@@ -20,6 +20,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const body = {
     status: 'ok',
     version: APP_VERSION,
+    commit: process.env.GIT_COMMIT || process.env.VERCEL_GIT_COMMIT_SHA || null,
+    startedAt: new Date().toISOString(),
     network: NETWORK,
     pricePerQuery: '0.001 USDC',
     protocol: 'x402',
