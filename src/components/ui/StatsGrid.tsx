@@ -2,14 +2,10 @@ import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
 import { TrendingUp, Zap, Clock, Shield } from 'lucide-react'
 import { fetchServerStats } from '../../lib/stellar'
+import type { HealthResponse } from '../../types'
 
-interface ServerStats {
-  totalQueries: number
-  totalUsdcSettled: string
-  avgLatencyMs: number
-  uptime: string
-  status: 'online' | 'offline'
-  [key: string]: any // Add index signature
+type ServerStats = Pick<HealthResponse, 'totalQueries' | 'totalUsdcSettled' | 'avgLatencyMs' | 'uptime'> & {
+  status: 'online' | 'offline' | 'invalid'
 }
 
 const CARDS = [
@@ -30,17 +26,21 @@ export function StatsGrid() {
 
   useEffect(() => {
     const load = async () => {
-      const data = await fetchServerStats()
-      if (data) {
-        setStats({
-          totalQueries:     data.totalQueries     ?? 0,
-          totalUsdcSettled: data.totalUsdcSettled ?? '0.00',
-          avgLatencyMs:     data.avgLatencyMs     ?? 0,
-          uptime:           data.uptime           ?? '—',
-          status: 'online',
-        })
-      } else {
-        setStats(prev => ({ ...prev, status: 'offline' }))
+      try {
+        const data = await fetchServerStats()
+        if (data) {
+          setStats({
+            totalQueries: data.totalQueries,
+            totalUsdcSettled: data.totalUsdcSettled,
+            avgLatencyMs: data.avgLatencyMs,
+            uptime: data.uptime,
+            status: 'online',
+          })
+        } else {
+          setStats(prev => ({ ...prev, status: 'offline' }))
+        }
+      } catch {
+        setStats(prev => ({ ...prev, status: 'invalid' }))
       }
     }
     load()
@@ -78,7 +78,7 @@ export function StatsGrid() {
             />
           </div>
           <p className="font-display text-lg font-bold" style={{ color }}>
-            {fmt(stats[key])}
+            {fmt(stats[key as keyof Omit<ServerStats, 'status'>])}
           </p>
           <p className="font-display text-white/30 mt-0.5 tracking-wider uppercase"
             style={{ fontSize: '9px' }}>
@@ -92,7 +92,7 @@ export function StatsGrid() {
       <div className="col-span-2 lg:col-span-4 flex items-center justify-end gap-2 mt-1">
         <div className={`w-1.5 h-1.5 rounded-full ${stats.status === 'online' ? 'bg-neon-green animate-pulse' : 'bg-red-500'}`} />
         <span className="font-display text-xs text-white/25">
-          SERVER {stats.status === 'online' ? 'ONLINE' : 'OFFLINE — run: npm run server'}
+          SERVER {stats.status === 'online' ? 'ONLINE' : stats.status === 'invalid' ? 'INVALID HEALTH RESPONSE' : 'OFFLINE — run: npm run server'}
         </span>
       </div>
     </div>

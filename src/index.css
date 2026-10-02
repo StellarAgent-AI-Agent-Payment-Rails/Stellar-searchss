@@ -48,3 +48,58 @@
   color: #00f5ff;
   margin-left: 2px;
 }
+
+.skip-link {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+.skip-link:focus {
+  position: absolute;
+  top: 1rem;
+  left: 1rem;
+  width: auto;
+  height: auto;
+  padding: 0.75rem 1.5rem;
+  margin: 0;
+  overflow: visible;
+  clip: auto;
+  white-space: normal;
+  z-index: 9999;
+  background-color: #00f5ff;
+  color: #020408;
+  font-weight: 700;
+  border-radius: 0.25rem;
+}
+
+/* Visible keyboard focus indicator for every interactive element.
+ * Cyan (#00f5ff) on the app's near-black surfaces measures ~15:1
+ * contrast, well above the WCAG 3:1 minimum for focus indicators.
+ * Unlayered on purpose so it wins over Tailwind's `outline-none`
+ * utility. The SearchBar glow ring stays as decoration only. */
+:where(a, button, input, select, textarea, summary, [tabindex], [role="button"]):focus-visible {
+  outline: 2px solid #00f5ff;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* The skip link sits on a cyan background when revealed, where a cyan
+ * outline would be invisible — use a dark outline plus a white halo. */
+.skip-link:focus-visible {
+  outline: 2px solid #020408;
+  outline-offset: 2px;
+  box-shadow: 0 0 0 4px #00f5ff, 0 0 0 6px #ffffff;
+}
+
+/* Never hide the keyboard indicator; mouse-only focus stays clean. */
+:where(a, button, input, select, textarea, summary, [tabindex], [role="button"]):focus:not(:focus-visible) {
+  outline: none;
+  box-shadow: none;
+}

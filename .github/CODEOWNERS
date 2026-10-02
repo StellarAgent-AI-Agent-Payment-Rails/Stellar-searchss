@@ -1,0 +1,33 @@
+# CODEOWNERS
+#
+# Routes review requests for payment-critical code to a maintainer.
+# GitHub uses the LAST matching pattern for a file, so more specific
+# rules must appear below broader ones.
+#
+# Paths with no rule here (docs, UI components, pages, styles, config)
+# are intentionally unowned so any contributor can review them.
+#
+# Docs: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+
+# ─── Payment server (x402 middleware, Serper proxy, CORS, logging) ───
+/server/                         @Emmy123222
+
+# ─── Vercel serverless handlers (production payment + search endpoints) ───
+/api/                            @Emmy123222
+
+# ─── MCP server (pays USDC via x402 on behalf of agents) ───
+/mcp-server/                     @Emmy123222
+
+# ─── Client-side payment flow and wallet signing ───
+/src/hooks/useSearch.ts          @Emmy123222
+/src/hooks/useFreighterWallet.ts @Emmy123222
+
+# ─── Network, USDC issuer and contract addresses ───
+/src/lib/constants.ts            @Emmy123222
+
+# ─── Environment templates (receiving address, facilitator URL) ───
+/.env.example                    @Emmy123222
+/.env.production                 @Emmy123222
+
+# ─── This file: changes to review routing need a maintainer ───
+/.github/CODEOWNERS              @Emmy123222

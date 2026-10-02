@@ -1,0 +1,32 @@
+{
+  "searchParameters": {
+    "q": "Stellar blockchain",
+    "num": 5,
+    "type": "search"
+  },
+  "organic": [
+    {
+      "title": "Stellar: Larger Than Bitcoin?",
+      "link": "https://stellar.org/",
+      "snippet": "Stellar is an open network that allows money to move and store in the form of digital tokens.",
+      "position": 1,
+      "date": "Jan 1, 2024"
+    },
+    {
+      "title": "What is Stellar?",
+      "link": "https://en.wikipedia.org/wiki/Stellar",
+      "snippet": "Stellar is a decentralized, open-source, peer-to-peer network.",
+      "position": 2,
+      "date": "Feb 1, 2024"
+    },
+    {
+      "title": "Stellar Lumens",
+      "link": "https://lumens.org/",
+      "snippet": "Lumens is a decentralized exchange network built on Stellar.",
+      "position": 3,
+      "date": "Mar 1, 2024"
+    }
+  ],
+  "peopleAlsoAsk": [],
+  "relatedSearches": []
+}

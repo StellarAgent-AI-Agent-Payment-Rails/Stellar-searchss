@@ -1,11 +1,19 @@
 {
   "mcpServers": {
-    "stellar-search": {
+    "stellar-search-local": {
+      "command": "npx",
+      "args": ["-y", "tsx", "./mcp-server/index.ts"],
+      "env": {
+        "GROQ_API_KEY": "your_groq_api_key_here",
+        "SEARCH_API_URL": "http://localhost:3001"
+      }
+    },
+    "stellar-search-hosted": {
       "command": "npx",
       "args": ["tsx", "./mcp-server/index.ts"],
       "env": {
         "GROQ_API_KEY": "your_groq_api_key_here",
-        "SEARCH_API_URL": "http://localhost:3001"
+        "SEARCH_API_URL": "https://stellar-search-2twg.vercel.app/api"
       }
     }
   }

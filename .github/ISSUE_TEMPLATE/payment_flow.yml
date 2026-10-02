@@ -1,0 +1,128 @@
+name: Payment flow problem
+about: Report a problem with sending, receiving or swapping payments
+labels: ["bug", "payments"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report a payment-flow problem.
+        Please fill in every required field — reports missing steps, environment or logs are hard to act on.
+
+  - type: checkboxes
+    id: preflight
+    attributes:
+      label: Preflight checklist
+      options:
+        - label: I have read [CONTRIBUTING.md](../blob/main/CONTRIBUTING.md)
+          required: true
+        - label: I have searched existing issues and this is not a duplicate
+          required: true
+        - label: I am not reporting a security vulnerability (those go through the security policy)
+          required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: What happened?
+      description: A clear and concise description of the payment-flow problem.
+      placeholder: When I try to send XLM to ..., the confirmation screen ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: Exact steps so we can reproduce the problem.
+      placeholder: |
+        1. Go to '...'
+        2. Click on '...'
+        3. Enter amount '...'
+        4. See error
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behaviour
+      description: What did you expect to happen?
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behaviour
+      description: What actually happened?
+    validations:
+      required: true
+
+  - type: dropdown
+    id: flow
+    attributes:
+      label: Which payment flow?
+      options:
+        - Send payment
+        - Receive payment
+        - Swap
+        - Other
+    validations:
+      required: true
+
+  - type: input
+    id: freighter_version
+    attributes:
+      label: Freighter version
+      description: Found in Freighter → Settings → About.
+      placeholder: e.g. 5.24.0
+    validations:
+      required: true
+
+  - type: dropdown
+    id: network
+    attributes:
+      label: Network
+      description: Which Stellar network were you using?
+      options:
+        - Mainnet (Public)
+        - Testnet
+        - Futurenet
+        - Custom / other
+    validations:
+      required: true
+
+  - type: input
+    id: environment
+    attributes:
+      label: Environment
+      description: OS and browser (with version).
+      placeholder: e.g. macOS 14.5, Chrome 126.0.6478.127
+    validations:
+      required: true
+
+  - type: textarea
+    id: console_output
+    attributes:
+      label: Console output
+      description: Paste any relevant errors from the browser console.
+      render: shell
+    validations:
+      required: true
+
+  - type: textarea
+    id: network_tab
+    attributes:
+      label: Network tab
+      description: Paste the relevant request/response from the browser Network tab (redact secrets).
+      render: shell
+    validations:
+      required: true
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional context
+      description: Screenshots, transaction hashes or anything else that helps.
+    validations:
+      required: false
