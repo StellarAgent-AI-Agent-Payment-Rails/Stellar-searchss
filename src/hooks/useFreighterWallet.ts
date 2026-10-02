@@ -4,7 +4,7 @@
  * Fetches live balances from Stellar Horizon
  */
 
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback, useEffect, useRef } from 'react'
 import {
   isConnected,
   requestAccess,
@@ -13,6 +13,14 @@ import {
 } from '@stellar/freighter-api'
 import { Horizon } from '@stellar/stellar-sdk'
 import { HORIZON_URL, USDK_ISSUER } from '../lib/stellar'
+
+export interface RefreshOptions {
+  targetTxHash?: string
+  txHash?: string
+  expectedPreviousBalance?: string
+  maxAttempts?: number
+  delayMs?: number
+}
 
 export interface WalletState {
   publicKey: string | null
@@ -170,6 +178,7 @@ export function useFreighterWallet() {
         usddTrustline: hasUsddTrustline,
         error: null,
       }))
+      return { xlm, usdc }
     } catch (err: any) {
       if (isRateLimitError(err)) {
         setWallet(prev => ({
@@ -182,6 +191,7 @@ export function useFreighterWallet() {
         ...prev,
         error: err.message || 'Failed to load account',
       }))
+      return null
     }
   }, [])
 
@@ -334,6 +344,7 @@ export function useFreighterWallet() {
   }, [fetchWalletData])
 
   const disconnect = useCallback(() => {
+    pollSessionRef.current++
     setWallet({
       publicKey: null,
       connected: false,
