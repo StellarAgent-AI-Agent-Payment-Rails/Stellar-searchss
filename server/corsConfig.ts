@@ -11,6 +11,8 @@
 import { describe, expect, it, vi, afterEach } from 'vitest'
 
 import type { CorsOptions } from 'cors'
+import cors from 'cors'
+import type { Request, Response } from 'express'
 
 /**
  * Request headers the payment flow actually sends.

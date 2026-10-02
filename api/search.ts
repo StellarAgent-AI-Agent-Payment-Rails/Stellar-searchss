@@ -1,4 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
+import { applyServerlessCors } from '../server/corsConfig'
 import { 
   STELLAR_NETWORK, 
   USDC_CONTRACT, 
@@ -17,22 +18,7 @@ const PAYMENTS_DISABLED = process.env.NODE_ENV === 'development' &&
   process.env.VERCEL_ENV !== 'production' && process.env.PAYMENTS_DISABLED === 'true'
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-
-  // ─── CORS ─────────────────────────────────────────────────────────────────
-  res.setHeader('Access-Control-Allow-Origin', '*')
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
-  res.setHeader('Access-Control-Allow-Headers', [
-    'Content-Type',
-    'Authorization',
-    'X-Payment',
-    'payment-signature',
-    'x-payment',
-    'X-PAYMENT',
-  ].join(', '))
-  res.setHeader('Access-Control-Expose-Headers', [
-    'PAYMENT-REQUIRED',
-    'X-Payment-Response',
-  ].join(', '))
+  await applyServerlessCors(req, res)
 
   if (req.method === 'OPTIONS') return res.status(200).end()
   if (req.method !== 'GET')    return res.status(405).json({ error: 'Method not allowed' })

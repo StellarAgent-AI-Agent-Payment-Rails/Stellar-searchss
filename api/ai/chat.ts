@@ -1,5 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
 import Groq from 'groq-sdk'
+import { applyServerlessCors } from '../../server/corsConfig'
 
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY! })
 
@@ -22,6 +23,12 @@ function readMessages(req: VercelRequest): ChatMessage[] | null {
 // client asks for them (Accept header or ?stream=1), otherwise returns the
 // full completion as JSON for callers that don't support SSE.
 export default async function handler(req: VercelRequest, res: VercelResponse) {
+  await applyServerlessCors(req, res)
+
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end()
+  }
+
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' })
   }
