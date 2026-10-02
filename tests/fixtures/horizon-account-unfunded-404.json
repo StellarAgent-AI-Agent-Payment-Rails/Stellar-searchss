@@ -1,0 +1,6 @@
+{
+  "type": "https://stellar.org/dev/errors/not_found",
+  "title": "Resource Missing",
+  "status": 404,
+  "detail": "The resource at the requested location was not found.",
+  "instance": "accounts/GBADUNFUNDED2YOURACCOUNT3YOURACCOUNT3YOURACCOUNT3YOUR

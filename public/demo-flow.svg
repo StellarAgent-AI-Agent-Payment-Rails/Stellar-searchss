@@ -1,0 +1,295 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 700" width="960" height="700" role="img" aria-label="Animated walkthrough of the StellarSearch x402 payment flow">
+  <title>StellarSearch x402 payment flow walkthrough</title>
+  <desc>An animated illustration of the real StellarSearch UI: connect Freighter, search, receive HTTP 402, sign a Soroban auth entry, retry with X-PAYMENT, let the facilitator settle 0.001 USDC on Stellar testnet, and render results.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#020408"/>
+      <stop offset="1" stop-color="#040a12"/>
+    </linearGradient>
+    <radialGradient id="halo" cx="50%" cy="34%" r="62%">
+      <stop offset="0" stop-color="#00f5ff" stop-opacity="0.10"/>
+      <stop offset="1" stop-color="#00f5ff" stop-opacity="0"/>
+    </radialGradient>
+    <clipPath id="type"><rect x="156" y="176" width="0" height="26"><animate attributeName="width" dur="20s" repeatCount="indefinite" keyTimes="0;0.07;1" values="0;180;180"/></rect></clipPath>
+    <clipPath id="progressClip"><rect x="168" y="300" width="0" height="12"><animate attributeName="width" dur="20s" repeatCount="indefinite" keyTimes="0;0.08;0.155;0.23;0.305;0.38;0.455;0.53;1" values="0;0;120;240;360;480;600;600;600"/></rect></clipPath>
+    <style>
+      text { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+      .stage { animation: cycle 20s linear infinite; }
+      .connectBtn { animation: connectBtn 20s linear infinite; }
+      .walletPill { animation: walletPill 20s linear infinite; }
+      .searchbox { animation: searchbox 20s linear infinite; }
+      .popup { animation: popup 20s linear infinite; }
+      .statusA { animation: statusA 20s linear infinite; }
+      .statusB { animation: statusB 20s linear infinite; }
+      .statusC { animation: statusC 20s linear infinite; }
+      .txrow { animation: txrow 20s linear infinite; }
+      .proc { animation: proc 20s linear infinite; }
+      .settled { animation: settled 20s linear infinite; }
+      .resultA { animation: resultA 20s linear infinite; }
+      .resultB { animation: resultB 20s linear infinite; }
+      .resultC { animation: resultC 20s linear infinite; }
+      .blink { animation: blink 1s steps(1) infinite; }
+.glow0{animation:glow0 20s linear infinite}
+.done0{animation:done0 20s linear infinite}
+.lbl0{animation:lbl0 20s linear infinite}
+.glow1{animation:glow1 20s linear infinite}
+.done1{animation:done1 20s linear infinite}
+.lbl1{animation:lbl1 20s linear infinite}
+.glow2{animation:glow2 20s linear infinite}
+.done2{animation:done2 20s linear infinite}
+.lbl2{animation:lbl2 20s linear infinite}
+.glow3{animation:glow3 20s linear infinite}
+.done3{animation:done3 20s linear infinite}
+.lbl3{animation:lbl3 20s linear infinite}
+.glow4{animation:glow4 20s linear infinite}
+.done4{animation:done4 20s linear infinite}
+.lbl4{animation:lbl4 20s linear infinite}
+.glow5{animation:glow5 20s linear infinite}
+.done5{animation:done5 20s linear infinite}
+.lbl5{animation:lbl5 20s linear infinite}
+      @keyframes cycle { 0% { opacity: 0; } 3% { opacity: 1; } 90% { opacity: 1; } 97% { opacity: 0; } 100% { opacity: 0; } }
+      @keyframes connectBtn { 0%, 5% { opacity: 1; } 7%, 100% { opacity: 0; } }
+      @keyframes walletPill { 0%, 6% { opacity: 0; } 8%, 100% { opacity: 1; } }
+      @keyframes searchbox { 0%, 8% { stroke: rgba(0,245,255,0.25); } 9%, 53% { stroke: #00f5ff; } 54%, 100% { stroke: rgba(0,245,255,0.25); } }
+      @keyframes popup { 0%, 23% { opacity: 0; } 24%, 30% { opacity: 1; } 31%, 100% { opacity: 0; } }
+      @keyframes statusA { 0%, 8% { opacity: 0; } 9%, 22.5% { opacity: 1; } 23.5%, 100% { opacity: 0; } }
+      @keyframes statusB { 0%, 23.5% { opacity: 0; } 24.5%, 52.5% { opacity: 1; } 53.5%, 100% { opacity: 0; } }
+      @keyframes statusC { 0%, 53.5% { opacity: 0; } 55%, 100% { opacity: 1; } }
+      @keyframes txrow { 0%, 53.5% { opacity: 0; } 55%, 100% { opacity: 1; } }
+      @keyframes proc { 0%, 8% { opacity: 0; } 9%, 52.5% { opacity: 0.85; } 53.5%, 100% { opacity: 0; } }
+      @keyframes settled { 0%, 53.5% { opacity: 0; } 55%, 100% { opacity: 1; } }
+      @keyframes resultA { 0%, 55% { opacity: 0; } 57%, 100% { opacity: 1; } }
+      @keyframes resultB { 0%, 57% { opacity: 0; } 59%, 100% { opacity: 1; } }
+      @keyframes resultC { 0%, 59% { opacity: 0; } 61%, 100% { opacity: 1; } }
+      @keyframes blink { 0%, 50% { opacity: 1; } 51%, 100% { opacity: 0; } }
+@keyframes glow0{0%,8%{opacity:0}9%{opacity:.9}11%{opacity:.22}13%{opacity:.85}15.5%{opacity:.2}16%,100%{opacity:0}}
+@keyframes done0{0%,15.5%{opacity:0}16%,100%{opacity:1}}
+@keyframes lbl0{0%,8%{opacity:.25}9.5%,100%{opacity:1}}
+@keyframes glow1{0%,15.5%{opacity:0}16.5%{opacity:.9}18.5%{opacity:.22}20.5%{opacity:.85}23%{opacity:.2}23.5%,100%{opacity:0}}
+@keyframes done1{0%,23%{opacity:0}23.5%,100%{opacity:1}}
+@keyframes lbl1{0%,15.5%{opacity:.25}17%,100%{opacity:1}}
+@keyframes glow2{0%,23%{opacity:0}24%{opacity:.9}26%{opacity:.22}28%{opacity:.85}30.5%{opacity:.2}31%,100%{opacity:0}}
+@keyframes done2{0%,30.5%{opacity:0}31%,100%{opacity:1}}
+@keyframes lbl2{0%,23%{opacity:.25}24.5%,100%{opacity:1}}
+@keyframes glow3{0%,30.5%{opacity:0}31.5%{opacity:.9}33.5%{opacity:.22}35.5%{opacity:.85}38%{opacity:.2}38.5%,100%{opacity:0}}
+@keyframes done3{0%,38%{opacity:0}38.5%,100%{opacity:1}}
+@keyframes lbl3{0%,30.5%{opacity:.25}32%,100%{opacity:1}}
+@keyframes glow4{0%,38%{opacity:0}39%{opacity:.9}41%{opacity:.22}43%{opacity:.85}45.5%{opacity:.2}46%,100%{opacity:0}}
+@keyframes done4{0%,45.5%{opacity:0}46%,100%{opacity:1}}
+@keyframes lbl4{0%,38%{opacity:.25}39.5%,100%{opacity:1}}
+@keyframes glow5{0%,45.5%{opacity:0}46.5%{opacity:.9}48.5%{opacity:.22}50.5%{opacity:.85}53%{opacity:.2}53.5%,100%{opacity:0}}
+@keyframes done5{0%,53%{opacity:0}53.5%,100%{opacity:1}}
+@keyframes lbl5{0%,45.5%{opacity:.25}47%,100%{opacity:1}}
+    </style>
+  </defs>
+
+  <rect width="960" height="700" fill="url(#bg)"/>
+  <rect width="960" height="700" fill="url(#halo)"/>
+
+  <!-- nav -->
+  <rect x="0" y="0" width="960" height="56" fill="rgba(6,13,20,0.85)"/>
+  <line x1="0" y1="56" x2="960" y2="56" stroke="rgba(0,245,255,0.1)"/>
+  <circle cx="34" cy="28" r="7" fill="none" stroke="#00f5ff" stroke-width="1.5"/>
+  <line x1="39" y1="33" x2="44" y2="38" stroke="#00f5ff" stroke-width="1.5"/>
+  <text x="54" y="33" font-size="15" font-weight="bold" fill="#ffffff">StellarSearch</text>
+
+  <g class="connectBtn">
+    <rect x="620" y="14" width="222" height="28" rx="8" fill="rgba(0,245,255,0.08)" stroke="rgba(0,245,255,0.4)"/>
+    <text x="731" y="32" text-anchor="middle" font-size="10" fill="#00f5ff">⚡ CONNECT FREIGHTER</text>
+  </g>
+  <g class="walletPill">
+    <rect x="620" y="14" width="222" height="28" rx="8" fill="rgba(57,255,20,0.06)" stroke="rgba(57,255,20,0.3)"/>
+    <circle cx="636" cy="28" r="4" fill="#39ff14"/>
+    <text x="648" y="32" font-size="10" fill="rgba(255,255,255,0.75)">GABCD…WXYZ</text>
+    <text x="830" y="32" text-anchor="end" font-size="10" fill="#39ff14">42.18 USDC</text>
+  </g>
+  <rect x="852" y="14" width="80" height="28" rx="14" fill="rgba(0,245,255,0.08)" stroke="rgba(0,245,255,0.3)"/>
+  <text x="892" y="32" text-anchor="middle" font-size="9" fill="#00f5ff">TESTNET</text>
+
+  <g class="stage">
+    <!-- hero -->
+    <text x="480" y="116" text-anchor="middle" font-size="30" font-weight="bold" letter-spacing="3" fill="#ffffff">SEARCH<tspan fill="#00f5ff">.</tspan>PAY<tspan fill="#00f5ff">.</tspan>GET</text>
+    <text x="480" y="142" text-anchor="middle" font-size="11" fill="rgba(255,255,255,0.42)">Real web search for AI agents · 0.001 USDC per query · settled on Stellar via x402</text>
+
+    <!-- search bar -->
+    <rect class="searchbox" x="110" y="164" width="740" height="44" rx="12" fill="#0a1628" stroke="rgba(0,245,255,0.25)" stroke-width="1.5"/>
+    <circle cx="134" cy="184" r="6" fill="none" stroke="rgba(0,245,255,0.6)" stroke-width="1.5"/>
+    <line x1="138.5" y1="188.5" x2="142" y2="192" stroke="rgba(0,245,255,0.6)" stroke-width="1.5"/>
+    <g clip-path="url(#type)">
+      <text x="156" y="191" font-size="14" fill="#e6f7ff">Stellar x402 payments</text>
+    </g>
+    <rect class="blink" x="156" y="177" width="2" height="16" fill="#00f5ff">
+      <animate attributeName="x" dur="20s" repeatCount="indefinite" keyTimes="0;0.07;1" values="156;336;336"/>
+    </rect>
+    <rect x="756" y="172" width="84" height="28" rx="8" fill="rgba(0,245,255,0.12)" stroke="rgba(0,245,255,0.4)"/>
+    <text x="798" y="190" text-anchor="middle" font-size="10" fill="#00f5ff">SEARCH</text>
+
+    <!-- payment flow panel -->
+    <rect x="90" y="216" width="780" height="300" rx="14" fill="rgba(6,13,20,0.7)" stroke="rgba(0,245,255,0.1)"/>
+    <text x="112" y="244" font-size="10" letter-spacing="2" fill="rgba(255,255,255,0.3)">x402 PAYMENT FLOW</text>
+    <text class="proc" x="846" y="244" text-anchor="end" font-size="10" fill="rgba(255,255,255,0.55)">◌ PROCESSING</text>
+    <text class="settled" x="846" y="244" text-anchor="end" font-size="10" fill="#39ff14">✓ SETTLED</text>
+
+    <line x1="168" y1="306" x2="768" y2="306" stroke="rgba(255,255,255,0.08)"/>
+    <line x1="168" y1="306" x2="768" y2="306" stroke="#00f5ff" stroke-width="2" opacity="0.55" clip-path="url(#progressClip)"/>
+
+      <g>
+        <circle cx="168" cy="306" r="20" fill="#0a1628" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>
+        <circle class="done0" cx="168" cy="306" r="20" fill="#00f5ff" fill-opacity="0.12" stroke="#00f5ff" stroke-width="1.5"/>
+        <g class="glow0">
+          <circle cx="168" cy="306" r="20" fill="none" stroke="#00f5ff" stroke-width="1.5"/>
+          <circle cx="168" cy="306" r="30" fill="none" stroke="#00f5ff" stroke-width="1"/>
+        </g>
+        <text x="168" y="312" text-anchor="middle" font-size="13" fill="#00f5ff" fill-opacity="0.55">→</text>
+        <text class="done0" x="168" y="312" text-anchor="middle" font-size="14" font-weight="bold" fill="#00f5ff">✓</text>
+        <g class="lbl0">
+          <text x="168" y="346" text-anchor="middle" font-size="10" fill="#00f5ff">Request</text>
+          <text x="168" y="359" text-anchor="middle" font-size="8" fill="rgba(255,255,255,0.25)">GET /search</text>
+        </g>
+      </g>
+
+      <g>
+        <circle cx="288" cy="306" r="20" fill="#0a1628" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>
+        <circle class="done1" cx="288" cy="306" r="20" fill="#ffb800" fill-opacity="0.12" stroke="#ffb800" stroke-width="1.5"/>
+        <g class="glow1">
+          <circle cx="288" cy="306" r="20" fill="none" stroke="#ffb800" stroke-width="1.5"/>
+          <circle cx="288" cy="306" r="30" fill="none" stroke="#ffb800" stroke-width="1"/>
+        </g>
+        <text x="288" y="312" text-anchor="middle" font-size="13" fill="#ffb800" fill-opacity="0.55">⚡</text>
+        <text class="done1" x="288" y="312" text-anchor="middle" font-size="14" font-weight="bold" fill="#ffb800">✓</text>
+        <g class="lbl1">
+          <text x="288" y="346" text-anchor="middle" font-size="10" fill="#ffb800">402 Received</text>
+          <text x="288" y="359" text-anchor="middle" font-size="8" fill="rgba(255,255,255,0.25)">Payment Required</text>
+        </g>
+      </g>
+
+      <g>
+        <circle cx="408" cy="306" r="20" fill="#0a1628" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>
+        <circle class="done2" cx="408" cy="306" r="20" fill="#7dd3fc" fill-opacity="0.12" stroke="#7dd3fc" stroke-width="1.5"/>
+        <g class="glow2">
+          <circle cx="408" cy="306" r="20" fill="none" stroke="#7dd3fc" stroke-width="1.5"/>
+          <circle cx="408" cy="306" r="30" fill="none" stroke="#7dd3fc" stroke-width="1"/>
+        </g>
+        <text x="408" y="312" text-anchor="middle" font-size="13" fill="#7dd3fc" fill-opacity="0.55">✦</text>
+        <text class="done2" x="408" y="312" text-anchor="middle" font-size="14" font-weight="bold" fill="#7dd3fc">✓</text>
+        <g class="lbl2">
+          <text x="408" y="346" text-anchor="middle" font-size="10" fill="#7dd3fc">Sign</text>
+          <text x="408" y="359" text-anchor="middle" font-size="8" fill="rgba(255,255,255,0.25)">Soroban + Freighter</text>
+        </g>
+      </g>
+
+      <g>
+        <circle cx="528" cy="306" r="20" fill="#0a1628" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>
+        <circle class="done3" cx="528" cy="306" r="20" fill="#c084fc" fill-opacity="0.12" stroke="#c084fc" stroke-width="1.5"/>
+        <g class="glow3">
+          <circle cx="528" cy="306" r="20" fill="none" stroke="#c084fc" stroke-width="1.5"/>
+          <circle cx="528" cy="306" r="30" fill="none" stroke="#c084fc" stroke-width="1"/>
+        </g>
+        <text x="528" y="312" text-anchor="middle" font-size="13" fill="#c084fc" fill-opacity="0.55">↻</text>
+        <text class="done3" x="528" y="312" text-anchor="middle" font-size="14" font-weight="bold" fill="#c084fc">✓</text>
+        <g class="lbl3">
+          <text x="528" y="346" text-anchor="middle" font-size="10" fill="#c084fc">Retry</text>
+          <text x="528" y="359" text-anchor="middle" font-size="8" fill="rgba(255,255,255,0.25)">X-PAYMENT header</text>
+        </g>
+      </g>
+
+      <g>
+        <circle cx="648" cy="306" r="20" fill="#0a1628" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>
+        <circle class="done4" cx="648" cy="306" r="20" fill="#39ff14" fill-opacity="0.12" stroke="#39ff14" stroke-width="1.5"/>
+        <g class="glow4">
+          <circle cx="648" cy="306" r="20" fill="none" stroke="#39ff14" stroke-width="1.5"/>
+          <circle cx="648" cy="306" r="30" fill="none" stroke="#39ff14" stroke-width="1"/>
+        </g>
+        <text x="648" y="312" text-anchor="middle" font-size="13" fill="#39ff14" fill-opacity="0.55">◈</text>
+        <text class="done4" x="648" y="312" text-anchor="middle" font-size="14" font-weight="bold" fill="#39ff14">✓</text>
+        <g class="lbl4">
+          <text x="648" y="346" text-anchor="middle" font-size="10" fill="#39ff14">Facilitate</text>
+          <text x="648" y="359" text-anchor="middle" font-size="8" fill="rgba(255,255,255,0.25)">Settle on Stellar</text>
+        </g>
+      </g>
+
+      <g>
+        <circle cx="768" cy="306" r="20" fill="#0a1628" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>
+        <circle class="done5" cx="768" cy="306" r="20" fill="#34d399" fill-opacity="0.12" stroke="#34d399" stroke-width="1.5"/>
+        <g class="glow5">
+          <circle cx="768" cy="306" r="20" fill="none" stroke="#34d399" stroke-width="1.5"/>
+          <circle cx="768" cy="306" r="30" fill="none" stroke="#34d399" stroke-width="1"/>
+        </g>
+        <text x="768" y="312" text-anchor="middle" font-size="13" fill="#34d399" fill-opacity="0.55">✓</text>
+        <text class="done5" x="768" y="312" text-anchor="middle" font-size="14" font-weight="bold" fill="#34d399">✓</text>
+        <g class="lbl5">
+          <text x="768" y="346" text-anchor="middle" font-size="10" fill="#34d399">Result</text>
+          <text x="768" y="359" text-anchor="middle" font-size="8" fill="rgba(255,255,255,0.25)">Search response</text>
+        </g>
+      </g>
+
+    <!-- status line -->
+    <rect x="112" y="384" width="736" height="34" rx="8" fill="rgba(255,255,255,0.03)" stroke="rgba(255,255,255,0.05)"/>
+    <text class="statusA" x="128" y="405" font-size="10" fill="rgba(255,255,255,0.5)">→ Step 1/6: Request — GET /search...</text>
+    <text class="statusB" x="128" y="405" font-size="10" fill="rgba(255,255,255,0.5)">→ Step 3/6: Sign — Soroban + Freighter...</text>
+    <text class="statusC" x="128" y="405" font-size="10" fill="#39ff14">✓ Payment settled — 5 results in 842ms</text>
+
+    <!-- tx hash + settlement chips -->
+    <g class="txrow">
+      <rect x="112" y="426" width="736" height="26" rx="6" fill="rgba(57,255,20,0.05)" stroke="rgba(57,255,20,0.2)"/>
+      <text x="124" y="443" font-size="9" fill="rgba(57,255,20,0.55)">TX HASH</text>
+      <text x="836" y="443" text-anchor="end" font-size="10" fill="#39ff14">a1b2c3d4…9f8e7d6c ↗</text>
+      <rect x="112" y="458" width="238" height="34" rx="6" fill="rgba(255,255,255,0.03)"/>
+      <text x="231" y="473" text-anchor="middle" font-size="8" fill="rgba(255,255,255,0.25)">PAID</text>
+      <text x="231" y="486" text-anchor="middle" font-size="11" fill="#00f5ff">0.001 USDC</text>
+      <rect x="361" y="458" width="238" height="34" rx="6" fill="rgba(255,255,255,0.03)"/>
+      <text x="480" y="473" text-anchor="middle" font-size="8" fill="rgba(255,255,255,0.25)">NETWORK</text>
+      <text x="480" y="486" text-anchor="middle" font-size="11" fill="#00f5ff">TESTNET</text>
+      <rect x="610" y="458" width="238" height="34" rx="6" fill="rgba(255,255,255,0.03)"/>
+      <text x="729" y="473" text-anchor="middle" font-size="8" fill="rgba(255,255,255,0.25)">STATUS</text>
+      <text x="729" y="486" text-anchor="middle" font-size="11" fill="#39ff14">SETTLED</text>
+    </g>
+
+    <!-- Freighter popup -->
+    <g class="popup">
+      <rect x="310" y="246" width="340" height="178" rx="14" fill="#0f1a2b" stroke="rgba(125,211,252,0.45)" stroke-width="1.5"/>
+      <text x="330" y="276" font-size="12" font-weight="bold" fill="#ffffff">🦊 Freighter</text>
+      <text x="630" y="276" text-anchor="end" font-size="12" fill="rgba(255,255,255,0.35)">✕</text>
+      <text x="330" y="300" font-size="10" fill="rgba(255,255,255,0.45)">Signature Request</text>
+      <rect x="330" y="310" width="300" height="54" rx="8" fill="#0a1628" stroke="rgba(255,255,255,0.08)"/>
+      <text x="344" y="332" font-size="10" fill="#7dd3fc">Sign Soroban authorization entry</text>
+      <text x="344" y="350" font-size="9" fill="rgba(255,255,255,0.45)">0.001 USDC · stellar:testnet</text>
+      <rect x="330" y="378" width="110" height="26" rx="8" fill="rgba(255,255,255,0.04)" stroke="rgba(255,255,255,0.12)"/>
+      <text x="385" y="395" text-anchor="middle" font-size="10" fill="rgba(255,255,255,0.5)">Reject</text>
+      <rect x="520" y="378" width="110" height="26" rx="8" fill="rgba(57,255,20,0.12)" stroke="rgba(57,255,20,0.5)"/>
+      <text x="575" y="395" text-anchor="middle" font-size="10" fill="#39ff14">Approve</text>
+    </g>
+
+    <!-- results -->
+    <text x="90" y="540" font-size="10" letter-spacing="2" fill="rgba(255,255,255,0.3)">RESULTS</text>
+
+      <g class="resultA">
+        <rect x="90" y="552" width="246" height="120" rx="10" fill="#060d14" stroke="rgba(0,245,255,0.08)"/>
+        <rect x="104" y="566" width="62" height="18" rx="9" fill="rgba(0,245,255,0.07)" stroke="rgba(0,245,255,0.2)"/>
+        <text x="135" y="578" text-anchor="middle" font-size="9" fill="#00f5ff">stellar.org</text>
+        <text x="104" y="606" font-size="11" fill="#ffffff">x402: HTTP-native payments for AI</text>
+        <text x="104" y="622" font-size="11" fill="#ffffff">agents</text>
+        <text x="104" y="648" font-size="9" fill="rgba(0,245,255,0.55)">developers.stellar.org</text>
+      </g>
+
+      <g class="resultB">
+        <rect x="357" y="552" width="246" height="120" rx="10" fill="#060d14" stroke="rgba(0,245,255,0.08)"/>
+        <rect x="371" y="566" width="62" height="18" rx="9" fill="rgba(0,245,255,0.07)" stroke="rgba(0,245,255,0.2)"/>
+        <text x="402" y="578" text-anchor="middle" font-size="9" fill="#00f5ff">x402.org</text>
+        <text x="371" y="606" font-size="11" fill="#ffffff">Facilitator settles 0.001 USDC on</text>
+        <text x="371" y="622" font-size="11" fill="#ffffff">Stellar testnet</text>
+        <text x="371" y="648" font-size="9" fill="rgba(0,245,255,0.55)">x402.org/facilitator</text>
+      </g>
+
+      <g class="resultC">
+        <rect x="624" y="552" width="246" height="120" rx="10" fill="#060d14" stroke="rgba(0,245,255,0.08)"/>
+        <rect x="638" y="566" width="62" height="18" rx="9" fill="rgba(0,245,255,0.07)" stroke="rgba(0,245,255,0.2)"/>
+        <text x="669" y="578" text-anchor="middle" font-size="9" fill="#00f5ff">groq.com</text>
+        <text x="638" y="606" font-size="11" fill="#ffffff">Llama 3.3 70B summarises the</text>
+        <text x="638" y="622" font-size="11" fill="#ffffff">search results</text>
+        <text x="638" y="648" font-size="9" fill="rgba(0,245,255,0.55)">console.groq.com</text>
+      </g>
+  </g>
+
+  <text x="480" y="690" text-anchor="middle" font-size="10" fill="rgba(255,255,255,0.28)">Animated walkthrough of the real StellarSearch UI — every step mirrors the live x402 flow.</text>
+</svg>

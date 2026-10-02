@@ -1,10 +1,15 @@
 import { motion } from 'framer-motion'
 import { useState, useEffect, useMemo } from 'react'
-import { ExternalLink, Activity, BarChart2, RefreshCw, History, Search } from 'lucide-react'
+import { ExternalLink, Activity, BarChart2, RefreshCw, History, Search, ChevronDown } from 'lucide-react'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts'
 import { IS_MAINNET, STELLAR_NETWORK, AMOUNT_USDC, STELLAR_EXPERT_URL, truncateHash, formatTimeAgo, explorerTxUrl, explorerAccountUrl } from '../lib/stellar'
 import type { StellarTransaction } from '../hooks/useFreighterWallet'
 import type { SearchReceipt } from '../hooks/useSearch'
+import {
+  isSearchQueryStorageEnabled,
+  RECEIPTS_STORAGE_KEY,
+  setSearchQueryStorageEnabled,
+} from '../lib/searchPrivacy'
 
 interface Props {
   transactions: StellarTransaction[]
@@ -13,16 +18,27 @@ interface Props {
   usdcBalance: string
   xlmBalance: string
   onRefresh: () => void
+  hasMore: boolean
+  onLoadMore: () => void
+  loadingMore: boolean
 }
 
-export function DashboardPage({ transactions, txLoading, publicKey, usdcBalance, xlmBalance, onRefresh }: Props) {
+export function DashboardPage({ transactions, txLoading, publicKey, usdcBalance, xlmBalance, onRefresh, hasMore, onLoadMore, loadingMore }: Props) {
   const [receipts, setReceipts] = useState<SearchReceipt[]>([])
+  const [storeQueryText, setStoreQueryText] = useState(isSearchQueryStorageEnabled)
 
   useEffect(() => {
-    const raw = localStorage.getItem('stellarsearch_receipts')
+    const raw = localStorage.getItem(RECEIPTS_STORAGE_KEY)
     if (raw) {
       try {
-        setReceipts(JSON.parse(raw))
+        const saved: SearchReceipt[] = JSON.parse(raw)
+        if (!isSearchQueryStorageEnabled()) {
+          const redacted = saved.map((receipt) => ({ ...receipt, query: '' }))
+          localStorage.setItem(RECEIPTS_STORAGE_KEY, JSON.stringify(redacted))
+          setReceipts(redacted)
+        } else {
+          setReceipts(saved)
+        }
       } catch (e) {
         console.error('Failed to parse receipts:', e)
       }
@@ -30,6 +46,20 @@ export function DashboardPage({ transactions, txLoading, publicKey, usdcBalance,
   }, [])
 
   const networkLabel = IS_MAINNET ? 'STELLAR MAINNET' : 'STELLAR TESTNET'
+
+  const handleQueryStorageChange = (enabled: boolean) => {
+    setSearchQueryStorageEnabled(enabled)
+    setStoreQueryText(enabled)
+    if (!enabled) {
+      setReceipts((current) => current.map((receipt) => ({ ...receipt, query: '' })))
+    }
+  }
+
+  const clearReceipts = () => {
+    if (!window.confirm('Clear all search receipts stored in this browser?')) return
+    localStorage.removeItem(RECEIPTS_STORAGE_KEY)
+    setReceipts([])
+  }
 
   const chartData = useMemo(() => {
     const usdcTxs = transactions.filter(tx => tx.asset === 'USDC')
@@ -65,6 +95,7 @@ export function DashboardPage({ transactions, txLoading, publicKey, usdcBalance,
           <button
             onClick={onRefresh}
             disabled={txLoading}
+            aria-label="Refresh dashboard data"
             className="p-2 rounded-lg border border-white/10 text-white/30 hover:text-neon-cyan transition-colors disabled:opacity-40"
           >
             <RefreshCw className={`w-4 h-4 ${txLoading ? 'animate-spin' : ''}`} />
@@ -155,7 +186,7 @@ export function DashboardPage({ transactions, txLoading, publicKey, usdcBalance,
                   fontSize={10} 
                   tickLine={false} 
                   axisLine={false} 
-                  tickFormatter={(val) => `$${val}`}
+                  tickFormatter={(val: number) => `$${val}`}
                   fontFamily="monospace"
                 />
                 <Tooltip 
@@ -255,6 +286,31 @@ export function DashboardPage({ transactions, txLoading, publicKey, usdcBalance,
             ))
           )}
         </div>
+
+        {!txLoading && transactions.length > 0 && (
+          <div className="flex justify-center p-4 border-t border-white/5">
+            {hasMore ? (
+              <button
+                onClick={onLoadMore}
+                disabled={loadingMore}
+                className="flex items-center gap-2 px-4 py-2 rounded-lg border border-neon-cyan/20 text-neon-cyan/70 hover:text-neon-cyan hover:border-neon-cyan/40 transition-colors font-display text-xs tracking-widest disabled:opacity-40"
+              >
+                {loadingMore ? (
+                  <motion.div
+                    className="w-3 h-3 rounded-full border-2 border-neon-cyan/30 border-t-neon-cyan"
+                    animate={{ rotate: 360 }}
+                    transition={{ duration: 0.8, repeat: Infinity, ease: 'linear' }}
+                  />
+                ) : (
+                  <ChevronDown className="w-3 h-3" />
+                )}
+                {loadingMore ? 'LOADING' : 'LOAD MORE'}
+              </button>
+            ) : (
+              <span className="font-display text-white/20 tracking-widest" style={{ fontSize: '10px' }}>END OF HISTORY</span>
+            )}
+          </div>
+        )}
       </motion.div>
 
       {/* Search Audit Log */}
@@ -271,9 +327,38 @@ export function DashboardPage({ transactions, txLoading, publicKey, usdcBalance,
             <span className="font-display text-xs text-white/30 tracking-widest">SEARCH AUDIT LOG</span>
             <span className="font-display text-white/15" style={{ fontSize: '10px' }}>· PERSISTED LOCALLY</span>
           </div>
-          <div className="font-display text-[10px] text-white/20 uppercase tracking-wider">
-            {receipts.length} RECEIPTS
+          <div className="flex items-center gap-3">
+            <span className="font-display text-[10px] text-white/20 uppercase tracking-wider">
+              {receipts.length} RECEIPTS
+            </span>
+            <button
+              type="button"
+              onClick={clearReceipts}
+              disabled={receipts.length === 0}
+              className="font-display text-[10px] text-white/30 hover:text-red-300 disabled:cursor-not-allowed disabled:opacity-30"
+            >
+              CLEAR RECEIPTS
+            </button>
           </div>
+        </div>
+
+        <div className="flex flex-col gap-2 p-5 border-b border-white/5 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <label htmlFor="store-search-query" className="text-sm text-white/65">
+              Save search query text in this browser
+            </label>
+            <p id="search-query-privacy-help" className="mt-1 max-w-2xl text-xs text-white/35">
+              Off by default. Receipts still keep the transaction hash, amount, time, and network. Turning this off also removes query text from saved receipts.
+            </p>
+          </div>
+          <input
+            id="store-search-query"
+            type="checkbox"
+            checked={storeQueryText}
+            onChange={(event) => handleQueryStorageChange(event.target.checked)}
+            aria-describedby="search-query-privacy-help"
+            className="mt-1 h-4 w-4 accent-cyan-400"
+          />
         </div>
 
         <div className="divide-y divide-white/4">
@@ -294,7 +379,9 @@ export function DashboardPage({ transactions, txLoading, publicKey, usdcBalance,
               >
                 <div className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${receipt.network === 'stellar:mainnet' ? 'bg-neon-amber' : 'bg-neon-cyan'}`} />
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm text-white/70 font-medium truncate">"{receipt.query}"</p>
+                  <p className="text-sm text-white/70 font-medium truncate">
+                    {receipt.query ? `"${receipt.query}"` : 'Query text not stored'}
+                  </p>
                   <div className="flex items-center gap-3 mt-1">
                     <a
                       href={explorerTxUrl(receipt.txHash)}

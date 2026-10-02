@@ -49,7 +49,7 @@ export function WalletPanel({
   /* ── Not connected ── */
   if (!wallet.connected) {
     return (
-      <div className="relative">
+<div className="relative flex flex-col items-start gap-2">
         <motion.button
           onClick={() => setPickerOpen(o => !o)}
           disabled={wallet.loading}
@@ -72,6 +72,12 @@ export function WalletPanel({
           {wallet.loading ? 'CONNECTING...' : 'CONNECT WALLET'}
           <ChevronDown className={`w-3 h-3 transition-transform ${pickerOpen ? 'rotate-180' : ''}`} />
         </motion.button>
+
+        {wallet.hint && (
+          <p role="status" className="max-w-xs text-xs text-red-300" aria-live="polite">
+            {wallet.hint}
+          </p>
+        )}
 
         <AnimatePresence>
           {pickerOpen && (
@@ -110,48 +116,6 @@ export function WalletPanel({
                 <div className="p-2">
                   {WALLET_OPTIONS.map(w => {
                     const disabled = !w.supportsSignAuthEntry
-                    return (
-                      <button
-                        key={w.id}
-                        onClick={() => handlePick(w.id)}
-                        disabled={disabled}
-                        aria-disabled={disabled}
-                        title={disabled ? w.unsupportedReason : undefined}
-                        className={`w-full flex items-start gap-3 p-3 rounded-lg text-left transition-colors ${
-                          disabled
-                            ? 'opacity-40 cursor-not-allowed'
-                            : 'hover:bg-white/5'
-                        }`}
-                      >
-                        <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center flex-shrink-0">
-                          <Wallet className="w-4 h-4 text-neon-cyan/70" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="font-display text-xs text-white/80 tracking-wider">{w.name}</p>
-                          {disabled ? (
-                            <p className="text-[10px] text-red-300/80 mt-0.5 flex items-center gap-1">
-                              <AlertCircle className="w-2.5 h-2.5 flex-shrink-0" />
-                              {w.unsupportedReason ?? 'Does not support signAuthEntry'}
-                            </p>
-                          ) : (
-                            <p className="text-[10px] text-white/30 mt-0.5">{w.description}</p>
-                          )}
-                        </div>
-                      </button>
-                    )
-                  })}
-                </div>
-
-                <div className="px-4 pt-1 pb-2">
-                  <p className="text-[10px] text-white/25 leading-relaxed">
-                    Only wallets that support <span className="font-mono text-white/40">signAuthEntry</span> can pay for searches. Others are disabled.
-                  </p>
-                </div>
-              </motion.div>
-            </>
-          )}
-        </AnimatePresence>
-      </div>
     )
   }
 
@@ -265,10 +229,10 @@ export function WalletPanel({
                 </span>
                 <button
                   onClick={onRefresh}
-                  disabled={txLoading}
+                  disabled={txLoading || wallet.refreshing}
                   className="p-1 text-white/30 hover:text-neon-cyan transition-colors disabled:opacity-50"
                 >
-                  <RefreshCw className={`w-3 h-3 ${txLoading ? 'animate-spin' : ''}`} />
+                  <RefreshCw className={`w-3 h-3 ${wallet.refreshing ? 'animate-spin' : ''}`} />
                 </button>
               </div>
 
@@ -330,7 +294,7 @@ export function WalletPanel({
                 </a>
               ) : (
                 <a
-                  href="https://laboratory.stellar.org/#account-creator?network=test"
+                  href="https://lab.stellar.org/account/fund"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex-1 py-2 rounded-lg border border-neon-cyan/20 text-center font-display text-[10px] text-neon-cyan/70 hover:bg-neon-cyan/5 transition-colors uppercase tracking-widest"

@@ -1,8 +1,8 @@
-import { motion } from 'framer-motion'
-import { Search, BookOpen, BarChart2, ExternalLink, Zap, Github, Globe } from 'lucide-react'
+import { m } from 'framer-motion'
+import { Search, BookOpen, BarChart2, ExternalLink, Zap, Github } from 'lucide-react'
 import { WalletPanel } from '../wallet/WalletPanel'
+import { MainnetIndicator, NetworkBadge } from './NetworkBadge'
 import type { WalletState, StellarTransaction } from '../../hooks/useFreighterWallet'
-import { IS_MAINNET } from '../../lib/stellar'
 
 type Page = 'search' | 'docs' | 'dashboard'
 
@@ -33,6 +33,9 @@ export function Navbar({
       className="sticky top-0 z-40 border-b border-white/5"
       style={{ background: 'rgba(2,4,8,0.85)', backdropFilter: 'blur(16px)' }}
     >
+      {/* Mainnet-only page-level indicator (renders nothing on testnet) */}
+      <MainnetIndicator />
+
       <div className="max-w-6xl mx-auto px-4 h-14 flex items-center gap-5">
 
         {/* Logo */}
@@ -51,17 +54,8 @@ export function Navbar({
           </span>
         </button>
 
-        {/* Network Badge */}
-        <div 
-          className={`hidden md:flex items-center gap-1.5 px-2 py-1 rounded border text-[10px] font-display tracking-widest ${
-            IS_MAINNET 
-              ? 'bg-neon-amber/10 border-neon-amber/30 text-neon-amber' 
-              : 'bg-neon-cyan/10 border-neon-cyan/30 text-neon-cyan'
-          }`}
-        >
-          <Globe className="w-2.5 h-2.5" />
-          {IS_MAINNET ? 'MAINNET' : 'TESTNET'}
-        </div>
+        {/* Persistent network badge — always visible on every page/breakpoint */}
+        <NetworkBadge />
 
         {/* Nav links */}
         <nav className="flex items-center gap-1 flex-1" role="navigation" aria-label="Main navigation">
@@ -76,7 +70,7 @@ export function Navbar({
               <Icon className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">{label}</span>
               {page === id && (
-                <motion.div
+                <m.div
                   layoutId="nav-active"
                   className="absolute inset-0 rounded-lg"
                   style={{
