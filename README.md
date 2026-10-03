@@ -411,15 +411,17 @@ stellar-search/
 │   │   ├── DocsPage.tsx
 │   │   └── DashboardPage.tsx           # Live Horizon tx history
 │   └── types/index.ts
-├── server/                             # Express + x402 backend (npm run server)
-│   ├── index.ts                        # /search, /images, /news, /ai/chat, /health
-│   ├── corsConfig.ts                   # CORS allow-list from env
+├── server/
+│   ├── handlers.ts                     # Shared framework-free /search, /health, /ai/chat logic
+│   ├── app.ts                          # Express app factory (createApp)
+│   ├── index.ts                        # Starts the Express app (npm run server)
+│   ├── corsConfig.ts                   # CORS allow-list from env (single source for both targets)
 │   └── logger.ts                       # Winston payment logging
-├── api/                                # Vercel serverless mirror of the paid routes
+├── api/                                # Vercel serverless functions (thin adapters)
 │   ├── index.ts                        # Service metadata
-│   ├── search.ts                       # GET /api/search — x402 protected
-│   ├── health.ts                       # GET /api/health
-│   └── ai/chat.ts                      # POST /api/ai/chat — Groq
+│   ├── search.ts                       # GET /api/search — calls server/handlers.ts
+│   ├── health.ts                       # GET /api/health — calls server/handlers.ts
+│   └── ai/chat.ts                      # POST /api/ai/chat — calls server/handlers.ts
 ├── mcp-server/
 │   └── index.ts                        # MCP tools (see below)
 ├── scripts/
@@ -432,6 +434,30 @@ stellar-search/
 ├── SECURITY.md
 └── README.md
 ```
+
+### Single source of truth for the API
+
+`server/handlers.ts` holds the framework-free implementations of `/search`,
+`/health` and `/ai/chat`. Handlers take already-parsed inputs and return a
+plain `{ status, headers, body }` result — they never see an Express `Request`
+or a Vercel `VercelRequest`.
+
+Both deployment targets are thin adapters over that module:
+
+- `server/app.ts` wires the handlers into the Express routes (and keeps the
+  Express-only `/images`, `/news`, `/summarize-url` and `/receipts` routes).
+- `api/search.ts`, `api/health.ts` and `api/ai/chat.ts` adapt Vercel's
+  req/res to the same handlers.
+
+Validation, search execution, Groq suggestions, the x402 payment-required
+challenge, the SSE framing and the health payload/ETag therefore exist in
+exactly one place. CORS comes from `server/corsConfig.ts`: Express uses
+`buildCorsOptions()` and the serverless functions use `buildCorsHeaders()`,
+both derived from the same constant allow-list.
+
+`tests/parity.test.ts` boots the Express app and invokes the Vercel handlers
+with the same inputs, asserting identical `{ status, body }` (Serper and Groq
+are mocked by MSW). Run it with `npm run test:parity`.
 
 ### MCP tools
 
