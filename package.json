@@ -32,6 +32,7 @@
     "test:e2e:preview": "playwright test --project=preview",
     "test:e2e:ui": "playwright test --ui",
     "mcp:http": "tsx mcp-server/index.ts --transport http",
+    "test:mcp": "node --import tsx --test mcp-server/index.test.ts",
     "test:run": "vitest run"
   },
   "dependencies": {

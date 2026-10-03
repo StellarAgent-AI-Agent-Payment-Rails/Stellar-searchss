@@ -6,7 +6,7 @@ process.env.NODE_ENV = 'test'
 process.env.SEARCH_API_URL = 'http://localhost:3001'
 process.env.GROQ_API_KEY = 'test-groq-key'
 
-import { listToolsHandler, callToolHandler, server } from './index.js'
+const { listToolsHandler, callToolHandler, server, tools, formatPaymentLine } = await import('./index.js')
 import { 
   AMOUNT_USDC, 
   HORIZON_URL, 
@@ -23,7 +23,7 @@ describe('MCP Server - ListTools', () => {
     const toolNames = res.tools.map((t) => t.name)
     assert.deepStrictEqual(
       toolNames.sort(),
-      ['ai_summarize', 'check_balance', 'get_search_stats', 'image_search', 'news_search', 'web_search'].sort()
+      ['ai_summarize', 'check_balance', 'get_search_stats', 'image_search', 'list_receipts', 'news_search', 'summarize_url', 'web_search'].sort()
     )
 
     for (const tool of res.tools) {
@@ -78,6 +78,7 @@ describe('MCP Server - CallTool Handlers', () => {
               },
             ],
             paidAmount: '0.001',
+            txHash: 'deadbeef',
             currency: 'USDC',
             network: 'stellar:testnet',
             latencyMs: 120,
@@ -460,5 +461,47 @@ describe('MCP Server - CallTool Handlers', () => {
       assert.strictEqual(res.content[0].type, 'text')
       assert.strictEqual(res.content[0].text, 'Unknown tool: non_existent_tool')
     })
+  })
+})
+
+
+const PAID_TOOL_NAMES = ['web_search', 'image_search', 'news_search'] as const
+
+function paidToolDescription(name: string): string {
+  const tool = tools.find((entry: { name: string }) => entry.name === name)
+  assert.ok(tool, `expected a tool named ${name}`)
+  return tool.description ?? ''
+}
+
+describe('paid MCP tool descriptions', () => {
+  it('does not claim the tools pay automatically', () => {
+    for (const name of PAID_TOOL_NAMES) {
+      const description = paidToolDescription(name)
+      assert.doesNotMatch(description, /automatically pays/i)
+      assert.doesNotMatch(description, /server handles the full payment flow/i)
+    }
+  })
+
+  it('states that the MCP server does not configure a payment signer', () => {
+    for (const name of PAID_TOOL_NAMES) {
+      assert.match(paidToolDescription(name), /does not configure a payment signer/i)
+    }
+  })
+})
+
+describe('formatPaymentLine', () => {
+  it('does not claim a payment when there is no settlement transaction', () => {
+    const line = formatPaymentLine({
+      paidAmount: '0.001', currency: 'USDC', network: 'stellar:testnet', txHash: null,
+    })
+    assert.doesNotMatch(line, /\bpaid\b/i)
+    assert.match(line, /not confirmed/i)
+  })
+
+  it('reports payment only when a settlement transaction is present', () => {
+    const line = formatPaymentLine({
+      paidAmount: '0.001', currency: 'USDC', network: 'stellar:testnet', txHash: 'deadbeef',
+    })
+    assert.match(line, /Paid: 0\.001 USDC on stellar:testnet/)
   })
 })
