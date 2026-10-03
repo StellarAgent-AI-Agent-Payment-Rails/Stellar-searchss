@@ -6,6 +6,7 @@ import {
   AMOUNT_USDC
 } from '../src/lib/constants'
 import { incrementCounter } from '../src/lib/stats'
+import { handlerElapsedMs, startInvocation } from './invocationMetrics'
 
 // ─── Config ───────────────────────────────────────────────────────────────
 export const RECEIVING_ADDRESS = process.env.STELLAR_RECEIVING_ADDRESS!
@@ -17,6 +18,7 @@ const PAYMENTS_DISABLED = process.env.NODE_ENV === 'development' &&
   process.env.VERCEL_ENV !== 'production' && process.env.PAYMENTS_DISABLED === 'true'
 
 export async function handler(req: VercelRequest, res: VercelResponse) {
+  const invocation = startInvocation()
 
   // ─── CORS ─────────────────────────────────────────────────────────────────
   res.setHeader('Access-Control-Allow-Origin', '*')
@@ -125,7 +127,7 @@ export async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     const data      = await serperRes.json()
-    const latencyMs = Date.now() - t0
+    const serperLatencyMs = Date.now() - t0
 
     const results = (data.organic || []).map((r: any, i: number) => ({
       id:             String(i + 1),
@@ -152,7 +154,11 @@ export async function handler(req: VercelRequest, res: VercelResponse) {
       paidAmount: AMOUNT_USDC,
       currency:   'USDC',
       txHash,
-      latencyMs,
+      latencyMs: serperLatencyMs,
+      serperLatencyMs,
+      invocationType: invocation.invocationType,
+      coldStartLatencyMs: invocation.coldStartLatencyMs,
+      warmHandlerLatencyMs: invocation.invocationType === 'warm' ? handlerElapsedMs(invocation) : null,
     })
 
   } catch (err: any) {
