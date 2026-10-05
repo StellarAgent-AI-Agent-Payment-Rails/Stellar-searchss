@@ -23,7 +23,7 @@ export function Footer() {
           >
             <Zap className="w-2.5 h-2.5 text-neon-cyan" />
           </div>
-          <span className="font-display text-xs text-white/20">
+          <span className="font-display text-xs text-white/60">
             STELLARSEARCH &#183; Stellar Hackathon 2026
           </span>
           <span
@@ -31,7 +31,7 @@ export function Footer() {
             style={{
               background: 'rgba(0,245,255,0.07)',
               border: '1px solid rgba(0,245,255,0.15)',
-              color: 'rgba(0,245,255,0.4)',
+              color: 'rgba(0,245,255,0.6)',
             }}
             title="API version"
           >
@@ -43,7 +43,7 @@ export function Footer() {
             <ExternalLink
               key={label}
               href={href}
-              className="font-display text-xs text-white/20 hover:text-neon-cyan/60 transition-colors hidden sm:inline"
+              className="font-display text-xs text-white/60 hover:text-neon-cyan/60 transition-colors hidden sm:inline"
             >
               {label}
             </ExternalLink>

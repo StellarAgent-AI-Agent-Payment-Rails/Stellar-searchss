@@ -32,8 +32,8 @@ export function SearchSuggestions({ onSelect, aiSuggestions, isLoading }: Props)
         aria-label="Loading suggestions"
       >
         <div className="flex items-center gap-1.5">
-          <Sparkles className="w-3 h-3 text-neon-amber/60 animate-pulse" />
-          <p className="font-display text-xs text-white/25 tracking-widest animate-pulse">
+          <Sparkles className="w-3 h-3 text-neon-amber/70 animate-pulse" />
+          <p className="font-display text-xs text-white/60 tracking-widest animate-pulse">
             GENERATING AI SUGGESTIONS...
           </p>
         </div>
@@ -58,8 +58,8 @@ export function SearchSuggestions({ onSelect, aiSuggestions, isLoading }: Props)
       className="space-y-3"
     >
       <div className="flex items-center gap-1.5">
-        {isAi && <Sparkles className="w-3 h-3 text-neon-amber/60" />}
-        <p className="font-display text-xs text-white/25 tracking-widest">
+        {isAi && <Sparkles className="w-3 h-3 text-neon-amber/70" />}
+        <p className="font-display text-xs text-white/60 tracking-widest">
           {isAi ? 'YOU MIGHT ALSO SEARCH FOR' : 'TRY THESE'}
         </p>
       </div>
@@ -72,7 +72,7 @@ export function SearchSuggestions({ onSelect, aiSuggestions, isLoading }: Props)
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: i * 0.06 }}
             onClick={() => onSelect(q)}
-            className="px-3 py-1.5 rounded-lg text-xs font-display tracking-wide transition-all text-white/40 hover:text-neon-cyan/80"
+            className="px-3 py-1.5 rounded-lg text-xs font-display tracking-wide transition-all text-white/60 hover:text-neon-cyan/80"
             style={{ border: '1px solid rgba(255,255,255,0.08)' }}
             onMouseEnter={e => {
               const el = e.currentTarget as HTMLButtonElement
@@ -91,7 +91,7 @@ export function SearchSuggestions({ onSelect, aiSuggestions, isLoading }: Props)
       </div>
 
       {isAi && (
-        <div className="flex items-center gap-1.5 text-white/20">
+        <div className="flex items-center gap-1.5 text-white/60">
           <Info className="w-3 h-3" />
           <p className="font-display text-[10px] tracking-wide">
             Derived from third-party search results — verify before use

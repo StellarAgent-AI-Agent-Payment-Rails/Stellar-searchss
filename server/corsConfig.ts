@@ -202,7 +202,7 @@ describe('buildCorsOptions', () => {
     process.env.ALLOWED_ORIGINS = 'https://allowed.com,https://other.com'
     const options = buildCorsOptions()
     const callback = vi.fn()
-    ;(options.origin as Function)('https://allowed.com', callback)
+    ;(options.origin as (origin: string, cb: (err: Error | null, allow?: boolean) => void) => void)('https://allowed.com', callback)
     expect(callback).toHaveBeenCalledWith(null, true)
   })
 
@@ -211,7 +211,7 @@ describe('buildCorsOptions', () => {
     process.env.ALLOWED_ORIGINS = 'https://allowed.com'
     const options = buildCorsOptions()
     const callback = vi.fn()
-    ;(options.origin as Function)('https://evil.com', callback)
+    ;(options.origin as (origin: string, cb: (err: Error | null, allow?: boolean) => void) => void)('https://evil.com', callback)
     expect(callback).toHaveBeenCalledWith(null, false)
   })
 
@@ -220,7 +220,7 @@ describe('buildCorsOptions', () => {
     process.env.ALLOWED_ORIGINS = 'https://allowed.com'
     const options = buildCorsOptions()
     const callback = vi.fn()
-    ;(options.origin as Function)(undefined, callback)
+    ;(options.origin as (origin: string | undefined, cb: (err: Error | null, allow?: boolean) => void) => void)(undefined, callback)
     expect(callback).toHaveBeenCalledWith(null, true)
   })
 
@@ -230,7 +230,7 @@ describe('buildCorsOptions', () => {
     vi.spyOn(console, 'warn').mockImplementation(() => {})
     const options = buildCorsOptions()
     const callback = vi.fn()
-    ;(options.origin as Function)('https://anything.com', callback)
+    ;(options.origin as (origin: string, cb: (err: Error | null, allow?: boolean) => void) => void)('https://anything.com', callback)
     expect(callback).toHaveBeenCalledWith(null, false)
   })
 })

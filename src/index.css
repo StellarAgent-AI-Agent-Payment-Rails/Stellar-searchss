@@ -19,6 +19,10 @@
 
 @layer utilities {
   .font-display { font-family: 'Space Mono', monospace; }
+  /* Solid neon text utilities. On the lightest surface (#16202b) these measure
+     cyan 12.16:1, green 12.14:1 and amber 9.49:1 - all pass WCAG AA (4.5:1).
+     For translucent text use the approved ramp in tailwind.config.js:
+     white / cyan / green >= 60%, amber >= 70%. */
   .text-neon-cyan { color: #00f5ff; }
   .text-neon-green { color: #39ff14; }
   .text-neon-amber { color: #ffb800; }

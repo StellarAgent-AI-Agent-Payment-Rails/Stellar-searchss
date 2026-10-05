@@ -188,8 +188,6 @@ function printResults(data: any, ms: number): void {
     console.log(`   ${r.url}`)
     if (r.description) console.log(`   ${r.description.slice(0, 120)}${r.description.length > 120 ? '...' : ''}`)
   })
-<<<<<<< HEAD
-=======
 
   // 3. Test Groq AI
   console.log('\n── Groq AI test ──')
@@ -232,7 +230,6 @@ function printResults(data: any, ms: number): void {
   }
 
   console.log('\n✅ All tests passed!\n')
->>>>>>> 7bd005c (fix: implement code splitting and decouple Groq suggestions (closes #171, closes #179))
 }
 
 // ─── Paid x402 client (server-side signer, no browser/Freighter) ────────────

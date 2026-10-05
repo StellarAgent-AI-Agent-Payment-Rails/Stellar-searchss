@@ -160,7 +160,7 @@ describe('validateSerperResponse', () => {
     const renamed = JSON.parse(JSON.stringify(imagesFixture));
     delete renamed.images[0].imageWidth;
     const warnings = validateSerperResponse(renamed, 'images');
-    expect(warnings.length).toBe GreaterThan(0);
+    expect(warnings.length).toBeGreaterThan(0);
     expect(warnings.join(' ')).toContain('imageWidth');
   });
 });
