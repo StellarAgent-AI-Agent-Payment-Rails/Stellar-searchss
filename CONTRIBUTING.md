@@ -77,6 +77,7 @@ If your change never touches the payment flow, you never need to install Freight
 
 - **[Good first issues](https://github.com/StellarAgent-AI-Agent-Payment-Rails/Stellar-searchss/issues?q=is%3Aopen+label%3A%22good+first+issue%22)** — scoped, self-contained, with clear acceptance criteria.
 - [All open issues](https://github.com/StellarAgent-AI-Agent-Payment-Rails/Stellar-searchss/issues) — the backlog has 50+ scoped ideas.
+- New to Stellar or x402? Start with the [Stellar and x402 glossary](docs/glossary.md).
 - Comment _"I'd like to work on this"_ on the issue before you start, so two people do not build the same thing.
 
 Then branch, commit and open a PR — the conventions are in [Development Workflow](#development-workflow) and [Submitting a Pull Request](#submitting-a-pull-request).

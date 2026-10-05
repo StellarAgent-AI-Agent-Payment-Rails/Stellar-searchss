@@ -22,6 +22,7 @@ const rateLimitConfig = loadRateLimitConfig()
 const limited = rateLimitGuard('GET /api/search', rateLimitConfig.search, rateLimitConfig)
 
 export async function handler(req: VercelRequest, res: VercelResponse) {
+  const invocation = startInvocation()
 
   // ─── CORS ─────────────────────────────────────────────────────────────────
   res.setHeader('Access-Control-Allow-Origin', '*')
@@ -164,7 +165,11 @@ export async function handler(req: VercelRequest, res: VercelResponse) {
       paidAmount: AMOUNT_USDC,
       currency:   'USDC',
       txHash,
-      latencyMs,
+      latencyMs: serperLatencyMs,
+      serperLatencyMs,
+      invocationType: invocation.invocationType,
+      coldStartLatencyMs: invocation.coldStartLatencyMs,
+      warmHandlerLatencyMs: invocation.invocationType === 'warm' ? handlerElapsedMs(invocation) : null,
     })
 
   } catch (err: any) {

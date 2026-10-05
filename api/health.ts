@@ -2,6 +2,7 @@ import type { VercelRequest, VercelResponse } from '@vercel/node'
 import { readFileSync } from 'fs'
 import { resolve, dirname } from 'path'
 import { fileURLToPath } from 'url'
+import { handlerElapsedMs, startInvocation } from './invocationMetrics'
 
 import { loadRateLimitConfig } from '../server/rateLimitConfig.js'
 import { rateLimitGuard } from './rateLimit.js'
@@ -36,6 +37,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     groqApiConfigured: !!GROQ_API_KEY,
     receivingAddressConfigured: !!RECEIVING_ADDRESS,
     stats: await getStats(),
+    avgLatencyMs: null,
+    invocationType: invocation.invocationType,
+    coldStartLatencyMs: invocation.coldStartLatencyMs,
+    warmHandlerLatencyMs: invocation.invocationType === 'warm' ? handlerElapsedMs(invocation) : null,
     timestamp: new Date().toISOString(),
   }
 

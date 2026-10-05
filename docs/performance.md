@@ -24,3 +24,9 @@ Requests time out after 10 seconds. The client acknowledgement flag does not
 configure the server: set the development server environment separately.
 No production performance results have been measured. Record environment,
 concurrency, throughput, p95 latency, and error rate before drawing conclusions.
+
+## Serverless invocation timing
+
+The Vercel `/api/search` and `/api/health` responses expose invocation type, cold-start latency, and warm-handler latency separately. Search responses also expose `serperLatencyMs`; the existing `latencyMs` field remains an alias for that upstream measurement. `/api/health` reports `avgLatencyMs` as `null` when it has no Serper aggregate instead of displaying a fabricated zero.
+
+`coldStartLatencyMs` measures from application timing-module initialization to first handler entry. Vercel does not expose the request-arrival timestamp to the function, so this is an application-observed lower bound, not the full platform startup duration. The cold/warm counter is local to each serverless function instance. `warmHandlerLatencyMs` measures the handler's in-process work on a warm invocation and is not mixed with the Serper request duration.
