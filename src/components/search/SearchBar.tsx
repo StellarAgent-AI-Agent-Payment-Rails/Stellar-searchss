@@ -22,6 +22,28 @@ export function SearchBar({
 
   useEffect(() => {
     inputRef.current?.focus()
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const isSlash = e.key === '/'
+      const isCmdK = (e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k'
+
+      if (isSlash || isCmdK) {
+        const activeEl = document.activeElement
+        const isInputFocused =
+          activeEl instanceof HTMLInputElement ||
+          activeEl instanceof HTMLTextAreaElement ||
+          activeEl?.getAttribute('contenteditable') === 'true'
+
+        if (!isInputFocused || (isCmdK && activeEl !== inputRef.current)) {
+          e.preventDefault()
+          inputRef.current?.focus()
+          inputRef.current?.select()
+        }
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
   }, [])
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
@@ -83,6 +105,12 @@ export function SearchBar({
             className="flex-1 min-w-0 bg-transparent text-white placeholder:text-white/60 text-sm rounded-md disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#00f5ff]"
             style={{ caretColor: isWrongNetwork ? '#ef4444' : '#00f5ff' }}
           />
+
+          {!isWrongNetwork && (
+            <div className="hidden sm:flex items-center gap-1 px-1.5 py-0.5 rounded border border-white/10 bg-white/5 text-[10px] text-white/40 font-mono select-none pointer-events-none">
+              <span>/</span>
+            </div>
+          )}
 
           <motion.button
             type="submit"

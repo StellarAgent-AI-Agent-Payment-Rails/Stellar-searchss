@@ -4,14 +4,16 @@ import { TrendingUp, Zap, Clock, Shield } from 'lucide-react'
 import { fetchServerStats } from '../../lib/stellar'
 import type { HealthResponse } from '../../types'
 
-type ServerStats = Pick<HealthResponse, 'totalQueries' | 'totalUsdcSettled' | 'avgLatencyMs' | 'uptime'> & {
+type ServerStats = Pick<HealthResponse, 'totalQueries' | 'totalUsdcSettled' | 'avgLatencyMs' | 'uptime' | 'coldStartLatencyMs' | 'warmHandlerLatencyMs' | 'invocationType'> & {
   status: 'online' | 'offline' | 'invalid'
 }
 
 const CARDS = [
   { key: 'totalQueries',     label: 'Total Queries', Icon: TrendingUp, color: '#00f5ff', fmt: (v: unknown) => Number(v).toLocaleString() },
   { key: 'totalUsdcSettled', label: 'USDC Settled',  Icon: Zap,        color: '#ffb800', fmt: (v: unknown) => `$${v}` },
-  { key: 'avgLatencyMs',     label: 'Avg Latency',   Icon: Clock,      color: '#39ff14', fmt: (v: unknown) => `${v}ms` },
+  { key: 'avgLatencyMs',     label: 'Serper Latency', Icon: Clock,      color: '#39ff14', fmt: (v: unknown) => v == null ? '—' : `${v}ms` },
+  { key: 'coldStartLatencyMs', label: 'Cold Start',   Icon: Zap,        color: '#f59e0b', fmt: (v: unknown) => v == null ? '—' : `${v}ms` },
+  { key: 'warmHandlerLatencyMs', label: 'Warm Handler', Icon: Clock,    color: '#a78bfa', fmt: (v: unknown) => v == null ? '—' : `${v}ms` },
   { key: 'uptime',           label: 'Uptime',        Icon: Shield,     color: '#7dd3fc', fmt: (v: unknown) => String(v) },
 ]
 
@@ -20,6 +22,9 @@ export function StatsGrid() {
     totalQueries: 0,
     totalUsdcSettled: '0.00',
     avgLatencyMs: 0,
+    coldStartLatencyMs: null,
+    warmHandlerLatencyMs: null,
+    invocationType: null,
     uptime: '—',
     status: 'offline',
   })
@@ -29,13 +34,18 @@ export function StatsGrid() {
       try {
         const data = await fetchServerStats()
         if (data) {
-          setStats({
+          setStats(prev => ({
             totalQueries: data.totalQueries,
             totalUsdcSettled: data.totalUsdcSettled,
             avgLatencyMs: data.avgLatencyMs,
+            // Keep the most recent cold-start measurement visible on later
+            // warm health polls, where no new cold-start sample exists.
+            coldStartLatencyMs: data.coldStartLatencyMs ?? prev.coldStartLatencyMs,
+            warmHandlerLatencyMs: data.warmHandlerLatencyMs,
+            invocationType: data.invocationType,
             uptime: data.uptime,
             status: 'online',
-          })
+          }))
         } else {
           setStats(prev => ({ ...prev, status: 'offline' }))
         }
@@ -49,7 +59,7 @@ export function StatsGrid() {
   }, [])
 
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+    <div className="grid grid-cols-2 md:grid-cols-3 2xl:grid-cols-6 gap-3">
       {CARDS.map(({ key, label, Icon, color, fmt }, i) => (
         <motion.div
           key={key}
@@ -89,10 +99,10 @@ export function StatsGrid() {
         </motion.div>
       ))}
 
-      <div className="col-span-2 lg:col-span-4 flex items-center justify-end gap-2 mt-1">
+      <div className="col-span-2 md:col-span-3 2xl:col-span-6 flex items-center justify-end gap-2 mt-1">
         <div className={`w-1.5 h-1.5 rounded-full ${stats.status === 'online' ? 'bg-neon-green animate-pulse' : 'bg-red-500'}`} />
         <span className="font-display text-xs text-white/60">
-          SERVER {stats.status === 'online' ? 'ONLINE' : stats.status === 'invalid' ? 'INVALID HEALTH RESPONSE' : 'OFFLINE — run: npm run server'}
+          SERVER {stats.status === 'online' ? `ONLINE${stats.invocationType ? ` · ${stats.invocationType.toUpperCase()} INVOCATION` : ''}` : stats.status === 'invalid' ? 'INVALID HEALTH RESPONSE' : 'OFFLINE — run: npm run server'}
         </span>
       </div>
     </div>

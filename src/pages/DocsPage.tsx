@@ -2,7 +2,7 @@ import { motion } from 'framer-motion'
 import { CheckCircle2, Coins, Droplets, ExternalLink, GitBranch, Globe, KeyRound, Shield, Wallet, Zap, Code2, Server } from 'lucide-react'
 import {
   IS_MAINNET, STELLAR_NETWORK, AMOUNT_USDC, STELLAR_EXPERT_URL, HORIZON_URL,
-  USDC_ISSUER, USDC_CONTRACT, USDC_ISSUER_TESTNET, explorerAssetUrl, explorerContractUrl,
+  USDC_ISSUER, USDC_ISSUER_TESTNET, USDC_CONTRACT, explorerAssetUrl, explorerContractUrl,
 } from '../lib/stellar'
 import { CopyableAddress } from '../components/ui'
 import { FUNDING_URLS } from '../lib/funding'
@@ -104,6 +104,7 @@ export function DocsPage() {
           {[
             { label: 'x402 Docs',        href: 'https://developers.stellar.org/docs/build/agentic-payments/x402' },
             { label: 'GitHub Repo',      href: 'https://github.com/stellar/x402-stellar' },
+            { label: 'Stellar glossary', href: 'https://github.com/StellarAgent-AI-Agent-Payment-Rails/Stellar-searchss/blob/main/docs/glossary.md' },
             { label: `${networkLabel} Explorer`, href: STELLAR_EXPERT_URL },
           ].map(({ label, href }) => (
             <a
