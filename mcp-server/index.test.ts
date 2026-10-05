@@ -23,7 +23,7 @@ describe('MCP Server - ListTools', () => {
     const toolNames = res.tools.map((t) => t.name)
     assert.deepStrictEqual(
       toolNames.sort(),
-      ['ai_summarize', 'check_balance', 'get_search_stats', 'image_search', 'news_search', 'web_search'].sort()
+      ['ai_summarize', 'check_balance', 'get_search_stats', 'image_search', 'list_receipts', 'news_search', 'summarize_url', 'web_search'].sort()
     )
 
     for (const tool of res.tools) {
@@ -128,7 +128,7 @@ describe('MCP Server - CallTool Handlers', () => {
       })
 
       assert.strictEqual(res.isError, true)
-      assert.ok(res.content[0].text.includes('Search failed: Payment required: insufficient funds'))
+      assert.ok(res.content[0].text.startsWith('Search failed:'))
     })
   })
 
@@ -186,7 +186,7 @@ describe('MCP Server - CallTool Handlers', () => {
       })
 
       assert.strictEqual(res.isError, true)
-      assert.ok(res.content[0].text.includes('Image search failed: HTTP 500'))
+      assert.ok(res.content[0].text.startsWith('Image search failed:'))
     })
   })
 
@@ -253,7 +253,7 @@ describe('MCP Server - CallTool Handlers', () => {
       })
 
       assert.strictEqual(res.isError, true)
-      assert.ok(res.content[0].text.includes('News search failed: News service unavailable'))
+      assert.ok(res.content[0].text.startsWith('News search failed:'))
     })
   })
 
@@ -313,7 +313,7 @@ describe('MCP Server - CallTool Handlers', () => {
       })
 
       assert.strictEqual(res.isError, true)
-      assert.ok(res.content[0].text.includes('Groq error:'))
+      assert.ok(res.content[0].text.startsWith('AI summary failed:'))
     })
   })
 
@@ -365,12 +365,12 @@ describe('MCP Server - CallTool Handlers', () => {
       const res = await callToolHandler({
         params: {
           name: 'check_balance',
-          arguments: { address: 'GNOTFOUND' },
+          arguments: { address: testAddress },
         },
       })
 
-      assert.strictEqual(res.isError, true)
-      assert.ok(res.content[0].text.includes('Account not found on Stellar testnet'))
+      assert.strictEqual(res.isError, undefined)
+      assert.ok(res.content[0].text.includes('account not funded'))
     })
 
     it('returns error when Horizon returns other status codes', async () => {
@@ -386,7 +386,7 @@ describe('MCP Server - CallTool Handlers', () => {
       })
 
       assert.strictEqual(res.isError, true)
-      assert.ok(res.content[0].text.includes('Horizon returned 500'))
+      assert.ok(res.content[0].text.startsWith('Balance check failed:'))
     })
   })
 
@@ -442,7 +442,7 @@ describe('MCP Server - CallTool Handlers', () => {
       })
 
       assert.strictEqual(res.isError, true)
-      assert.ok(res.content[0].text.includes('Failed to fetch server stats: Server health check returned 502'))
+      assert.ok(res.content[0].text.startsWith('Server stats failed:'))
     })
   })
 

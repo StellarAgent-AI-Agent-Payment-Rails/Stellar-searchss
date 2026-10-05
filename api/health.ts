@@ -19,6 +19,7 @@ const limited = rateLimitGuard('GET /api/health', rateLimitConfig.health, rateLi
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (await limited(req, res)) return
+  const invocation = startInvocation()
 
   const NETWORK = process.env.STELLAR_NETWORK || 'stellar:testnet'
   const FACILITATOR_URL = process.env.FACILITATOR_URL || 'https://www.x402.org/facilitator'

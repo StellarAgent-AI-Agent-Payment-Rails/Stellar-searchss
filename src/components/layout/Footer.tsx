@@ -1,5 +1,6 @@
 import { STELLAR_EXPERT_URL, IS_MAINNET } from '../../lib/stellar'
 import { Zap } from 'lucide-react'
+import { ExternalLink } from '../ui/ExternalLink'
 
 // Injected by Vite at build time from package.json → version.
 declare const __APP_VERSION__: string
@@ -13,8 +14,8 @@ const LINKS = [
 
 export function Footer() {
   return (
-    <footer className="border-t white/4 py-5">
-      <div className="max-w-6l mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-3">
+    <footer className="border-t border-white/5 py-5">
+      <div className="max-w-6xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-3">
         <div className="flex items-center gap-2">
           <div
             className="w-5 h-5 rounded flex items-center justify-center"

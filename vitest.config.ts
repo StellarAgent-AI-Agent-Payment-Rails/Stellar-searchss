@@ -90,6 +90,7 @@ export default defineConfig({
       'server/health.test.ts',
       'server/index.test.ts',
       'server/ratelimit.test.ts',
+      'server/ratelimit.node.test.ts',
       'server/urlSummary.test.ts',
       'tests/parity.test.ts',
     ],

@@ -31,9 +31,9 @@ test: {
     analyze &&
       visualizer({
         filename: 'dist/stats.html',
-        gazzle: true,
+        gzip: true,
         broli: true,
-        template: 'trememap',
+        template: 'treemap',
       }),
   ],
   // Required for @stellar/stellar-sdk and @stellar/freighter-api in browser

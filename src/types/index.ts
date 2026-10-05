@@ -22,6 +22,9 @@ export interface HealthResponse {
   totalQueries: number
   totalUsdcSettled: string
   avgLatencyMs: number
+  coldStartLatencyMs: number | null
+  warmHandlerLatencyMs: number | null
+  invocationType: 'cold' | 'warm' | null
   cacheHitRate: string
   uptime: string
   serperApiConfigured: boolean
@@ -62,6 +65,11 @@ const HEALTH_BOOLEAN_FIELDS = [
   'receivingAddressConfigured',
 ] as const satisfies ReadonlyArray<keyof HealthResponse>
 
+const HEALTH_NULLABLE_LATENCY_FIELDS = [
+  'coldStartLatencyMs',
+  'warmHandlerLatencyMs',
+] as const satisfies ReadonlyArray<keyof HealthResponse>
+
 /**
  * Validates an unknown payload as a {@link HealthResponse}. Returns the typed
  * value on success, or throws {@link HealthResponseValidationError} listing
@@ -86,6 +94,19 @@ export function parseHealthResponse(input: unknown): HealthResponse {
   }
   for (const field of HEALTH_BOOLEAN_FIELDS) {
     if (typeof record[field] !== 'boolean') issues.push(`${field} must be a boolean`)
+  }
+  for (const field of HEALTH_NULLABLE_LATENCY_FIELDS) {
+    const value = record[field]
+    if (value !== null && (typeof value !== 'number' || !Number.isFinite(value) || value < 0)) {
+      issues.push(`${field} must be a non-negative finite number or null`)
+    }
+  }
+  if (
+    record.invocationType !== null &&
+    record.invocationType !== 'cold' &&
+    record.invocationType !== 'warm'
+  ) {
+    issues.push(`invocationType must be 'cold', 'warm', or null`)
   }
 
   if (issues.length > 0) throw new HealthResponseValidationError(issues)

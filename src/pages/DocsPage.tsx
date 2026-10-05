@@ -331,6 +331,8 @@ export function DocsPage() {
             />
           </div>
         </div>
+      </section>
+
       {/* Search privacy */}
       <section className="space-y-3" aria-labelledby="search-privacy-heading">
         <div>

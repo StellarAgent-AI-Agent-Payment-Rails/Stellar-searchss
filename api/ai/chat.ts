@@ -6,6 +6,13 @@ import { rateLimitGuard } from '../rateLimit.js'
 
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY! })
 
+const GROQ_MODEL = 'qwen/qwen3.8-27b'
+
+function readMessages(req: VercelRequest): { role: 'system' | 'user' | 'assistant'; content: string }[] | null {
+  const body = req.body as { messages?: { role: 'system' | 'user' | 'assistant'; content: string }[] } | undefined
+  return body?.messages?.length ? body.messages : null
+}
+
 const rateLimitConfig = loadRateLimitConfig()
 const limited = rateLimitGuard('POST /api/ai/chat', rateLimitConfig.aiChat, rateLimitConfig)
 

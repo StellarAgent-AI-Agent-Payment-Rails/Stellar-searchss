@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 
 process.env.GROQ_API_KEY = 'test-key'
-const { getSafeToolErrorMessage, reportToolError } = await import('../mcp-server/index.ts')
+const { getSafeToolErrorMessage, reportToolError } = await import('../mcp-server/index.js')
 
 const originalError = console.error
 const stderr: unknown[][] = []

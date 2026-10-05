@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
-  Wallet, ChevronDown, ExternalLink, AlertTriangle,
+  Wallet, ChevronDown, ExternalLink as ExternalLinkIcon, AlertTriangle,
   Copy, CheckCheck, RefreshCw, LogOut, AlertCircle,
 } from 'lucide-react'
 import type { WalletState, StellarTransaction } from '../../hooks/useFreighterWallet'
@@ -30,7 +30,7 @@ export function WalletPanel({
   const [copied, setCopied] = useState(false)
 
   const isWrongNetwork = wallet.connected && wallet.network !== EXPECTED_WALLET_NETWORK
-  const hasTrustline = wallet.hasUsdcTrustline !== false
+  const hasTrustline = wallet.usdcTrustline !== false
   const needsTrustline = wallet.connected && !wallet.loading && !hasTrustline
 
   const isUnfunded = wallet.error === 'This account is not funded yet'
@@ -186,7 +186,7 @@ export function WalletPanel({
                     rel="noopener noreferrer"
                     className="inline-flex items-center gap-1 mt-2 font-display text-[10px] text-neon-cyan/70 hover:text-neon-cyan transition-colors uppercase tracking-widest"
                   >
-                    Add USDC trustline <ExternalLink className="w-2.5 h-2.5" />
+                    Add USDC trustline <ExternalLinkIcon className="w-2.5 h-2.5" />
                   </a>
                 </div>
               )}
@@ -207,7 +207,7 @@ export function WalletPanel({
                         rel="noopener noreferrer"
                         className="inline-flex items-center gap-1 mt-1 font-display text-[10px] tracking-widest uppercase text-neon-cyan/70 hover:text-neon-cyan transition-colors"
                       >
-                        Fund this account <ExternalLink className="w-2.5 h-2.5" />
+                        Fund this account <ExternalLinkIcon className="w-2.5 h-2.5" />
                       </a>
                     </div>
                   </div>
@@ -299,7 +299,7 @@ export function WalletPanel({
                   className="flex-1 py-2 rounded-lg border border-neon-cyan/20 text-center font-display text-[10px] text-neon-cyan/70 hover:bg-neon-cyan/5 transition-colors uppercase tracking-widest"
                 >
                   Fund Testnet ↗
-                </ExternalLink>
+                </a>
               )}
               <button
                 onClick={() => { onDisconnect(); setOpen(false) }}

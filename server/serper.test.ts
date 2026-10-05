@@ -11,7 +11,7 @@ import {
 } from './serper';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const FIXTURES_DIR = join(__dirname, '..', '..', 'tests', 'fixtures', 'serper');
+const FIXTURES_DIR = join(__dirname, '..', 'tests', 'fixtures', 'serper');
 
 function loadFixture(name: string): any {
   const p = join(FIXTURES_DIR, name);
@@ -30,7 +30,7 @@ beforeAll(() => {
 
 describe('Serper response schema contract', () => {
   it('organic fixture matches the expected shape', () => {
-    expect(organicFixture.organic).toBeAnInstanceOf(Array);
+    expect(organicFixture.organic).toBeInstanceOf(Array);
     expect(organicFixture.organic.length).toBeGreaterThan(0);
     for (const r of organicFixture.organic) {
       expect(r).toHaveProperty('title');
@@ -43,7 +43,7 @@ describe('Serper response schema contract', () => {
   });
 
   it('images fixture matches the expected shape', () => {
-    expect(imagesFixture.images).toBeAnInstanceOf(Array);
+    expect(imagesFixture.images).toBeInstanceOf(Array);
     expect(imagesFixture.images.length).toBeGreaterThan(0);
     for (const r of imagesFixture.images) {
       expect(r).toHaveProperty('title');
@@ -57,7 +57,7 @@ describe('Serper response schema contract', () => {
   });
 
   it('news fixture matches the expected shape', () => {
-    expect(newsFixture.news).toBeAnInstanceOf(Array);
+    expect(newsFixture.news).toBeInstanceOf(Array);
     expect(newsFixture.news.length).toBeGreaterThan(0);
     for (const r of newsFixture.news) {
       expect(r).toHaveProperty('title');
@@ -105,7 +105,7 @@ describe('mapping functions against fixtures', () => {
 
 describe('field rename detection', () => {
   it('fails when organic.snippet is renamed', () => {
-    const warnSpy = vi.spyOn();
+    const warnSpy = vi.spyOn(console, 'warn');
     const renamed = JSON.parse(JSON.stringify(organicFixture));
     for (const r of renamed.organic) {
       r.description = r.snippet;
@@ -117,7 +117,7 @@ describe('field rename detection', () => {
   });
 
   it('fails when images.imageWidth is renamed', () => {
-    const warnSpy = vi.spyOn();
+    const warnSpy = vi.spyOn(console, 'warn');
     const renamed = JSON.parse(JSON.stringify(imagesFixture));
     for (const r of renamed.images) {
       r.width = r.imageWidth;
@@ -129,7 +129,7 @@ describe('field rename detection', () => {
   });
 
   it('fails when news.snippet is renamed', () => {
-    const warnSpy = vi.spyOn();
+    const warnSpy = vi.spyOn(console, 'warn');
     const renamed = JSON.parse(JSON.stringify(newsFixture));
     for (const r of renamed.news) {
       r.description = r.snippet;
@@ -160,7 +160,7 @@ describe('validateSerperResponse', () => {
     const renamed = JSON.parse(JSON.stringify(imagesFixture));
     delete renamed.images[0].imageWidth;
     const warnings = validateSerperResponse(renamed, 'images');
-    expect(warnings.length).toBe GreaterThan(0);
+    expect(warnings.length).toBeGreaterThan(0);
     expect(warnings.join(' ')).toContain('imageWidth');
   });
 });

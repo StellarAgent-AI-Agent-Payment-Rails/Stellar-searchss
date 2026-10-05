@@ -9,6 +9,8 @@
 
 import { describe, expect, it, vi, afterEach } from 'vitest'
 
+import type { CorsOptions } from 'cors'
+
 import {
   buildCorsOptions,
   getCorsStartupMessage,
@@ -75,7 +77,7 @@ describe('isProductionEnv', () => {
  * helper asserts the callable form and gives the rule a concrete signature
  * instead of the banned bare `Function` type.
  */
-type CorsOriginCallback = (err: Error | null, allow?: boolean) => void
+type CorsOriginCallback = (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => void
 
 function originCallback(options: CorsOptions): CorsOriginCallback {
   return options.origin as CorsOriginCallback

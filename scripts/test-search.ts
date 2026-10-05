@@ -188,52 +188,8 @@ function printResults(data: any, ms: number): void {
     console.log(`   ${r.url}`)
     if (r.description) console.log(`   ${r.description.slice(0, 120)}${r.description.length > 120 ? '...' : ''}`)
   })
-<<<<<<< HEAD
-=======
-
-  // 3. Test Groq AI
-  console.log('\n── Groq AI test ──')
-  const aiRes = await fetch(`${SERVER}/ai/chat`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      messages: [{ role: 'user', content: `Summarise what I should know about: ${query}` }],
-    }),
-  })
-
-  if (aiRes.ok) {
-    const aiData = await aiRes.json()
-    console.log(`\n✓ Groq AI (${aiData.model}):`)
-    console.log(`   ${aiData.content.slice(0, 200)}...`)
-  } else {
-    console.log('✗ Groq AI unavailable (check GROQ_API_KEY)')
-  }
-
-  // 4. Test AI suggestions — via decoupled GET /suggestions?q=...
-  console.log('\n── AI suggestions test ──')
-
-  const t1 = Date.now()
-  const suggRes = await fetch(`${SERVER}/suggestions?q=${encodeURIComponent(query)}`)
-  const suggMs = Date.now() - t1
-
-  if (!suggRes.ok) {
-    console.error('✗ Suggestions request failed:', suggRes.status)
-  } else {
-    const suggData = await suggRes.json()
-    const suggestions: string[] = suggData.suggestions ?? []
-
-    if (!Array.isArray(suggestions)) {
-      console.error('✗ suggestions field is not an array')
-      process.exit(1)
-    }
-
-    console.log(`\n✓ Got ${suggestions.length} AI suggestions asynchronously (${suggMs}ms total):`)
-    suggestions.forEach((s, i) => console.log(`   ${i + 1}. ${s}`))
-  }
-
-  console.log('\n✅ All tests passed!\n')
->>>>>>> 7bd005c (fix: implement code splitting and decouple Groq suggestions (closes #171, closes #179))
 }
+
 
 // ─── Paid x402 client (server-side signer, no browser/Freighter) ────────────
 // Mirrors src/hooks/useSearch.ts but signs the Soroban auth entry with a

@@ -11,7 +11,7 @@ interface Props {
 /**
    * `null` means the trustline state has not been determined yet.
    */
-  usddTrustline?: boolean | null
+  usdcTrustline?: boolean | null
 
   // Navigates to the funding guide section on the docs page via SPA routing
   // (a plain hash anchor would reload the app back to the search page).
@@ -35,7 +35,7 @@ export function ZeroBalanceBanner({ connected, publicKey, usdcBalance, usdcTrust
     // The missing-trustline notice is more urgent than the zero-balance one,
     // so it gets its own dismissal key.
     const key =
-      usddTrustline === false ? trustlineDismissKey(publicKey) : dismissKey(publicKey)
+      usdcTrustline === false ? trustlineDismissKey(publicKey) : dismissKey(publicKey)
     setDismissed(sessionStorage.getItem(key) === '1')
   }, [publicKey, usdcTrustline])
 
@@ -84,7 +84,7 @@ export function ZeroBalanceBanner({ connected, publicKey, usdcBalance, usdcTrust
                 <p className="text-xs text-white/45">
                   Add the trustline in your wallet, then come back for free testnet USDC.
                   <a
-                    href={TRUSTLINE_GUIDE_URL}
+                    href={FUNDING_URLS.trustlineDocs}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-neon-cyan/80 hover:text-neon-cyan transition-colors inline-flex items-center gap-1 ml-1"
@@ -96,7 +96,29 @@ export function ZeroBalanceBanner({ connected, publicKey, usdcBalance, usdcTrust
             ) : (
               <>
                 <p className="text-sm text-neon-amber/90 leading-relaxed">
-                  Your USDC trustline is set up, but the balance is zero. You need testnet USDC to search
+                  Your USDC trustline is set up, but the balance is zero. You need testnet USDC to search.{' '}
+                  <button
+                    onClick={onOpenGuide}
+                    className="font-medium underline underline-offset-2 hover:text-neon-amber transition-colors"
+                  >
+                    Follow the step-by-step funding guide
+                  </button>{' '}
+                  (create account → fund XLM → add USDC trustline → claim USDC)
+                </p>
+                <p className="text-xs text-white/45">
+                  Already set up?{' '}
+                  <a
+                    href={FUNDING_URLS.usdcFaucet}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-neon-cyan/80 hover:text-neon-cyan transition-colors inline-flex items-center gap-1"
+                  >
+                    Claim USDC from the faucet <ExternalLink className="w-3 h-3" />
+                  </a>{' '}
+                  — requires the USDC trustline first.
+                </p>
+              </>
+            )}
           </div>
           <button
             onClick={onDismiss}

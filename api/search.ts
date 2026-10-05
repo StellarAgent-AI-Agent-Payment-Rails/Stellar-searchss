@@ -6,6 +6,7 @@ import {
   AMOUNT_USDC
 } from '../src/lib/constants'
 import { loadRateLimitConfig } from '../server/rateLimitConfig.js'
+import { handlerElapsedMs, startInvocation } from './invocationMetrics'
 import { rateLimitGuard } from './rateLimit.js'
 
 // ─── Config ───────────────────────────────────────────────────────────────
@@ -122,6 +123,7 @@ export async function handler(req: VercelRequest, res: VercelResponse) {
       if (dateFilters[freshness]) requestBody.tbs = dateFilters[freshness]
     }
 
+    const serperStart = Date.now()
     const serperRes = await fetch('https://google.serper.dev/search', {
       method:  'POST',
       headers: {
@@ -139,6 +141,7 @@ export async function handler(req: VercelRequest, res: VercelResponse) {
 
     const data      = (await serperRes.json()) as any
     const latencyMs = Date.now() - t0
+    const serperLatencyMs = Date.now() - serperStart
 
     const results = (data.organic || []).map((r: any, i: number) => ({
       id:             String(i + 1),
@@ -154,9 +157,6 @@ export async function handler(req: VercelRequest, res: VercelResponse) {
     }))
 
     // Record successful search for stats. Best-effort: never block the response.
-    incrementCounter('searches').catch(() => {})
-    incrementCounter('results', results.length).catch(() => {})
-
     return res.json({
       query:      q.trim(),
       results,

@@ -12,7 +12,7 @@ import { fileURLToPath } from 'url'
 import { buildCorsOptions, getCorsStartupMessage } from './corsConfig.js'
 import { installRateLimiting } from './rateLimit.js'
 import { loadRateLimitConfig } from './rateLimitConfig.js'
-import { createRateLimiter } from './ratelimit.js'
+import { createRateLimiter } from './rateLimit.js'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const { version: APP_VERSION } = JSON.parse(
@@ -188,7 +188,10 @@ app.use(
 // /ai/chat and /summarize-url are free but each triggers a Groq call (and the
 // latter a network fetch), so they are the abuse-prone surface. Limits are
 // keyed per client IP so one caller cannot starve the rest.
-const freeRouteLimiter = createRateLimiter({
+const rateLimitConfig = loadRateLimitConfig()
+const rateLimiters = installRateLimiting(app, rateLimitConfig)
+
+const summarizeUrlLimiter = createRateLimiter({
   windowMs: Number(process.env.RATE_LIMIT_WINDOW_MS) || 60_000,
   max: Number(process.env.SUMMARIZE_URL_RATE_LIMIT_MAX) || 30,
 })
@@ -915,6 +918,18 @@ app.get('/receipts', (req: Request, res: Response) => {
 })
 
 // ─── GET /health ──────────────────────────────────────────────────────────
+let healthInvocationCount = 0
+const serverProcessStartedAt = Date.now()
+function healthInvocation(): { invocationType: 'cold' | 'warm'; coldStartLatencyMs: number | null; warmHandlerLatencyMs: number | null } {
+  healthInvocationCount += 1
+  const isCold = healthInvocationCount === 1
+  return {
+    invocationType: isCold ? 'cold' : 'warm',
+    coldStartLatencyMs: isCold ? Date.now() - serverProcessStartedAt : null,
+    warmHandlerLatencyMs: isCold ? null : 0,
+  }
+}
+
 app.get('/health', (req: Request, res: Response) => {
   const avg = stats.latencies.length
     ? Math.round(stats.latencies.reduce((a, b) => a + b, 0) / stats.latencies.length)
@@ -938,6 +953,7 @@ app.get('/health', (req: Request, res: Response) => {
     serperApiConfigured:       !!SERPER_API_KEY,
     groqApiConfigured:         !!GROQ_API_KEY,
     receivingAddressConfigured: !!RECEIVING_ADDRESS,
+    ...healthInvocation(),
   }
 
   // Short-lived public cache so repeated polls from LiveTicker/StatsGrid can be

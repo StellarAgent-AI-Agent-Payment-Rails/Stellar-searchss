@@ -63,7 +63,26 @@ const HTTP_PORT = parseInt(process.env.MCP_HTTP_PORT || '3002', 10)
 const HTTP_HOST = process.env.MCP_HTTP_HOST || '0.0.0.0'
 const HTTP_AUTH_TOKEN = process.env.MCP_HTTP_AUTH_TOKEN
 
-const groq = new Groq({ apiKey: GROQ_API_KEY })
+const groq = new Groq({ apiKey: GROQ_API_KEY, fetch: ((input: any, init?: any) => fetch(input, init)) as any })
+
+function describeHttpError(status: number): string {
+  return `HTTP ${status}`
+}
+
+let paidFetch: ((input: any, init?: any) => Promise<Response>) | null = null
+function getPaidFetch() {
+  if (paidFetch) return paidFetch
+  const secret = process.env.STELLAR_PAYER_SECRET
+  if (!secret) {
+    paidFetch = (input: any, init?: any) => fetch(input, init)
+    return paidFetch
+  }
+  const network = STELLAR_NETWORK as Network
+  const signer = createEd25519Signer(secret, network)
+  const client = new x402Client().register(network, new ExactStellarScheme(signer))
+  paidFetch = wrapFetchWithPayment(fetch, client)
+  return paidFetch
+}
 
 type ErrorCategory = 'authentication/configuration' | 'network/request' | 'upstream service' | 'invalid request' | 'unexpected internal'
 
@@ -302,7 +321,7 @@ function balanceMessage(address: string, account: HorizonAccount): string {
   return lines.join('\n')}
 
 // ─── MCP server ───────────────────────────────────────────────────────────
-const server = new Server(
+export const server = new Server(
   { name: 'stellar-search', version: APP_VERSION },
   { capabilities: { tools: {}, prompts: {}, resources: {} } },
 )
@@ -546,7 +565,7 @@ server.setRequestHandler(GetPromptRequestSchema, async (request) => {
   throw new Error(`Unknown prompt: ${name}`)
 })
 
-server.setRequestHandler(CallToolRequestSchema, async (request) => {
+export const callToolHandler = async (request: any) => {
   const { name, arguments: args } = request.params
 
   // ── web_search ────────────────────────────────────────────────────────
@@ -868,6 +887,8 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
   return { content: [{ type: 'text' as const, text: `Unknown tool: ${name}` }], isError: true }
 }
+
+server.setRequestHandler(CallToolRequestSchema, callToolHandler)
 
 // ─── Resources ────────────────────────────────────────────────────────────
 // Server stats are reference data, so a client can list and read them directly
