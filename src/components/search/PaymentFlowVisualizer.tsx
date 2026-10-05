@@ -1,5 +1,5 @@
 import { m, AnimatePresence } from 'framer-motion'
-import ExternalLink from 'lucide-react/dist/esm/icons/external-link'
+import { ExternalLink } from 'lucide-react'
 import type { SearchSession } from '../../hooks/useSearch'
 import { explorerTxUrl, truncateHash } from '../../lib/stellar'
 
@@ -82,7 +82,7 @@ export function PaymentFlowVisualizer({ session }: Props) {
                       animate={{ scale: 1 }}
                       style={{ color: step.color }}
                       className="text-xs font-bold"
-                    >✓</motion.span>
+                    >✓</m.span>
                   ) : stepFailed ? (
                     <span style={{ color: '#ef4444' }} className="text-xs font-bold">✗</span>
                   ) : (

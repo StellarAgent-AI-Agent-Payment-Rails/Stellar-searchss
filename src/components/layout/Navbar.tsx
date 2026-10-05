@@ -15,6 +15,7 @@ const NAV_ITEMS: { id: Page; label: string; Icon: React.FC<{ className?: string 
 interface Props {
   page: Page
   onNavigate: (p: Page) => void
+  onPrefetch?: (p: Page) => void
   wallet: WalletState
   transactions: StellarTransaction[]
   txLoading: boolean
@@ -24,7 +25,7 @@ interface Props {
 }
 
 export function Navbar({
-  page, onNavigate,
+  page, onNavigate, onPrefetch,
   wallet, transactions, txLoading,
   onConnect, onDisconnect, onRefresh,
 }: Props) {
@@ -41,6 +42,8 @@ export function Navbar({
         {/* Logo */}
         <button
           onClick={() => onNavigate('search')}
+          onMouseEnter={() => onPrefetch?.('search')}
+          onFocus={() => onPrefetch?.('search')}
           className="flex items-center gap-2 flex-shrink-0 group"
         >
           <div
@@ -63,6 +66,8 @@ export function Navbar({
             <button
               key={id}
               onClick={() => onNavigate(id)}
+              onMouseEnter={() => onPrefetch?.(id)}
+              onFocus={() => onPrefetch?.(id)}
               aria-current={page === id ? "page" : undefined}
               className="relative flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-display text-xs tracking-wider transition-colors"
               style={{ color: page === id ? '#00f5ff' : 'rgba(255,255,255,0.3)' }}

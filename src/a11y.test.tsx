@@ -32,7 +32,9 @@ const wallet: WalletState = {
   xlmBalance: '0',
   usdcBalance: '0',
   loading: false,
+  refreshing: false,
   error: null,
+  hint: null,
 }
 
 const session: SearchSession = {
@@ -47,7 +49,15 @@ const session: SearchSession = {
 describe('page accessibility smoke checks', () => {
   it('checks the search page', async () => {
     const { container } = render(
-      <SearchPage wallet={wallet} onConnectWallet={() => undefined} session={session} search={async () => undefined} reset={() => undefined} />,
+      <SearchPage
+        wallet={wallet}
+        onConnectWallet={() => undefined}
+        session={session}
+        search={async () => undefined}
+        reset={() => undefined}
+        retry={async () => undefined}
+        onNavigateFundingGuide={() => undefined}
+      />,
     )
     await expectNoUnlistedCriticalViolations('search', container)
   })

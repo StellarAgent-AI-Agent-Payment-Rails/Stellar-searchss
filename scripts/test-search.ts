@@ -188,6 +188,51 @@ function printResults(data: any, ms: number): void {
     console.log(`   ${r.url}`)
     if (r.description) console.log(`   ${r.description.slice(0, 120)}${r.description.length > 120 ? '...' : ''}`)
   })
+<<<<<<< HEAD
+=======
+
+  // 3. Test Groq AI
+  console.log('\n── Groq AI test ──')
+  const aiRes = await fetch(`${SERVER}/ai/chat`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      messages: [{ role: 'user', content: `Summarise what I should know about: ${query}` }],
+    }),
+  })
+
+  if (aiRes.ok) {
+    const aiData = await aiRes.json()
+    console.log(`\n✓ Groq AI (${aiData.model}):`)
+    console.log(`   ${aiData.content.slice(0, 200)}...`)
+  } else {
+    console.log('✗ Groq AI unavailable (check GROQ_API_KEY)')
+  }
+
+  // 4. Test AI suggestions — via decoupled GET /suggestions?q=...
+  console.log('\n── AI suggestions test ──')
+
+  const t1 = Date.now()
+  const suggRes = await fetch(`${SERVER}/suggestions?q=${encodeURIComponent(query)}`)
+  const suggMs = Date.now() - t1
+
+  if (!suggRes.ok) {
+    console.error('✗ Suggestions request failed:', suggRes.status)
+  } else {
+    const suggData = await suggRes.json()
+    const suggestions: string[] = suggData.suggestions ?? []
+
+    if (!Array.isArray(suggestions)) {
+      console.error('✗ suggestions field is not an array')
+      process.exit(1)
+    }
+
+    console.log(`\n✓ Got ${suggestions.length} AI suggestions asynchronously (${suggMs}ms total):`)
+    suggestions.forEach((s, i) => console.log(`   ${i + 1}. ${s}`))
+  }
+
+  console.log('\n✅ All tests passed!\n')
+>>>>>>> 7bd005c (fix: implement code splitting and decouple Groq suggestions (closes #171, closes #179))
 }
 
 // ─── Paid x402 client (server-side signer, no browser/Freighter) ────────────
@@ -402,45 +447,20 @@ async function runSearch(): Promise<void> {
     }
   }
 
-  // ── 5. AI suggestions (paid) — opt-in via ?suggestions=1 ──
-  console.log('\n-- AI suggestions check (paid) --')
+  // ── 5. AI suggestions (decoupled GET /suggestions?q=...) ──
+  console.log('\n-- AI suggestions check (decoupled) --')
   {
     const t1 = Date.now()
-    const suggParams = new URLSearchParams({ q: query, count: String(count), suggestions: '1' })
-    const suggUrl = `${SERVER}/search?${suggParams}`
-    const { res: suggRes, body: suggData } = await fetchJson(suggUrl, { headers: await paidHeaders(paidFetch, suggUrl) })
+    const suggUrl = `${SERVER}/suggestions?q=${encodeURIComponent(query)}`
+    const { res: suggRes, body: suggData } = await fetchJson(suggUrl)
     const suggMs = Date.now() - t1
-    check('paid GET /search?suggestions=1 returns 200', suggRes.status === 200, `got ${suggRes.status}`)
+    check('GET /suggestions returns 200', suggRes.status === 200, `got ${suggRes.status}`)
     if (suggRes.status !== 200) fail('Suggestions request failed', `status ${suggRes.status}`)
     const suggestions: unknown = (suggData as any)?.suggestions
     check('suggestions field is an array', Array.isArray(suggestions), `got ${typeof suggestions}`)
-    if (Array.isArray(suggestions)) {
-      if (suggestions.length === 0) {
-        console.log('   WARN: suggestions empty -- Groq may be unavailable; not failing the paid flow.')
-      } else {
-        check('suggestions has 3 entries', suggestions.length === 3, `got ${suggestions.length}`)
-        check('suggestions are non-empty strings', suggestions.every((s) => typeof s === 'string' && s.length > 0))
-      }
-      if (suggMs > 500 && VERBOSE) {
-        console.log(`   WARN: suggestions took ${suggMs}ms total (adds ${suggMs - ms}ms vs plain search).`)
-      }
-      if (VERBOSE && suggestions.length > 0) {
-        console.log(`\n   Got ${suggestions.length} AI suggestions (${suggMs}ms total):`)
-        ;(suggestions as string[]).forEach((s, i) => console.log(`   ${i + 1}. ${s}`))
-      }
-    }
-  }
-
-  // ── 6. Without ?suggestions=1 — must be an empty array (paid) ──
-  {
-    const noSuggParams = new URLSearchParams({ q: query, count: '1' })
-    const noSuggUrl = `${SERVER}/search?${noSuggParams}`
-    const { res: noSuggRes, body: noSuggData } = await fetchJson(noSuggUrl, { headers: await paidHeaders(paidFetch, noSuggUrl) })
-    check('paid GET /search without suggestions flag returns 200', noSuggRes.status === 200, `got ${noSuggRes.status}`)
-    if (noSuggRes.status === 200) {
-      const noSuggestions: unknown = (noSuggData as any)?.suggestions ?? []
-      check('no suggestions without ?suggestions=1', Array.isArray(noSuggestions) && (noSuggestions as unknown[]).length === 0,
-        `got ${JSON.stringify(noSuggestions)?.slice(0, 200)}`)
+    if (Array.isArray(suggestions) && VERBOSE) {
+      console.log(`\n   Got ${suggestions.length} AI suggestions (${suggMs}ms total):`)
+      ;(suggestions as string[]).forEach((s, i) => console.log(`   ${i + 1}. ${s}`))
     }
   }
 

@@ -92,7 +92,7 @@ describe('POST /ai/chat SSE and fallback', () => {
       text,
       'event: delta\ndata: {"content":"Stream chunk 1"}\n\n' +
         'event: delta\ndata: {"content":" Stream chunk 2"}\n\n' +
-        'event: done\ndata: {"model":"llama-3.3-70b-versatile"}\n\n',
+        'event: done\ndata: {"model":"qwen/qwen3.8-27b"}\n\n',
     )
   })
 
