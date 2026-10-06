@@ -8,7 +8,50 @@ export interface ApiStat {
   uptime: string
 }
 
-// Injected by Vite at build time from package.json → version.
-// See vite.config.ts `define: { __APP_VERSION__ }`.
-declare const __APP_VERSION__: string
+export interface HealthResponse {
+  status: string
+  totalQueries: number
+  totalUsdcSettled: string | number
+  /** Mean upstream Serper request latency, when the server exposes it. */
+  avgLatencyMs: number | null
+  /** Runtime initialization-to-first-handler-entry measurement for this instance. */
+  coldStartLatencyMs?: number | null
+  /** Handler execution duration on a warm instance. */
+  warmHandlerLatencyMs?: number | null
+  invocationType?: 'cold' | 'warm' | null
+  uptime: string
+  serperApiConfigured?: boolean
+  groqApiConfigured?: boolean
+  receivingAddressConfigured?: boolean
+}
 
+export class HealthResponseValidationError extends Error {
+  constructor(message: string) {
+    super(message)
+    this.name = 'HealthResponseValidationError'
+  }
+}
+
+export function parseHealthResponse(data: any): HealthResponse {
+  if (!data || typeof data !== 'object') {
+    throw new HealthResponseValidationError('Invalid health response format')
+  }
+  const latency = (value: unknown): number | null =>
+    typeof value === 'number' && Number.isFinite(value) && value >= 0 ? value : null
+
+  return {
+    status: data.status ?? 'ok',
+    totalQueries: data.totalQueries ?? 0,
+    totalUsdcSettled: data.totalUsdcSettled ?? '0.000',
+    avgLatencyMs: latency(data.avgLatencyMs),
+    coldStartLatencyMs: latency(data.coldStartLatencyMs),
+    warmHandlerLatencyMs: latency(data.warmHandlerLatencyMs),
+    invocationType: data.invocationType === 'cold' || data.invocationType === 'warm'
+      ? data.invocationType
+      : null,
+    uptime: data.uptime ?? '100%',
+    serperApiConfigured: Boolean(data.serperApiConfigured),
+    groqApiConfigured: Boolean(data.groqApiConfigured),
+    receivingAddressConfigured: Boolean(data.receivingAddressConfigured),
+  }
+}

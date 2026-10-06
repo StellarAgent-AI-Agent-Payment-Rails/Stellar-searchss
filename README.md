@@ -86,6 +86,7 @@ For full endpoint parameters, response shapes, and error codes, see [`docs/api.m
 git clone https://github.com/StellarAgent-AI-Agent-Payment-Rails/Stellar-searchss.git
 cd Stellar-searchss
 npm install
+cp .env.example .env
 ```
 
 ### 2. Get your keys (all free)
@@ -102,15 +103,26 @@ No facilitator API key is required — `FACILITATOR_URL` defaults to the public
 ### 3. Configure
 
 ```bash
+# Skip this if you ran `npm run setup` — it already created .env
 cp .env.example .env
 # Fill in the keys above
 ```
+
+Then open `.env` and fill in the keys from step 2. Leave the remaining values at their defaults.
 
 ### 4. Install Freighter
 
 Install the [Freighter browser extension](https://freighter.app), create a testnet wallet, and fund it with USDC — see [Get testnet USDC](#get-testnet-usdc) below.
 
 ### 5. Run
+
+One command starts both processes:
+
+```bash
+npm run dev:all     # backend :3001 + frontend :5173, via concurrently
+```
+
+Or run them in separate terminals to see each log stream on its own:
 
 ```bash
 # Terminal 1 — backend
@@ -140,6 +152,11 @@ Default mode is **free** — it asserts request validation, `/health`, and that
 non-zero if any check fails:
 
 ```bash
+# The server answers even with no keys configured
+curl http://localhost:3001/health
+# → {"status":"ok","network":"stellar:testnet",...}
+
+# End-to-end check of the x402 gate (server must be running)
 npm run test:search "Stellar blockchain"
 ```
 

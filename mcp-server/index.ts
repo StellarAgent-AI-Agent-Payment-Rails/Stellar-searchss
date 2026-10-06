@@ -44,6 +44,9 @@ import {
   AMOUNT_USDC,
   IS_MAINNET
 } from '../src/lib/constants'
+import { wrapFetchWithPayment, x402Client, type Network } from '@x402/fetch'
+import { ExactStellarScheme } from '@x402/stellar/exact/client'
+import { createEd25519Signer } from '@x402/stellar'
 
 dotenv.config()
 
@@ -53,7 +56,7 @@ const { version: APP_VERSION } = JSON.parse(
 )
 
 const SERVER_URL = process.env.SEARCH_API_URL || 'http://localhost:3001'
-const GROQ_API_KEY = process.env.GROQ_API_KEY!
+const GROQ_API_KEY = process.env.GROQ_API_KEY || ''
 
 const TRANSPORT = (process.env.MCP_TRANSPORT || 'stdio').toLowerCase()
 const HTTP_PORT = parseInt(process.env.MCP_HTTP_PORT || '3002', 10)
@@ -304,7 +307,7 @@ const server = new Server(
   { capabilities: { tools: {}, prompts: {}, resources: {} } },
 )
 
-server.setRequestHandler(ListToolsRequestSchema, async () => ({
+export const listToolsHandler = async () => ({
   tools: [
     {
       name: 'web_search',
@@ -425,7 +428,7 @@ Use this tool when an agent needs to audit or report its own spending.`,
       },
     },
   ],
-}))
+})
 
 // ─── MCP prompts ──────────────────────────────────────────────────────────
 server.setRequestHandler(ListPromptsRequestSchema, async () => ({
@@ -548,16 +551,15 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
   // ── web_search ────────────────────────────────────────────────────────
   if (name === 'web_search') {
-    const { query, count = 5, freshness } = args as { query: string; count?: number; freshness?: string }
+    const { query, count = 5, freshness } = (args || {}) as { query: string; count?: number; freshness?: string }
 
     try {
       const params = new URLSearchParams({ q: query, count: String(count) })
       if (freshness) params.set('freshness', freshness)
 
-      // The server's x402 middleware handles the full payment flow.
-      // In server-to-server mode the server needs a funded Stellar key.
-      // For MCP usage we call the server which itself holds the paying wallet.
-      const res = await fetch(`${SERVER_URL}/search?${params}`)
+      // The server is the *payee*: /search is guarded by its x402 middleware,
+      // so we pay with our own Stellar key via the wrapped fetch.
+      const res = await getPaidFetch()(`${SERVER_URL}/search?${params}`)
 
       if (!res.ok) {
         const e: any = await res.json().catch(() => ({}))
@@ -571,7 +573,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
       return {
         content: [{
-          type: 'text',
+          type: 'text' as const,
           text: [
             `🔍 Results for: "${query}"`,
             `💰 Paid: ${data.paidAmount} ${data.currency} on ${data.network}`,
@@ -595,21 +597,21 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       const params = new URLSearchParams({ q: query, count: String(safeCount) })
       if (freshness) params.set('freshness', freshness)
 
-      const res = await fetch(`${SERVER_URL}/images?${params}`)
+      const res = await getPaidFetch()(`${SERVER_URL}/images?${params}`)
 
       if (!res.ok) {
         const e: any = await res.json().catch(() => ({}))
-        throw new Error(e.error || `HTTP ${res.status}`)
+        throw new Error(e.error || describeHttpError(res.status))
       }
 
       const data: any = await res.json()
-      const formatted = data.results
+      const formatted = (data.results || [])
         .map((r: any, i: number) => `${i + 1}. **${r.title}**\n   Image: ${r.imageUrl}\n   Source: ${r.sourceUrl} (${r.source})`)
         .join('\n\n')
 
       return {
         content: [{
-          type: 'text',
+          type: 'text' as const,
           text: [
             `🖼️  Image results for: "${query}"`,
             `💰 Paid: ${data.paidAmount} ${data.currency} on ${data.network}`,
@@ -626,7 +628,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
   // ── news_search ───────────────────────────────────────────────────────
   if (name === 'news_search') {
-    const { query, count = 10, freshness } = args as {
+    const { query, count = 10, freshness } = (args || {}) as {
       query: string; count?: number; freshness?: string
     }
 
@@ -635,15 +637,15 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       const params = new URLSearchParams({ q: query, count: String(safeCount) })
       if (freshness) params.set('freshness', freshness)
 
-      const res = await fetch(`${SERVER_URL}/news?${params}`)
+      const res = await getPaidFetch()(`${SERVER_URL}/news?${params}`)
 
       if (!res.ok) {
         const e: any = await res.json().catch(() => ({}))
-        throw new Error(e.error || `HTTP ${res.status}`)
+        throw new Error(e.error || describeHttpError(res.status))
       }
 
       const data: any = await res.json()
-      const formatted = data.results
+      const formatted = (data.results || [])
         .map((r: any, i: number) => {
           const date = r.publishedAt ? ` · ${r.publishedAt}` : ''
           return `${i + 1}. **${r.title}** (${r.source}${date})\n   ${r.url}\n   ${r.snippet}`
@@ -652,7 +654,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
       return {
         content: [{
-          type: 'text',
+          type: 'text' as const,
           text: [
             `📰 News results for: "${query}"`,
             `💰 Paid: ${data.paidAmount} ${data.currency} on ${data.network}`,
@@ -669,7 +671,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
   // ── ai_summarize ──────────────────────────────────────────────────────
   if (name === 'ai_summarize') {
-    const { text, instruction = 'summarise' } = args as { text: string; instruction?: string }
+    const { text, instruction = 'summarise' } = (args || {}) as { text: string; instruction?: string }
 
     try {
       const completion = await groq.chat.completions.create({
@@ -683,7 +685,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       })
 
       const content = completion.choices[0]?.message?.content || 'No response.'
-      return { content: [{ type: 'text', text: content }] }
+      return { content: [{ type: 'text' as const, text: content }] }
     } catch (err: any) {
       return reportToolError('AI summary', err)
     }
@@ -864,8 +866,8 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     }
   }
 
-  return { content: [{ type: 'text', text: `Unknown tool: ${name}` }], isError: true }
-})
+  return { content: [{ type: 'text' as const, text: `Unknown tool: ${name}` }], isError: true }
+}
 
 // ─── Resources ────────────────────────────────────────────────────────────
 // Server stats are reference data, so a client can list and read them directly

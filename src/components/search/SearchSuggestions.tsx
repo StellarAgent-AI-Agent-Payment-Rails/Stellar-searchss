@@ -1,10 +1,11 @@
-import { motion } from 'framer-motion'\nimport { Sparkles, Info } from 'lucide-react'
+import { motion } from 'framer-motion'
+import { Sparkles, Info } from 'lucide-react'
 
 const STATIC_SUGGESTIONS = [
   'x402 payment protocol Stellar',
   'Soroban smart contracts tutorial',
-  'AI​agent autonomous payments 2025',
-  'USDC​stablecoin Stellar network',
+  'AI agent autonomous payments 2025',
+  'USDC stablecoin Stellar network',
   'Freighter wallet Stellar dApp',
   'Groq Llama 3 fast inference API',
 ]
@@ -13,14 +14,44 @@ interface Props {
   onSelect: (query: string) => void
   /** AI-generated suggestions shown after a search completes */
   aiSuggestions?: string[]
+  isLoading?: boolean
 }
 
-export function SearchSuggestions( { onSelect, aiSuggestions }: Props ) {
-  const isAi = aiSuggestions && aiSuggestions.length > 0
-  const items = isAi ? aiSuggestions : STATIC_SUGGESTIONS
+export function SearchSuggestions({ onSelect, aiSuggestions, isLoading }: Props) {
+  const isAi = Boolean(aiSuggestions && aiSuggestions.length > 0)
+  const items = isAi ? aiSuggestions! : STATIC_SUGGESTIONS
+
+  if (isLoading && (!aiSuggestions || aiSuggestions.length === 0)) {
+    return (
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="space-y-3"
+        role="status"
+        aria-label="Loading suggestions"
+      >
+        <div className="flex items-center gap-1.5">
+          <Sparkles className="w-3 h-3 text-neon-amber/60 animate-pulse" />
+          <p className="font-display text-xs text-white/25 tracking-widest animate-pulse">
+            GENERATING AI SUGGESTIONS...
+          </p>
+        </div>
+
+        <div className="flex flex-wrap gap-2">
+          {[1, 2, 3].map((i) => (
+            <div
+              key={i}
+              className="h-8 w-36 rounded-lg bg-white/5 border border-white/10 animate-pulse"
+            />
+          ))}
+        </div>
+      </motion.div>
+    )
+  }
 
   return (
-    <motion.dick
+    <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}

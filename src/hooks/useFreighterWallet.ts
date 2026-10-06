@@ -37,6 +37,7 @@ export interface WalletState {
   loading: boolean
   refreshing: boolean
   error: string | null
+fundingRequired: boolean
   hint: string | null
 }
 
@@ -52,8 +53,53 @@ export interface StellarTransaction {
   memo?: string
 }
 
+export interface SearchSession {
+  query: string
+  results: any[]
+}
+
+export interface Receipt {
+  id: string
+  txHash: string
+  amount: string
+  asset: string
+  timestamp: string
+  memo?: string
+}
+
+export const RECEIPTS_STORAGE_KEY = 'stellar-receipts'
+
 export const DEFAULT_TX_PAGE_SIZE = 15
 const horizon = new Horizon.Server(NORIZON_URL)
+
+const horizon = new Horizon.Server(HORIZON_URL)
+
+function loadReceipts(): Receipt[] {
+  try {
+    const raw = localStorage.getItem(RECEIPTS_STORAGE_KEY)
+    if (!raw) return []
+    const parsed = JSON.parse(raw)
+    return Array.isArray(parsed) ? parsed : []
+  } catch {
+    return []
+  }
+}
+
+function saveReceipts(receipts: Receipt[]) {
+  try {
+    localStorage.setItem(RECEIPTS_STORAGE_KEY, JSON.stringify(receipts))
+  } catch {
+    // localStorage unavailable
+  }
+}
+
+function clearReceipts() {
+  try {
+    localStorage.removeItem(RECEIPTS_STORAGE_KEY)
+  } catch {
+    // localStorage unavailable
+  }
+}
 
 export const horizon = new Horizon.Server(HORIZON_URL)
 
@@ -118,6 +164,16 @@ function mapOperation(op: any): StellarTransaction {
     memo: op.transaction?.memo,
   }
 }
+
+const FUNDING_ERROR = 'This account is not funded yet'
+
+function isHorizon404(err: any): boolean {
+  if (!err) return false
+  if (err.response?.status === 404) return true
+  if (err.status === 404) return true
+  const message = String(err.message || '')
+  return /404/.test(message) || /not found/i.test(message)
+}
 export function useFreighterWallet() {
   const [wallet, setWallet] = useState<WalletState>({
     publicKey: null,
@@ -129,10 +185,13 @@ export function useFreighterWallet() {
     loading: false,
     refreshing: false,
     error: null,
+fundingRequired: false,
     hint: null,
   })
   const [transactions, setTransactions] = useState<StellarTransaction[]>([])
   const [txLoading, setTxLoading] = useState(false)
+const [receipts, setReceipts] = useState<Receipt[]>(loadReceipts)
+  const [searchSession, setSearchSession] = useState<SearchSession | null>(null)
   const [txLoadingMore, setTxLoadingMore] = useState(false)
   const [txCursor, setTxCursor] = useState<string | null>(null)
   const [txHasMore, setTxHasMore] = useState(false)
@@ -177,9 +236,21 @@ export function useFreighterWallet() {
         usdcBalance: usdc,
         usddTrustline: hasUsddTrustline,
         error: null,
+        fundingRequired: false,
       }))
       return { xlm, usdc }
     } catch (err: any) {
+console.error('Failed to load account from Horizon:', err)
+      if (isHorizon404(err)) {
+        setWallet(prev => ({
+          ...prev,
+          xlmBalance: '0',
+          usdcBalance: '0',
+          error: FUNDING_ERROR,
+          fundingRequired: true,
+        }))
+        return
+      }
       if (isRateLimitError(err)) {
         setWallet(prev => ({
           ...prev,
@@ -190,6 +261,7 @@ export function useFreighterWallet() {
       setWallet(prev => ({
         ...prev,
         error: err.message || 'Failed to load account',
+        fundingRequired: false,
       }))
       return null
     }
@@ -298,7 +370,7 @@ export function useFreighterWallet() {
 
   // Connect Freighter wallet
   const connect = useCallback(async () => {
-    setWallet(prev => ({ ...prev, loading: true, error: null, hint: null }))
+setWallet(prev => ({ ...prev, loading: true, error: null, fundingRequired: false, hint: null }))
 
     try {
       const connected = await isConnected()
@@ -328,6 +400,7 @@ export function useFreighterWallet() {
         network,
         loading: false,
         error: null,
+        fundingRequired: false,
       }))
 
       // Fetch live data after connect (balances + transactions in parallel)
@@ -338,7 +411,8 @@ export function useFreighterWallet() {
         loading: false,
         connected: false,
         error: err.message || 'Connection failed',
-        hint: err.message || 'Connection failed. Please check Freighter and try again.',
+hint: err.message || 'Connection failed. Please check Freighter and try again.',
+        fundingRequired: false,
       }))
     }
   }, [fetchWalletData])
@@ -355,11 +429,30 @@ export function useFreighterWallet() {
       loading: false,
       refreshing: false,
       error: null,
+fundingRequired: false,
       hint: null,
     })
     setTransactions([])
+setSearchSession(null)
     setTxCursor(null)
     setTxHasMore(false)
+    if (clearStoredReceipts) {
+      clearReceipts()
+      setReceipts([])
+    }
+  }, [])
+
+  const addReceipt = useCallback((receipt: Receipt) => {
+    setReceipts(prev => {
+      const next = [receipt, ...prev]
+      saveReceipts(next)
+      return next
+    })
+  }, [])
+
+  const clearStoredReceipts = useCallback(() => {
+    clearReceipts()
+    setReceipts([])
   }, [])
 
   const refresh = useCallback(async () => {
@@ -425,14 +518,53 @@ if (connected.error) {
     check()
   }, [fetchWalletData])
 
+  // Freighter does not emit a reliable account-change event in every browser.
+  // Poll while connected so switching accounts updates all account-scoped data.
+  useEffect(() => {
+    if (!wallet.connected || !wallet.publicKey) return
+
+    let checking = false
+    const checkAddress = async () => {
+      if (checking) return
+      checking = true
+      try {
+        const result = await getAddress()
+        if (!result.error && result.address && result.address !== wallet.publicKey) {
+          const nextAddress = result.address
+          setWallet(prev => ({ ...prev, publicKey: nextAddress, error: null }))
+          setTransactions([])
+          setTxCursor(null)
+          setTxHasMore(false)
+          await fetchBalances(nextAddress)
+          await fetchTransactions(nextAddress)
+          toast.success('Freighter account switched', {
+            description: 'Balances and transaction history were refreshed.',
+          })
+        }
+      } catch (err) {
+        console.warn('Could not check the active Freighter account:', err)
+      } finally {
+        checking = false
+      }
+    }
+
+    const interval = window.setInterval(checkAddress, 4000)
+    return () => window.clearInterval(interval)
+  }, [wallet.connected, wallet.publicKey, fetchBalances, fetchTransactions])
+
   return {
     wallet,
     transactions,
     txLoading,
-    transactionError,
+transactionError,
     txLoadingMore,
     txHasMore,
     loadMoreTransactions,
+    receipts,
+    searchSession,
+    setSearchSession,
+    addReceipt,
+    clearStoredReceipts,
     connect,
     disconnect,
     refresh,

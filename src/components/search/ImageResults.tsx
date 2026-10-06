@@ -54,6 +54,7 @@ function SkeletonCell() {
 
 function ImageCell({ result, onSelect }: { result: ImageResult; onSelect?: (r: ImageResult) => void }) {
   const [loaded, setLoaded] = React.useState(false)
+  const [imageFailed, setImageFailed] = React.useState(false)
 
   return (
     <button
