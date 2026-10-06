@@ -75,17 +75,17 @@ async function startMockGroq(): Promise<{ close: () => Promise<void>; url: strin
         choices: [{ index: 0, delta: { content: token }, finish_reason: null }],
       }
       res.write(`data: ${JSON.stringify(chunk)}\n\n`)
-      await new Promise(resolve => setTimeout(resolve, 20))
+      await new Promise((resolve) => setTimeout(resolve, 20))
     }
     res.write('data: [DONE]\n\n')
     res.end()
   })
 
-  await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve))
+  await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve))
   const address = server.address()
   if (!address || typeof address === 'string') throw new Error('mock server failed to listen')
   return {
-    close: () => new Promise(resolve => server.close(() => resolve())),
+    close: () => new Promise((resolve) => server.close(() => resolve())),
     url: `http://127.0.0.1:${address.port}`,
   }
 }
@@ -177,7 +177,11 @@ async function runSseProtocol(base: string): Promise<void> {
     }
 
     check('emits at least one delta event', deltas.length > 0)
-    check('delta contents reassemble in order', deltas.join('') === 'Hello from the mock stream', `got ${JSON.stringify(deltas)}`)
+    check(
+      'delta contents reassemble in order',
+      deltas.join('') === 'Hello from the mock stream',
+      `got ${JSON.stringify(deltas)}`,
+    )
     check('no error event emitted', errorPayload === undefined, errorPayload)
     check('emits done event', seen.has('done'))
     check('done carries the model', doneModel === MODEL, `got ${doneModel}`)
@@ -201,7 +205,7 @@ async function runDisconnect(base: string): Promise<void> {
     // Abort as soon as the first chunk arrives, like a user closing the panel.
     await reader.read()
     controller.abort()
-    await new Promise(resolve => setTimeout(resolve, 150))
+    await new Promise((resolve) => setTimeout(resolve, 150))
     check('client disconnect does not crash the server', true)
   } catch (err: any) {
     // The abort itself throws — that is the client behaving correctly.
@@ -243,13 +247,17 @@ async function main(): Promise<void> {
     await closeMock?.()
   }
 
-  console.log(`\n${failed === 0 ? '✅ All' : '❌'} contract tests: ${passed} passed, ${failed} failed\n`)
+  console.log(
+    `\n${failed === 0 ? '✅ All' : '❌'} contract tests: ${passed} passed, ${failed} failed\n`,
+  )
   if (failed > 0) process.exitCode = 1
 }
 
 // Wrap the serverless handler in a minimal HTTP server that emulates the
 // @vercel/node request/response helpers used by api/ai/chat.ts.
-async function withTestServer(handler: (req: unknown, res: unknown) => Promise<void>): Promise<void> {
+async function withTestServer(
+  handler: (req: unknown, res: unknown) => Promise<void>,
+): Promise<void> {
   const http = await import('node:http')
   const server = http.createServer((req, res) => {
     const chunks: Buffer[] = []
@@ -272,13 +280,13 @@ async function withTestServer(handler: (req: unknown, res: unknown) => Promise<v
           return res
         },
       })
-      Promise.resolve(handler(vercelReq, vercelRes)).catch(err => {
+      Promise.resolve(handler(vercelReq, vercelRes)).catch((err) => {
         console.error('   handler crashed:', err)
         if (!res.writableEnded) res.end()
       })
     })
   })
-  await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve))
+  await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve))
   const address = server.address()
   const port = typeof address === 'object' && address ? address.port : 0
   try {
@@ -286,11 +294,11 @@ async function withTestServer(handler: (req: unknown, res: unknown) => Promise<v
     await runSseProtocol(`http://127.0.0.1:${port}`)
     await runDisconnect(`http://127.0.0.1:${port}`)
   } finally {
-    await new Promise<void>(resolve => server.close(() => resolve()))
+    await new Promise<void>((resolve) => server.close(() => resolve()))
   }
 }
 
-main().catch(err => {
+main().catch((err) => {
   console.error('\n✗ Unhandled error:', err.message)
   process.exit(1)
 })

@@ -5,14 +5,10 @@
  */
 
 import { useState, useCallback, useEffect } from 'react'
-import {
-  isConnected,
-  requestAccess,
-  getAddress,
-  getNetwork,
-} from '@stellar/freighter-api'
+import { isConnected, requestAccess, getAddress, getNetwork } from '@stellar/freighter-api'
 import { Horizon } from '@stellar/stellar-sdk'
-import { HORIZON_URL, USDK_ISSUER } from '../lib/stellar'
+import { toast } from 'sonner'
+import { HORIZON_URL, USDC_ISSUER } from '../lib/stellar'
 
 export interface WalletState {
   publicKey: string | null
@@ -29,7 +25,7 @@ export interface WalletState {
   loading: boolean
   refreshing: boolean
   error: string | null
-fundingRequired: boolean
+  fundingRequired: boolean
   hint: string | null
 }
 
@@ -62,9 +58,6 @@ export interface Receipt {
 export const RECEIPTS_STORAGE_KEY = 'stellar-receipts'
 
 export const DEFAULT_TX_PAGE_SIZE = 15
-const horizon = new Horizon.Server(NORIZON_URL)
-
-const horizon = new Horizon.Server(HORIZON_URL)
 
 function loadReceipts(): Receipt[] {
   try {
@@ -112,9 +105,7 @@ function getRetryAfterMs(err: any): number | null {
   const headers = err?.response?.headers
   if (!headers) return null
   const raw =
-    typeof headers.get === 'function'
-      ? headers.get('retry-after')
-      : headers['retry-after']
+    typeof headers.get === 'function' ? headers.get('retry-after') : headers['retry-after']
   if (!raw) return null
   const seconds = parseInt(raw, 10)
   if (Number.isNaN(seconds)) return null
@@ -132,9 +123,8 @@ async function withBackoff<T>(fn: () => Promise<T>): Promise<T> {
         throw err
       }
       const retryAfter = getRetryAfterMs(err)
-      const delay =
-        retryAfter ?? BASE_DELAY_MS * Math.pow(2, attempt)
-      await new Promise(resolve => setTimeout(resolve, delay))
+      const delay = retryAfter ?? BASE_DELAY_MS * Math.pow(2, attempt)
+      await new Promise((resolve) => setTimeout(resolve, delay))
       attempt += 1
     }
   }
@@ -146,10 +136,7 @@ function mapOperation(op: any): StellarTransaction {
     hash: op.transaction_hash,
     type: op.type,
     amount: op.amount ? parseFloat(op.amount).toFixed(4) : '—',
-    asset:
-      op.asset_type === 'native'
-        ? 'XLM'
-        : op.asset_code || 'Unknown',
+    asset: op.asset_type === 'native' ? 'XLM' : op.asset_code || 'Unknown',
     from: op.from || op.funder || '',
     to: op.to || op.account || '',
     timestamp: op.created_at,
@@ -177,12 +164,12 @@ export function useFreighterWallet() {
     loading: false,
     refreshing: false,
     error: null,
-fundingRequired: false,
+    fundingRequired: false,
     hint: null,
   })
   const [transactions, setTransactions] = useState<StellarTransaction[]>([])
   const [txLoading, setTxLoading] = useState(false)
-const [receipts, setReceipts] = useState<Receipt[]>(loadReceipts)
+  const [receipts, setReceipts] = useState<Receipt[]>(loadReceipts)
   const [searchSession, setSearchSession] = useState<SearchSession | null>(null)
   const [txLoadingMore, setTxLoadingMore] = useState(false)
   const [txCursor, setTxCursor] = useState<string | null>(null)
@@ -213,7 +200,7 @@ const [receipts, setReceipts] = useState<Receipt[]>(loadReceipts)
           balance.asset_type === 'credit_alphanum12'
         ) {
           const credit = balance as any
-          if (credit.asset_code === 'USDC' && credit.asset_issuer === USDK_ISSUER) {
+          if (credit.asset_code === 'USDC' && credit.asset_issuer === USDC_ISSUER) {
             hasUsddTrustline = true
             usdc = parseFloat(credit.balance).toFixed(6)
           }
@@ -222,7 +209,7 @@ const [receipts, setReceipts] = useState<Receipt[]>(loadReceipts)
 
       balanceCache.set(publicKey, { xlm, usdc, ts: Date.now() })
 
-      setWallet(prev => ({
+      setWallet((prev) => ({
         ...prev,
         xlmBalance: xlm,
         usdcBalance: usdc,
@@ -231,9 +218,9 @@ const [receipts, setReceipts] = useState<Receipt[]>(loadReceipts)
         fundingRequired: false,
       }))
     } catch (err: any) {
-console.error('Failed to load account from Horizon:', err)
+      console.error('Failed to load account from Horizon:', err)
       if (isHorizon404(err)) {
-        setWallet(prev => ({
+        setWallet((prev) => ({
           ...prev,
           xlmBalance: '0',
           usdcBalance: '0',
@@ -243,13 +230,13 @@ console.error('Failed to load account from Horizon:', err)
         return
       }
       if (isRateLimitError(err)) {
-        setWallet(prev => ({
+        setWallet((prev) => ({
           ...prev,
           error: 'Rate limited, retrying…',
         }))
         return
       }
-      setWallet(prev => ({
+      setWallet((prev) => ({
         ...prev,
         error: err.message || 'Failed to load account',
         fundingRequired: false,
@@ -257,44 +244,24 @@ console.error('Failed to load account from Horizon:', err)
     }
   }, [])
 
-// Fetch real transaction history from Horizon (first page)
+  // Fetch real transaction history from Horizon (first page)
   const fetchTransactions = useCallback(
     async (publicKey: string, pageSize: number = DEFAULT_TX_PAGE_SIZE) => {
       setTxLoading(true)
       setTransactionError(null)
       try {
         const ops = await withBackoff(() =>
-          horizon
-            .operations()
-            .forAccount(publicKey)
-            .order('desc')
-            .limit(pageSize)
-            .call()
+          horizon.operations().forAccount(publicKey).order('desc').limit(pageSize).call(),
         )
-
-        const txs: StellarTransaction[] = ops.records
-          .filter((op: any) => op.type === 'payment' || op.type === 'create_account')
-          .map((op: any) => ({
-            id: op.id,
-            hash: op.transaction_hash,
-            type: op.type,
-            amount: op.amount ? parseFloat(op.amount).toFixed(4) : '—',
-            asset:
-              op.asset_type === 'native'
-                ? 'XLM'
-                : op.asset_code || 'Unknown',
-            from: op.from || op.funder || '',
-            to: op.to || op.account || '',
-            timestamp: op.created_at,
-            memo: op.transaction?.memo,
-          }))
 
         const txs = ops.records
           .filter((op: any) => op.type === 'payment' || op.type === 'create_account')
           .map(mapOperation)
 
         setTransactions(txs)
-        setTxCursor(ops.records.length > 0 ? ops.records[ops.records.length - 1].paging_token : null)
+        setTxCursor(
+          ops.records.length > 0 ? ops.records[ops.records.length - 1].paging_token : null,
+        )
         setTxHasMore(ops.records.length === pageSize)
       } catch (err: any) {
         if (!isRateLimitError(err)) {
@@ -305,7 +272,7 @@ console.error('Failed to load account from Horizon:', err)
         setTxLoading(false)
       }
     },
-    []
+    [],
   )
 
   // Load the next page of transactions using Horizon cursor paging
@@ -334,8 +301,7 @@ console.error('Failed to load account from Horizon:', err)
           return
         }
 
-        setTransactions(prev => [
-...prev, ...nextTxs])
+        setTransactions((prev) => [...prev, ...nextTxs])
         setTxCursor(ops.records[ops.records.length - 1].paging_token)
         setTxHasMore(ops.records.length === pageSize)
       } catch (err: any) {
@@ -349,25 +315,32 @@ console.error('Failed to load account from Horizon:', err)
         setTxLoadingMore(false)
       }
     },
-    [txCursor, txHasMore, txLoadingMore]
+    [txCursor, txHasMore, txLoadingMore],
   )
 
   // Run both Horizon fetches concurrently. Use allSettled so a
   // failure in one does not discard the other's result.
-  const fetchWalletData = useCallback(async (publicKey: string) => {
-    await Promise.allSettled([fetchBalances(publicKey), fetchTransactions(publicKey)])
-  }, [fetchBalances, fetchTransactions])
+  const fetchWalletData = useCallback(
+    async (publicKey: string) => {
+      await Promise.allSettled([fetchBalances(publicKey), fetchTransactions(publicKey)])
+    },
+    [fetchBalances, fetchTransactions],
+  )
 
   // Connect Freighter wallet
   const connect = useCallback(async () => {
-setWallet(prev => ({ ...prev, loading: true, error: null, fundingRequired: false, hint: null }))
+    setWallet((prev) => ({
+      ...prev,
+      loading: true,
+      error: null,
+      fundingRequired: false,
+      hint: null,
+    }))
 
     try {
       const connected = await isConnected()
       if (!connected.isConnected) {
-        throw new Error(
-          'Freighter extension not found. Install it from freighter.app'
-        )
+        throw new Error('Freighter extension not found. Install it from freighter.app')
       }
 
       const accessResult = await requestAccess()
@@ -383,7 +356,7 @@ setWallet(prev => ({ ...prev, loading: true, error: null, fundingRequired: false
       const networkResult = await getNetwork()
       const network = networkResult.network || 'TESTNET'
 
-      setWallet(prev => ({
+      setWallet((prev) => ({
         ...prev,
         publicKey: addressResult.address,
         connected: true,
@@ -396,12 +369,12 @@ setWallet(prev => ({ ...prev, loading: true, error: null, fundingRequired: false
       // Fetch live data after connect (balances + transactions in parallel)
       await fetchWalletData(addressResult.address)
     } catch (err: any) {
-      setWallet(prev => ({
+      setWallet((prev) => ({
         ...prev,
         loading: false,
         connected: false,
         error: err.message || 'Connection failed',
-hint: err.message || 'Connection failed. Please check Freighter and try again.',
+        hint: err.message || 'Connection failed. Please check Freighter and try again.',
         fundingRequired: false,
       }))
     }
@@ -418,11 +391,11 @@ hint: err.message || 'Connection failed. Please check Freighter and try again.',
       loading: false,
       refreshing: false,
       error: null,
-fundingRequired: false,
+      fundingRequired: false,
       hint: null,
     })
     setTransactions([])
-setSearchSession(null)
+    setSearchSession(null)
     setTxCursor(null)
     setTxHasMore(false)
     if (clearStoredReceipts) {
@@ -432,7 +405,7 @@ setSearchSession(null)
   }, [])
 
   const addReceipt = useCallback((receipt: Receipt) => {
-    setReceipts(prev => {
+    setReceipts((prev) => {
       const next = [receipt, ...prev]
       saveReceipts(next)
       return next
@@ -445,13 +418,12 @@ setSearchSession(null)
   }, [])
 
   const refresh = useCallback(async () => {
-if (!wallet.publicKey) return
-    setWallet(prev => ({ ...prev, refreshing: true }))
+    if (!wallet.publicKey) return
+    setWallet((prev) => ({ ...prev, refreshing: true }))
     try {
       await fetchWalletData(wallet.publicKey)
     } finally {
-      setWallet(prev => ({ ...prev, refreshing: false }))
-    }
+      setWallet((prev) => ({ ...prev, refreshing: false }))
     }
   }, [wallet.publicKey, fetchWalletData])
 
@@ -460,14 +432,14 @@ if (!wallet.publicKey) return
     const check = async () => {
       try {
         const connected = await isConnected()
-if (connected.error) {
+        if (connected.error) {
           throw new Error(connected.error.message)
         }
         if (connected.isConnected) {
           const addr = await getAddress()
           if (addr.address) {
             const net = await getNetwork()
-            setWallet(prev => ({
+            setWallet((prev) => ({
               ...prev,
               publicKey: addr.address,
               connected: true,
@@ -487,7 +459,7 @@ if (connected.error) {
         const net = await getNetwork()
         if (net.error) throw new Error(net.error.message)
 
-        setWallet(prev => ({
+        setWallet((prev) => ({
           ...prev,
           publicKey: addr.address,
           connected: true,
@@ -496,11 +468,12 @@ if (connected.error) {
         fetchBalances(addr.address)
         fetchTransactions(addr.address)
       } catch (err: unknown) {
-        setWallet(prev => ({
+        setWallet((prev) => ({
           ...prev,
-          hint: err instanceof Error
-            ? err.message
-            : 'Could not reconnect to Freighter. Please try connecting again.',
+          hint:
+            err instanceof Error
+              ? err.message
+              : 'Could not reconnect to Freighter. Please try connecting again.',
         }))
       }
     }
@@ -520,7 +493,7 @@ if (connected.error) {
         const result = await getAddress()
         if (!result.error && result.address && result.address !== wallet.publicKey) {
           const nextAddress = result.address
-          setWallet(prev => ({ ...prev, publicKey: nextAddress, error: null }))
+          setWallet((prev) => ({ ...prev, publicKey: nextAddress, error: null }))
           setTransactions([])
           setTxCursor(null)
           setTxHasMore(false)
@@ -545,7 +518,7 @@ if (connected.error) {
     wallet,
     transactions,
     txLoading,
-transactionError,
+    transactionError,
     txLoadingMore,
     txHasMore,
     loadMoreTransactions,

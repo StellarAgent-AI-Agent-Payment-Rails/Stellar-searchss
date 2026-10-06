@@ -8,12 +8,10 @@ const analyze = process.env.ANALYZE === '1'
 
 // Read version from package.json at build time so the frontend bundle always
 // reflects the version without an extra runtime fetch.
-const { version } = JSON.parse(
-  readFileSync(resolve(__dirname, 'package.json'), 'utf-8'),
-)
+const { version } = JSON.parse(readFileSync(resolve(__dirname, 'package.json'), 'utf-8'))
 
 export default defineConfig({
-test: {
+  test: {
     environment: 'node',
     globals: true,
     include: ['**/*.{test,spec}.{ts,tsx,js,jsx}'],

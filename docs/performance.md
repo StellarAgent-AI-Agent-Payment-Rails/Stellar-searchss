@@ -12,13 +12,13 @@ settlement, but requests still call Serper and may consume API quota.
 PAYMENTS_DISABLED=true BASE_URL=http://localhost:3000 npm run load-test
 ```
 
-| Variable | Default | Purpose |
-| --- | --- | --- |
-| BASE_URL | http://localhost:3000 | Local development instance |
-| PAYMENTS_DISABLED | unset | Must be true as an explicit test acknowledgement |
-| CONCURRENCY | 50 | Concurrent request workers |
-| DURATION_MS | 30000 | Test duration in milliseconds |
-| QUERY | load test | Search query |
+| Variable          | Default               | Purpose                                          |
+| ----------------- | --------------------- | ------------------------------------------------ |
+| BASE_URL          | http://localhost:3000 | Local development instance                       |
+| PAYMENTS_DISABLED | unset                 | Must be true as an explicit test acknowledgement |
+| CONCURRENCY       | 50                    | Concurrent request workers                       |
+| DURATION_MS       | 30000                 | Test duration in milliseconds                    |
+| QUERY             | load test             | Search query                                     |
 
 Requests time out after 10 seconds. The client acknowledgement flag does not
 configure the server: set the development server environment separately.

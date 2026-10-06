@@ -3,12 +3,14 @@ import { parseHealthResponse } from './index'
 
 describe('parseHealthResponse invocation latency fields', () => {
   it('keeps Serper, cold-start, and warm-handler latency separate', () => {
-    expect(parseHealthResponse({
-      avgLatencyMs: 80,
-      coldStartLatencyMs: 14,
-      warmHandlerLatencyMs: 3,
-      invocationType: 'cold',
-    })).toMatchObject({
+    expect(
+      parseHealthResponse({
+        avgLatencyMs: 80,
+        coldStartLatencyMs: 14,
+        warmHandlerLatencyMs: 3,
+        invocationType: 'cold',
+      }),
+    ).toMatchObject({
       avgLatencyMs: 80,
       coldStartLatencyMs: 14,
       warmHandlerLatencyMs: 3,
@@ -23,12 +25,14 @@ describe('parseHealthResponse invocation latency fields', () => {
   })
 
   it('rejects invalid latency values and unknown invocation states', () => {
-    expect(parseHealthResponse({
-      avgLatencyMs: '80',
-      coldStartLatencyMs: -1,
-      warmHandlerLatencyMs: Infinity,
-      invocationType: 'unknown',
-    })).toMatchObject({
+    expect(
+      parseHealthResponse({
+        avgLatencyMs: '80',
+        coldStartLatencyMs: -1,
+        warmHandlerLatencyMs: Infinity,
+        invocationType: 'unknown',
+      }),
+    ).toMatchObject({
       avgLatencyMs: null,
       coldStartLatencyMs: null,
       warmHandlerLatencyMs: null,

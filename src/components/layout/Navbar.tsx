@@ -7,9 +7,9 @@ import type { WalletState, StellarTransaction } from '../../hooks/useFreighterWa
 type Page = 'search' | 'docs' | 'dashboard'
 
 const NAV_ITEMS: { id: Page; label: string; Icon: React.FC<{ className?: string }> }[] = [
-  { id: 'search',    label: 'SEARCH',       Icon: Search    },
-  { id: 'docs',      label: 'HOW IT WORKS', Icon: BookOpen  },
-  { id: 'dashboard', label: 'DASHBOARD',    Icon: BarChart2 },
+  { id: 'search', label: 'SEARCH', Icon: Search },
+  { id: 'docs', label: 'HOW IT WORKS', Icon: BookOpen },
+  { id: 'dashboard', label: 'DASHBOARD', Icon: BarChart2 },
 ]
 
 interface Props {
@@ -25,9 +25,15 @@ interface Props {
 }
 
 export function Navbar({
-  page, onNavigate, onPrefetch,
-  wallet, transactions, txLoading,
-  onConnect, onDisconnect, onRefresh,
+  page,
+  onNavigate,
+  onPrefetch,
+  wallet,
+  transactions,
+  txLoading,
+  onConnect,
+  onDisconnect,
+  onRefresh,
 }: Props) {
   return (
     <header
@@ -38,7 +44,6 @@ export function Navbar({
       <MainnetIndicator />
 
       <div className="max-w-6xl mx-auto px-4 h-14 flex items-center gap-5">
-
         {/* Logo */}
         <button
           onClick={() => onNavigate('search')}
@@ -61,14 +66,18 @@ export function Navbar({
         <NetworkBadge />
 
         {/* Nav links */}
-        <nav className="flex items-center gap-1 flex-1" role="navigation" aria-label="Main navigation">
+        <nav
+          className="flex items-center gap-1 flex-1"
+          role="navigation"
+          aria-label="Main navigation"
+        >
           {NAV_ITEMS.map(({ id, label, Icon }) => (
             <button
               key={id}
               onClick={() => onNavigate(id)}
               onMouseEnter={() => onPrefetch?.(id)}
               onFocus={() => onPrefetch?.(id)}
-              aria-current={page === id ? "page" : undefined}
+              aria-current={page === id ? 'page' : undefined}
               className="relative flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-display text-xs tracking-wider transition-colors"
               style={{ color: page === id ? '#00f5ff' : 'rgba(255,255,255,0.3)' }}
             >

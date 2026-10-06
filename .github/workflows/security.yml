@@ -23,11 +23,11 @@ jobs:
       - name: Run gitleaks
         uses: gitleaks/gitleaks-action@v2
         with:
-          args: --verbose --red-actual --config .gitleaks.toml --report-format sarif --report-path gitleaks.sarif
+          args: --verbose --redact --config .gitleaks.toml --report-format sarif --report-path gitleaks.sarif
           version: latest
       - name: Upload gitleaks report
-        if | always()
-        uses: actions/uploadArtifact@v4
+        if: always()
+        uses: actions/upload-artifact@v4
         with:
           name: gitleaks-report
-          path: gitleaks.saref
+          path: gitleaks.sarif

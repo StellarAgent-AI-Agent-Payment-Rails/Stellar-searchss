@@ -1,0 +1,18 @@
+# Dependencies
+node_modules
+
+# Build output
+dist
+.vite
+coverage
+playwright-report
+test-results
+
+# Lockfiles (managed by the package manager)
+package-lock.json
+
+# Test fixtures (verbatim data, not formatted)
+tests/fixtures
+
+# Logs
+*.log

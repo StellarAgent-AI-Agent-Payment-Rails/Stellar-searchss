@@ -6,10 +6,10 @@ import { ExternalLink } from '../ui/ExternalLink'
 declare const __APP_VERSION__: string
 
 const LINKS = [
-  { label: 'x402.org',         href: 'https://x402.org' },
-  { label: 'Stellar Docs',     href: 'https://developers.stellar.org' },
+  { label: 'x402.org', href: 'https://x402.org' },
+  { label: 'Stellar Docs', href: 'https://developers.stellar.org' },
   { label: `${IS_MAINNET ? 'Mainnet' : 'Testnet'} Explorer`, href: STELLAR_EXPERT_URL },
-  { label: 'Freighter',        href: 'https://freighter.app' },
+  { label: 'Freighter', href: 'https://freighter.app' },
 ]
 
 export function Footer() {

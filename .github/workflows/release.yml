@@ -8,7 +8,7 @@ on:
       - 'v[0-9]+.[0-9]+.[0-9]+-*'
 
 permissions:
-  contents: write   # needed to create the GitHub Release
+  contents: write # needed to create the GitHub Release
 
 jobs:
   release:
@@ -20,7 +20,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0   # full history so we can diff the changelog
+          fetch-depth: 0 # full history so we can diff the changelog
 
       # ── 2. Validate the tag matches package.json version ───────────────
       - name: Validate version consistency
@@ -60,7 +60,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ github.ref_name }}
-          name: "StellarSearch ${{ github.ref_name }}"
+          name: 'StellarSearch ${{ github.ref_name }}'
           body_path: /tmp/release_notes.md
           draft: false
           prerelease: ${{ contains(github.ref_name, '-') }}

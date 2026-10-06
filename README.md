@@ -31,14 +31,14 @@ StellarSearch is a pay-per-query web search API for autonomous AI agents. Every 
 
 Base URL: `http://localhost:3001` (Express server) or `/api` (Vercel serverless functions).
 
-| Endpoint | Method | Price | Description |
-|---|---|---|---|
-| `/search` | `GET` | **0.001 USDC** (x402) | Web search via Serper.dev. Params: `q` (required, ≤256 chars), `count` (default 5, max 20), `freshness` (`pd`/`pw`/`pm`), `suggestions=1` for Groq-powered related queries |
-| `/images` | `GET` | **0.001 USDC** (x402) | Image search via Serper.dev. Returns `imageUrl`, `thumbnailUrl`, `sourceUrl`, dimensions. Params: `q` (required), `count` (default 10, max 10) |
-| `/news` | `GET` | **0.001 USDC** (x402) | News search via Serper.dev. Returns articles with `title`, `url`, `snippet`, `source`, `publishedAt`. Params: `q` (required), `count` (default 10, max 20), `freshness` (`pd`/`pw`/`pm`) |
-| `/ai/chat` | `POST` | Free | Groq Llama 3.3 70B assistant. JSON body `{ messages: [...] }`. Streams SSE when `Accept: text/event-stream` or `?stream=1` |
-| `/health` | `GET` | Free | Live server stats: uptime, total queries, USDC settled, avg latency, API key configuration status |
-| `/` | `GET` | Free | Service metadata and endpoint index |
+| Endpoint   | Method | Price                 | Description                                                                                                                                                                              |
+| ---------- | ------ | --------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `/search`  | `GET`  | **0.001 USDC** (x402) | Web search via Serper.dev. Params: `q` (required, ≤256 chars), `count` (default 5, max 20), `freshness` (`pd`/`pw`/`pm`), `suggestions=1` for Groq-powered related queries               |
+| `/images`  | `GET`  | **0.001 USDC** (x402) | Image search via Serper.dev. Returns `imageUrl`, `thumbnailUrl`, `sourceUrl`, dimensions. Params: `q` (required), `count` (default 10, max 10)                                           |
+| `/news`    | `GET`  | **0.001 USDC** (x402) | News search via Serper.dev. Returns articles with `title`, `url`, `snippet`, `source`, `publishedAt`. Params: `q` (required), `count` (default 10, max 20), `freshness` (`pd`/`pw`/`pm`) |
+| `/ai/chat` | `POST` | Free                  | Groq Llama 3.3 70B assistant. JSON body `{ messages: [...] }`. Streams SSE when `Accept: text/event-stream` or `?stream=1`                                                               |
+| `/health`  | `GET`  | Free                  | Live server stats: uptime, total queries, USDC settled, avg latency, API key configuration status                                                                                        |
+| `/`        | `GET`  | Free                  | Service metadata and endpoint index                                                                                                                                                      |
 
 All three paid routes use the same x402 config — 0.001 USDC, `stellar:testnet`, `payTo` = `STELLAR_RECEIVING_ADDRESS`, settled through the configured facilitator.
 
@@ -57,22 +57,20 @@ curl http://localhost:3001/health
 
 ---
 
-
 For full endpoint parameters, response shapes, and error codes, see [`docs/api.md`](docs/api.md).
-
 
 ## Real stack (no mocks)
 
-| Layer | Real package / service |
-|---|---|
-| Payment protocol | `@x402/express` + `@x402/stellar` + `@x402/core` |
-| Blockchain | Stellar Testnet (via Horizon API) |
-| Facilitator | x402 facilitator (`FACILITATOR_URL`, default `https://www.x402.org/facilitator`) |
-| Wallet connect | `@stellar/freighter-api` (real Freighter extension) |
-| Balances / tx | Stellar Horizon REST API (live, not mocked) |
-| Search results | Serper.dev API (real Google search results) |
-| AI assistant | `groq-sdk` · Llama 3.3 70B (real Groq API) |
-| Frontend | React 18, TypeScript, Tailwind CSS, Framer Motion |
+| Layer            | Real package / service                                                           |
+| ---------------- | -------------------------------------------------------------------------------- |
+| Payment protocol | `@x402/express` + `@x402/stellar` + `@x402/core`                                 |
+| Blockchain       | Stellar Testnet (via Horizon API)                                                |
+| Facilitator      | x402 facilitator (`FACILITATOR_URL`, default `https://www.x402.org/facilitator`) |
+| Wallet connect   | `@stellar/freighter-api` (real Freighter extension)                              |
+| Balances / tx    | Stellar Horizon REST API (live, not mocked)                                      |
+| Search results   | Serper.dev API (real Google search results)                                      |
+| AI assistant     | `groq-sdk` · Llama 3.3 70B (real Groq API)                                       |
+| Frontend         | React 18, TypeScript, Tailwind CSS, Framer Motion                                |
 
 ---
 
@@ -91,11 +89,11 @@ cp .env.example .env
 
 ### 2. Get your keys (all free)
 
-| Key | Where to get it |
-|---|---|
+| Key                         | Where to get it                                                                                               |
+| --------------------------- | ------------------------------------------------------------------------------------------------------------- |
 | `STELLAR_RECEIVING_ADDRESS` | [Stellar Lab](https://laboratory.stellar.org/#account-creator?network=test) — generate + fund testnet keypair |
-| `SERPER_API_KEY` | [serper.dev](https://serper.dev/) — free tier: 2.5k queries/month |
-| `GROQ_API_KEY` | [console.groq.com/keys](https://console.groq.com/keys) — free |
+| `SERPER_API_KEY`            | [serper.dev](https://serper.dev/) — free tier: 2.5k queries/month                                             |
+| `GROQ_API_KEY`              | [console.groq.com/keys](https://console.groq.com/keys) — free                                                 |
 
 No facilitator API key is required — `FACILITATOR_URL` defaults to the public
 `https://www.x402.org/facilitator` endpoint (see `.env.example`).
@@ -206,16 +204,16 @@ bundle, so changing one requires a redeploy. Every other variable is **runtime**
 it is read per request by the `api/` functions. Redeploy after changing either
 kind so both the bundle and the functions pick up the new values.
 
-| Variable | Required | Build-time / runtime | Purpose | Example |
-|---|---|---|---|---|
-| `STELLAR_RECEIVING_ADDRESS` | **Yes** | Runtime | `payTo` account that receives 0.001 USDC for every paid query | `G…` (your funded testnet keypair) |
-| `SERPER_API_KEY` | **Yes** | Runtime | Serper.dev key backing `/api/search` | `your_serper_api_key_here` |
-| `GROQ_API_KEY` | **Yes** | Runtime | Groq key for `/api/ai/chat` and AI summaries | `gsk_…` |
-| `STELLAR_NETWORK` | No | Runtime | Network the functions settle on. Default `stellar:testnet` | `stellar:testnet` |
-| `FACILITATOR_URL` | No | Runtime | x402 facilitator that verifies and settles payments. Default `https://www.x402.org/facilitator` | `https://www.x402.org/facilitator` |
-| `VITE_STELLAR_NETWORK` | No | **Build-time** (`VITE_`) | Network inlined into the browser bundle. Keep it equal to `STELLAR_NETWORK` | `stellar:testnet` |
-| `VITE_SERVER_URL` | No | **Build-time** (`VITE_`) | API base the browser calls. Use the relative `/api` on Vercel | `/api` |
-| `PAYMENTS_DISABLED` | No | Runtime | Load-testing escape hatch for local runs only. Never set it in production | `true` |
+| Variable                    | Required | Build-time / runtime     | Purpose                                                                                         | Example                            |
+| --------------------------- | -------- | ------------------------ | ----------------------------------------------------------------------------------------------- | ---------------------------------- |
+| `STELLAR_RECEIVING_ADDRESS` | **Yes**  | Runtime                  | `payTo` account that receives 0.001 USDC for every paid query                                   | `G…` (your funded testnet keypair) |
+| `SERPER_API_KEY`            | **Yes**  | Runtime                  | Serper.dev key backing `/api/search`                                                            | `your_serper_api_key_here`         |
+| `GROQ_API_KEY`              | **Yes**  | Runtime                  | Groq key for `/api/ai/chat` and AI summaries                                                    | `gsk_…`                            |
+| `STELLAR_NETWORK`           | No       | Runtime                  | Network the functions settle on. Default `stellar:testnet`                                      | `stellar:testnet`                  |
+| `FACILITATOR_URL`           | No       | Runtime                  | x402 facilitator that verifies and settles payments. Default `https://www.x402.org/facilitator` | `https://www.x402.org/facilitator` |
+| `VITE_STELLAR_NETWORK`      | No       | **Build-time** (`VITE_`) | Network inlined into the browser bundle. Keep it equal to `STELLAR_NETWORK`                     | `stellar:testnet`                  |
+| `VITE_SERVER_URL`           | No       | **Build-time** (`VITE_`) | API base the browser calls. Use the relative `/api` on Vercel                                   | `/api`                             |
+| `PAYMENTS_DISABLED`         | No       | Runtime                  | Load-testing escape hatch for local runs only. Never set it in production                       | `true`                             |
 
 `NODE_ENV` and `VERCEL_ENV` are injected by Vercel and read by `api/search.ts` to
 keep the payment gate on in production — do not set them yourself.
@@ -264,14 +262,14 @@ before changing `STELLAR_NETWORK`.
 These are not needed for the Vercel frontend + `api/` deployment, but the MCP
 server, the self-hosted Express server, and the CLI tests read them:
 
-| Variable | Required | Used by | Purpose | Example |
-|---|---|---|---|---|
-| `SEARCH_API_URL` | No | MCP server, CLI tests | Absolute API base the MCP search/stats tools call. Must include `/api` on Vercel. Default `http://localhost:3001` | `https://your-app.vercel.app/api` |
-| `ALLOWED_ORIGINS` | No | Express server (self-host) | Comma-separated browser origins allowed when `NODE_ENV=production` | `https://your-app.vercel.app` |
-| `PORT` | No | Express server (self-host) | Port for `npm run server`. Default `3001` | `3001` |
-| `DEBUG_BANNER` | No | Express server (self-host) | `1` prints the full receiving address in the startup banner | `1` |
-| `STELLAR_PAYER_SECRET` | No | CLI paid test | Testnet secret used by `npm run test:search -- --paid` | `S…` |
-| `SOROBAN_RPC_URL` | No | CLI paid test | Soroban RPC endpoint for the paid test. Default `https://soroban-testnet.stellar.org` | `https://soroban-testnet.stellar.org` |
+| Variable               | Required | Used by                    | Purpose                                                                                                           | Example                               |
+| ---------------------- | -------- | -------------------------- | ----------------------------------------------------------------------------------------------------------------- | ------------------------------------- |
+| `SEARCH_API_URL`       | No       | MCP server, CLI tests      | Absolute API base the MCP search/stats tools call. Must include `/api` on Vercel. Default `http://localhost:3001` | `https://your-app.vercel.app/api`     |
+| `ALLOWED_ORIGINS`      | No       | Express server (self-host) | Comma-separated browser origins allowed when `NODE_ENV=production`                                                | `https://your-app.vercel.app`         |
+| `PORT`                 | No       | Express server (self-host) | Port for `npm run server`. Default `3001`                                                                         | `3001`                                |
+| `DEBUG_BANNER`         | No       | Express server (self-host) | `1` prints the full receiving address in the startup banner                                                       | `1`                                   |
+| `STELLAR_PAYER_SECRET` | No       | CLI paid test              | Testnet secret used by `npm run test:search -- --paid`                                                            | `S…`                                  |
+| `SOROBAN_RPC_URL`      | No       | CLI paid test              | Soroban RPC endpoint for the paid test. Default `https://soroban-testnet.stellar.org`                             | `https://soroban-testnet.stellar.org` |
 
 `.env.example` also carries two optional placeholders for an external serverless
 stats store. No code currently reads them, so they are not required and are
@@ -366,7 +364,7 @@ Claude Code / any MCP client
 The MCP server sits in front of the same Express routes, so an agent using Claude Code
 pays through the identical x402 flow.
 
-> **Security:** payment *is* authentication in this project — there are no accounts, sessions, or API
+> **Security:** payment _is_ authentication in this project — there are no accounts, sessions, or API
 > keys, so the security of the payment flow is the security of the product. The trust boundaries
 > between client, server, facilitator, and the Stellar network are documented in the
 > **[payment flow threat model](docs/threat-model.md)**, which also enumerates the known attacks and
@@ -437,14 +435,14 @@ stellar-search/
 
 `mcp-server/index.ts` exposes six tools to any MCP client:
 
-| Tool | Backing route | Price |
-|---|---|---|
-| `web_search` | `GET /search` | 0.001 USDC |
-| `image_search` | `GET /images` | 0.001 USDC |
-| `news_search` | `GET /news` | 0.001 USDC |
-| `ai_summarize` | Groq API directly | Free |
-| `check_balance` | Stellar Horizon REST | Free |
-| `get_search_stats` | `GET /health` | Free |
+| Tool               | Backing route        | Price      |
+| ------------------ | -------------------- | ---------- |
+| `web_search`       | `GET /search`        | 0.001 USDC |
+| `image_search`     | `GET /images`        | 0.001 USDC |
+| `news_search`      | `GET /news`          | 0.001 USDC |
+| `ai_summarize`     | Groq API directly    | Free       |
+| `check_balance`    | Stellar Horizon REST | Free       |
+| `get_search_stats` | `GET /health`        | Free       |
 
 ---
 
@@ -456,10 +454,10 @@ The example uses `npx tsx ./mcp-server/index.ts` because the MCP server is writt
 
 The MCP server reads these environment variables:
 
-| Variable | Required | Description |
-|---|---|---|
-| `GROQ_API_KEY` | Yes | Groq API key used by the `ai_summarize` tool. The Groq client is initialized when the MCP server starts, so provide a key even if you only plan to use other tools. |
-| `SEARCH_API_URL` | No | Base URL for the StellarSearch API used by search and stats tools. Defaults to `http://localhost:3001`. For the hosted service, use `https://stellar-search-2twg.vercel.app/api`. |
+| Variable         | Required | Description                                                                                                                                                                       |
+| ---------------- | -------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `GROQ_API_KEY`   | Yes      | Groq API key used by the `ai_summarize` tool. The Groq client is initialized when the MCP server starts, so provide a key even if you only plan to use other tools.               |
+| `SEARCH_API_URL` | No       | Base URL for the StellarSearch API used by search and stats tools. Defaults to `http://localhost:3001`. For the hosted service, use `https://stellar-search-2twg.vercel.app/api`. |
 
 The local entry expects the API server to be running on port 3001. The hosted entry connects to the deployed API and does not require a local API server. Both still require a Groq key for the MCP process to start.
 
@@ -491,11 +489,11 @@ Run the tests with `npm run test:url`.
 
 The server also exposes reusable prompt templates that show up in MCP clients' prompt pickers. Each one wires up the right tool with sensible defaults:
 
-| Prompt | Arguments | Tool used | What it does |
-|---|---|---|---|
-| `cited_research` | `topic` (required), `depth` (optional, default `3`) | `web_search` | Researches a topic and returns a cited summary with sources |
-| `competitive_comparison` | `company_a`, `company_b` (required) | `web_search` | Compares two companies side by side with sourced facts |
-| `news_roundup` | `topic` (required), `timeframe` (optional, default `last 7 days`) | `web_search` | Summarizes recent news on a topic with links |
+| Prompt                   | Arguments                                                         | Tool used    | What it does                                                |
+| ------------------------ | ----------------------------------------------------------------- | ------------ | ----------------------------------------------------------- |
+| `cited_research`         | `topic` (required), `depth` (optional, default `3`)               | `web_search` | Researches a topic and returns a cited summary with sources |
+| `competitive_comparison` | `company_a`, `company_b` (required)                               | `web_search` | Compares two companies side by side with sourced facts      |
+| `news_roundup`           | `topic` (required), `timeframe` (optional, default `last 7 days`) | `web_search` | Summarizes recent news on a topic with links                |
 
 Example: pick `cited_research`, enter `topic: "Stellar x402 adoption"`, and the client issues a `web_search` call with a research-oriented query.
 
@@ -503,10 +501,10 @@ Example: pick `cited_research`, enter `topic: "Stellar x402 adoption"`, and the 
 
 Alongside its tools (`web_search`, `image_search`, `news_search`, `ai_summarize`, `check_balance`, `get_search_stats`), the server exposes live server stats as an MCP **resource**:
 
-| Type | Name | Description |
-|---|---|---|
+| Type     | Name                      | Description                                                             |
+| -------- | ------------------------- | ----------------------------------------------------------------------- |
 | Resource | `stellar-search://health` | Live server stats as JSON (`application/json`), backed by `GET /health` |
-| Tool | `get_search_stats` | The same stats, formatted for a chat reply |
+| Tool     | `get_search_stats`        | The same stats, formatted for a chat reply                              |
 
 Server stats are reference data, so they fit the resource model better than a tool: a client can surface them without a model deciding to spend a tool call on it. Clients that support resources can list and read it directly:
 
@@ -529,13 +527,13 @@ Then tell Claude Code: `"Search for the latest Stellar x402 examples"` — it ca
 
 ## Hackathon requirements
 
-| Requirement | ✓ |
-|---|---|
-| Open-source repo + README | ✅ |
-| 2–3 min video demo | Record showing: connect Freighter → search → see 402 → payment settles → results |
+| Requirement                       | ✓                                                                                                 |
+| --------------------------------- | ------------------------------------------------------------------------------------------------- |
+| Open-source repo + README         | ✅                                                                                                |
+| 2–3 min video demo                | Record showing: connect Freighter → search → see 402 → payment settles → results                  |
 | Real Stellar testnet transactions | ✅ Every paid request (`/search`, `/images`, `/news`) settles 0.001 USDC via the x402 facilitator |
-| x402 protocol | ✅ `@x402/express` + `@x402/stellar` |
-| Addresses explicit demand signal | ✅ "pay-per-query web search instead of monthly subscriptions" |
+| x402 protocol                     | ✅ `@x402/express` + `@x402/stellar`                                                              |
+| Addresses explicit demand signal  | ✅ "pay-per-query web search instead of monthly subscriptions"                                    |
 
 ---
 

@@ -22,9 +22,20 @@ interface Props {
   onNavigateFundingGuide: () => void
 }
 
-export function SearchPage({ wallet, onConnectWallet, session, search, reset, retry, onNavigateFundingGuide }: Props) {
+export function SearchPage({
+  wallet,
+  onConnectWallet,
+  session,
+  search,
+  reset,
+  retry,
+  onNavigateFundingGuide,
+}: Props) {
   const handleSearch = (query: string) => {
-    if (!wallet.connected) { onConnectWallet(); return }
+    if (!wallet.connected) {
+      onConnectWallet()
+      return
+    }
     search(query)
   }
 
@@ -32,7 +43,6 @@ export function SearchPage({ wallet, onConnectWallet, session, search, reset, re
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-8 space-y-8">
-
       <StatsGrid />
 
       <AnimatePresence>
@@ -53,7 +63,11 @@ export function SearchPage({ wallet, onConnectWallet, session, search, reset, re
               <div className="absolute inset-0 flex items-center justify-center">
                 <div
                   className="w-8 h-8 rounded-full flex items-center justify-center"
-                  style={{ background: 'rgba(0,245,255,0.15)', border: '1px solid rgba(0,245,255,0.5)', boxShadow: '0 0 10px rgba(0,245,255,0.3)' }}
+                  style={{
+                    background: 'rgba(0,245,255,0.15)',
+                    border: '1px solid rgba(0,245,255,0.5)',
+                    boxShadow: '0 0 10px rgba(0,245,255,0.3)',
+                  }}
                 >
                   <Search className="w-4 h-4 text-neon-cyan" />
                 </div>
@@ -62,16 +76,27 @@ export function SearchPage({ wallet, onConnectWallet, session, search, reset, re
 
             <h1 className="font-display text-4xl sm:text-5xl text-white leading-tight">
               SEARCH
-              <span className="text-neon-cyan" style={{ textShadow: '0 0 20px rgba(0,245,255,0.8)' }}>.</span>
+              <span
+                className="text-neon-cyan"
+                style={{ textShadow: '0 0 20px rgba(0,245,255,0.8)' }}
+              >
+                .
+              </span>
               PAY
-              <span className="text-neon-cyan" style={{ textShadow: '0 0 20px rgba(0,245,255,0.8)' }}>.</span>
+              <span
+                className="text-neon-cyan"
+                style={{ textShadow: '0 0 20px rgba(0,245,255,0.8)' }}
+              >
+                .
+              </span>
               GET
             </h1>
 
             <p className="text-white/45 text-lg max-w-md mx-auto leading-relaxed">
               Real web search for AI agents.{' '}
-              <span className="text-neon-cyan font-medium">{AMOUNT_USDC} USDC</span> per query settled on Stellar via x402.
-              Powered by <span className="text-neon-amber font-medium">Serper.dev</span> +{' '}
+              <span className="text-neon-cyan font-medium">{AMOUNT_USDC} USDC</span> per query
+              settled on Stellar via x402. Powered by{' '}
+              <span className="text-neon-amber font-medium">Serper.dev</span> +{' '}
               <span className="text-neon-green font-medium">Groq AI</span>.
             </p>
 
@@ -81,7 +106,11 @@ export function SearchPage({ wallet, onConnectWallet, session, search, reset, re
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
                 className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-display text-sm tracking-wider text-neon-cyan"
-                style={{ border: '1px solid rgba(0,245,255,0.4)', background: 'rgba(0,245,255,0.08)', boxShadow: '0 0 20px rgba(0,245,255,0.15)' }}
+                style={{
+                  border: '1px solid rgba(0,245,255,0.4)',
+                  background: 'rgba(0,245,255,0.08)',
+                  boxShadow: '0 0 20px rgba(0,245,255,0.15)',
+                }}
               >
                 <Zap className="w-4 h-4" />
                 CONNECT FREIGHTER TO SEARCH
@@ -109,8 +138,10 @@ export function SearchPage({ wallet, onConnectWallet, session, search, reset, re
 
       <AnimatePresence>
         {session.status === 'idle' && (
-          <SearchSuggestions onSelect={handleSearch} />
-          <SearchResults results={[]} query="" />
+          <>
+            <SearchSuggestions onSelect={handleSearch} />
+            <SearchResults results={[]} query="" />
+          </>
         )}
       </AnimatePresence>
 
@@ -127,15 +158,25 @@ export function SearchPage({ wallet, onConnectWallet, session, search, reset, re
             {session.status === 'error' && (
               <div className="p-4 rounded-xl border border-red-500/25 bg-red-500/5" role="alert">
                 <div className="flex items-start gap-3">
-                <AlertCircle className="w-4 h-4 text-red-400 flex-shrink-0" />
+                  <AlertCircle className="w-4 h-4 text-red-400 flex-shrink-0" />
                   <div className="min-w-0">
                     <p className="text-sm text-red-300">{session.error}</p>
-                    <p className="text-xs text-white/35 mt-1">The payment/search flow stopped at step {session.step ?? 'unknown'}. You can retry without retyping your query.</p>
+                    <p className="text-xs text-white/35 mt-1">
+                      The payment/search flow stopped at step {session.step ?? 'unknown'}. You can
+                      retry without retyping your query.
+                    </p>
                     <div className="flex flex-wrap items-center gap-3 mt-3">
-                      <button onClick={retry} className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border border-red-300/30 text-red-200 hover:bg-red-300/10 font-display text-xs tracking-wider">
+                      <button
+                        onClick={retry}
+                        className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border border-red-300/30 text-red-200 hover:bg-red-300/10 font-display text-xs tracking-wider"
+                      >
                         <RotateCw className="w-3 h-3" /> RETRY SEARCH
                       </button>
-                      <a href="#docs" onClick={() => onNavigateFundingGuide()} className="inline-flex items-center gap-1 text-xs text-white/45 hover:text-neon-cyan">
+                      <a
+                        href="#docs"
+                        onClick={() => onNavigateFundingGuide()}
+                        className="inline-flex items-center gap-1 text-xs text-white/45 hover:text-neon-cyan"
+                      >
                         Troubleshooting guide <ExternalLink className="w-3 h-3" />
                       </a>
                     </div>
@@ -145,13 +186,25 @@ export function SearchPage({ wallet, onConnectWallet, session, search, reset, re
             )}
 
             {(session.status === 'complete' || session.status === 'searching') && (
-              <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}>
-                <SearchResults results={session.results} query={session.query} isLoading={session.status === 'searching'} />
+              <motion.div
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.15 }}
+              >
+                <SearchResults
+                  results={session.results}
+                  query={session.query}
+                  isLoading={session.status === 'searching'}
+                />
               </motion.div>
             )}
 
             {session.status === 'complete' && (
-              <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
+              <motion.div
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3 }}
+              >
                 <SearchSuggestions
                   onSelect={handleSearch}
                   aiSuggestions={session.suggestions}
@@ -161,8 +214,15 @@ export function SearchPage({ wallet, onConnectWallet, session, search, reset, re
             )}
 
             {(session.status === 'complete' || session.status === 'error') && (
-              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center pt-2">
-                <button onClick={reset} className="font-display text-xs text-white/25 hover:text-neon-cyan transition-colors tracking-widest">
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="text-center pt-2"
+              >
+                <button
+                  onClick={reset}
+                  className="font-display text-xs text-white/25 hover:text-neon-cyan transition-colors tracking-widest"
+                >
                   ← NEW SEARCH
                 </button>
               </motion.div>

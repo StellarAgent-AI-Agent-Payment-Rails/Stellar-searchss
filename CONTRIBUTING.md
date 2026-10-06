@@ -29,10 +29,10 @@ cp .env.example .env
 
 Open `.env` and set **only these two** values:
 
-| Key | Where to get it | Cost |
-|---|---|---|
-| `SERPER_API_KEY` | [serper.dev](https://serper.dev) | Free — 2,500 queries/month |
-| `GROQ_API_KEY` | [console.groq.com/keys](https://console.groq.com/keys) | Free |
+| Key              | Where to get it                                        | Cost                       |
+| ---------------- | ------------------------------------------------------ | -------------------------- |
+| `SERPER_API_KEY` | [serper.dev](https://serper.dev)                       | Free — 2,500 queries/month |
+| `GROQ_API_KEY`   | [console.groq.com/keys](https://console.groq.com/keys) | Free                       |
 
 Leave every other value in `.env` exactly as it is. `STELLAR_RECEIVING_ADDRESS` can stay as the placeholder and the server will still boot — it only matters for the paid `/search` route (see step 5).
 
@@ -64,12 +64,12 @@ npx tsc --noEmit
 
 ### 5. What you can (and cannot) do without a wallet
 
-| ✅ Works with no wallet | ⛔ Needs Freighter + funded testnet USDC |
-|---|---|
-| Everything in `src/` — pages, components, styling, copy, layout | `/search` (the 0.001 USDC paid route) and anything that calls it |
-| `npm run setup`, `npm run dev`, `npm run build`, `npx tsc --noEmit` | `src/hooks/useSearch.ts`, `src/hooks/useFreighterWallet.ts`, `src/components/wallet/WalletPanel.tsx` |
-| `npm run test:search` — it signs no payment, it asserts the `402` | MCP tools — `web_search` pays via x402 |
-| `GET /health`, `GET /ai/chat`, docs, README, CONTRIBUTING, issue triage | `src/pages/DashboardPage.tsx` (reads live Horizon tx history) |
+| ✅ Works with no wallet                                                 | ⛔ Needs Freighter + funded testnet USDC                                                             |
+| ----------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| Everything in `src/` — pages, components, styling, copy, layout         | `/search` (the 0.001 USDC paid route) and anything that calls it                                     |
+| `npm run setup`, `npm run dev`, `npm run build`, `npx tsc --noEmit`     | `src/hooks/useSearch.ts`, `src/hooks/useFreighterWallet.ts`, `src/components/wallet/WalletPanel.tsx` |
+| `npm run test:search` — it signs no payment, it asserts the `402`       | MCP tools — `web_search` pays via x402                                                               |
+| `GET /health`, `GET /ai/chat`, docs, README, CONTRIBUTING, issue triage | `src/pages/DashboardPage.tsx` (reads live Horizon tx history)                                        |
 
 If your change never touches the payment flow, you never need to install Freighter or create a Stellar account. The full wallet walkthrough is in [Local Development Setup](#local-development-setup).
 
@@ -128,15 +128,15 @@ Serper.dev  ──── real Google results ────►  Browser
 
 **Core packages:**
 
-| Package | Role |
-|---|---|
-| `@x402/express` | HTTP 402 payment middleware |
-| `@x402/stellar` | Stellar-specific x402 scheme |
-| `@x402/fetch` | Client-side x402 fetch wrapper |
-| `@stellar/freighter-api` | Browser wallet signing |
-| `@stellar/stellar-sdk` | Horizon API client |
-| `groq-sdk` | Groq AI (Llama 3.3 70B) |
-| `serper.dev` | Real-time Google search results |
+| Package                  | Role                            |
+| ------------------------ | ------------------------------- |
+| `@x402/express`          | HTTP 402 payment middleware     |
+| `@x402/stellar`          | Stellar-specific x402 scheme    |
+| `@x402/fetch`            | Client-side x402 fetch wrapper  |
+| `@stellar/freighter-api` | Browser wallet signing          |
+| `@stellar/stellar-sdk`   | Horizon API client              |
+| `groq-sdk`               | Groq AI (Llama 3.3 70B)         |
+| `serper.dev`             | Real-time Google search results |
 
 ---
 
@@ -144,21 +144,21 @@ Serper.dev  ──── real Google results ────►  Browser
 
 Before you begin, make sure you have:
 
-| Requirement | Version | Notes |
-|---|---|---|
-| **Node.js** | ≥ 18.0.0 | ESM support required |
-| **npm** | ≥ 9.0.0 | Comes with Node 18 |
-| **Git** | any recent | — |
-| **Freighter** | latest | [freighter.app](https://freighter.app) browser extension |
-| **Stellar testnet account** | — | Free — see setup below |
+| Requirement                 | Version    | Notes                                                    |
+| --------------------------- | ---------- | -------------------------------------------------------- |
+| **Node.js**                 | ≥ 18.0.0   | ESM support required                                     |
+| **npm**                     | ≥ 9.0.0    | Comes with Node 18                                       |
+| **Git**                     | any recent | —                                                        |
+| **Freighter**               | latest     | [freighter.app](https://freighter.app) browser extension |
+| **Stellar testnet account** | —          | Free — see setup below                                   |
 
 ### Free API keys you will need
 
-| Key | Where to get it | Cost |
-|---|---|---|
-| `SERPER_API_KEY` | [serper.dev](https://serper.dev) | Free — 2,500 queries/month |
-| `GROQ_API_KEY` | [console.groq.com/keys](https://console.groq.com/keys) | Free |
-| `STELLAR_RECEIVING_ADDRESS` | [Stellar Lab](https://lab.stellar.org/account/fund) | Free testnet keypair |
+| Key                         | Where to get it                                        | Cost                       |
+| --------------------------- | ------------------------------------------------------ | -------------------------- |
+| `SERPER_API_KEY`            | [serper.dev](https://serper.dev)                       | Free — 2,500 queries/month |
+| `GROQ_API_KEY`              | [console.groq.com/keys](https://console.groq.com/keys) | Free                       |
+| `STELLAR_RECEIVING_ADDRESS` | [Stellar Lab](https://lab.stellar.org/account/fund)    | Free testnet keypair       |
 
 > **Note:** You only need `SERPER_API_KEY` and `GROQ_API_KEY` for most frontend work. The `STELLAR_RECEIVING_ADDRESS` is only required if you are working on the payment flow.
 
@@ -313,14 +313,14 @@ Comment on the issue before you start: _"I'd like to work on this"_ — this avo
 
 Branch off `main` using this naming convention:
 
-| Type | Pattern | Example |
-|---|---|---|
-| Bug fix | `fix/<short-description>` | `fix/freighter-rejection-loop` |
-| New feature | `feat/<short-description>` | `feat/search-history` |
-| Documentation | `docs/<short-description>` | `docs/contributing-guide` |
-| Refactor | `refactor/<short-description>` | `refactor/memoize-stats-grid` |
-| Test | `test/<short-description>` | `test/use-search-unit` |
-| Chore/DX | `chore/<short-description>` | `chore/add-eslint` |
+| Type          | Pattern                        | Example                        |
+| ------------- | ------------------------------ | ------------------------------ |
+| Bug fix       | `fix/<short-description>`      | `fix/freighter-rejection-loop` |
+| New feature   | `feat/<short-description>`     | `feat/search-history`          |
+| Documentation | `docs/<short-description>`     | `docs/contributing-guide`      |
+| Refactor      | `refactor/<short-description>` | `refactor/memoize-stats-grid`  |
+| Test          | `test/<short-description>`     | `test/use-search-unit`         |
+| Chore/DX      | `chore/<short-description>`    | `chore/add-eslint`             |
 
 ```bash
 git checkout -b fix/freighter-rejection-loop
@@ -370,6 +370,7 @@ docs: add CONTRIBUTING.md
 ## Submitting a Pull Request
 
 1. Push your branch:
+
    ```bash
    git push origin fix/freighter-rejection-loop
    ```
@@ -392,12 +393,12 @@ docs: add CONTRIBUTING.md
 
 ### PR size guidelines
 
-| Change type | Ideal PR size |
-|---|---|
-| Bug fix | < 100 lines changed |
-| Small feature | < 300 lines changed |
-| Large feature | Break into logical sub-PRs |
-| Refactor | One file / one abstraction at a time |
+| Change type   | Ideal PR size                        |
+| ------------- | ------------------------------------ |
+| Bug fix       | < 100 lines changed                  |
+| Small feature | < 300 lines changed                  |
+| Large feature | Break into logical sub-PRs           |
+| Refactor      | One file / one abstraction at a time |
 
 ---
 
@@ -527,29 +528,29 @@ npm run test:search "Stellar blockchain"
 
 ### x402 / Freighter
 
-| Symptom | Likely cause | Fix |
-|---|---|---|
-| "expected 64 got 9" | `Buffer.toString()` used instead of base64 | Use `Buffer.from(raw).toString('base64')` |
-| 402 loop never resolves | Freighter on wrong network | Switch to Testnet in Freighter settings |
-| "Failed to parse payment requirements" | Server returning malformed header | Check server logs; decode the `PAYMENT-REQUIRED` header with `base64 -d \| jq .` |
-| Freighter popup never appears | `createPaymentPayload()` not awaited | Ensure `await` before the call |
-| Balance not updating after payment | `refresh()` not called post-search | Call `refresh()` in the `useSearch` success path |
+| Symptom                                | Likely cause                               | Fix                                                                              |
+| -------------------------------------- | ------------------------------------------ | -------------------------------------------------------------------------------- |
+| "expected 64 got 9"                    | `Buffer.toString()` used instead of base64 | Use `Buffer.from(raw).toString('base64')`                                        |
+| 402 loop never resolves                | Freighter on wrong network                 | Switch to Testnet in Freighter settings                                          |
+| "Failed to parse payment requirements" | Server returning malformed header          | Check server logs; decode the `PAYMENT-REQUIRED` header with `base64 -d \| jq .` |
+| Freighter popup never appears          | `createPaymentPayload()` not awaited       | Ensure `await` before the call                                                   |
+| Balance not updating after payment     | `refresh()` not called post-search         | Call `refresh()` in the `useSearch` success path                                 |
 
 ### Vite / Build
 
-| Symptom | Likely cause | Fix |
-|---|---|---|
-| `global is not defined` | Stellar SDK needs `globalThis` polyfill | Already handled in `vite.config.ts` — do not remove the `define` block |
-| Buffer errors in browser | `buffer` package not aliased | `resolve.alias` in `vite.config.ts` handles this |
-| CORS errors in dev | Frontend calling server directly | Use the Vite proxy (`/search`, `/ai`, `/health` already proxied) |
+| Symptom                  | Likely cause                            | Fix                                                                    |
+| ------------------------ | --------------------------------------- | ---------------------------------------------------------------------- |
+| `global is not defined`  | Stellar SDK needs `globalThis` polyfill | Already handled in `vite.config.ts` — do not remove the `define` block |
+| Buffer errors in browser | `buffer` package not aliased            | `resolve.alias` in `vite.config.ts` handles this                       |
+| CORS errors in dev       | Frontend calling server directly        | Use the Vite proxy (`/search`, `/ai`, `/health` already proxied)       |
 
 ### Stellar / Horizon
 
-| Symptom | Likely cause | Fix |
-|---|---|---|
-| Account not found | Account not funded on testnet | Fund it at Stellar Lab |
-| USDC balance always 0 | Wrong USDC issuer address | Use `GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5` for testnet |
-| Transactions not loading | Horizon rate-limit | Add a 500ms delay between calls; use pagination |
+| Symptom                  | Likely cause                  | Fix                                                                        |
+| ------------------------ | ----------------------------- | -------------------------------------------------------------------------- |
+| Account not found        | Account not funded on testnet | Fund it at Stellar Lab                                                     |
+| USDC balance always 0    | Wrong USDC issuer address     | Use `GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5` for testnet |
+| Transactions not loading | Horizon rate-limit            | Add a 500ms delay between calls; use pagination                            |
 
 ---
 
@@ -561,14 +562,14 @@ Every notable change to StellarSearch is recorded in [`CHANGELOG.md`](./CHANGELO
 
 If your PR changes behaviour that a deployer or user would care about, add an entry under the `## [Unreleased]` section of `CHANGELOG.md` in the same PR. Use the appropriate subsection:
 
-| Subsection | Use for |
-|---|---|
-| `Added` | New features, new env vars, new endpoints |
-| `Changed` | Behaviour changes to existing features |
+| Subsection   | Use for                                           |
+| ------------ | ------------------------------------------------- |
+| `Added`      | New features, new env vars, new endpoints         |
+| `Changed`    | Behaviour changes to existing features            |
 | `Deprecated` | Features that will be removed in a future release |
-| `Removed` | Features removed in this release |
-| `Fixed` | Bug fixes |
-| `Security` | Vulnerability fixes |
+| `Removed`    | Features removed in this release                  |
+| `Fixed`      | Bug fixes                                         |
+| `Security`   | Vulnerability fixes                               |
 
 Docs-only, test-only, and internal refactor PRs do not require a changelog entry.
 
@@ -603,5 +604,5 @@ All contributors are welcome to add themselves to a `CONTRIBUTORS` list. When yo
 
 ---
 
-*StellarSearch — Stellar Hackathon 2026 · Agents on Stellar*.
+_StellarSearch — Stellar Hackathon 2026 · Agents on Stellar_.
 .

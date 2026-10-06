@@ -32,12 +32,12 @@ NNNN-short-kebab-case-title.md
 ## Template
 
 Copy `template.md` to `NNNN-short-title.md` and fill it in. Every section is
-mandatory except *Alternatives considered* (though it is strongly encouraged).
+mandatory except _Alternatives considered_ (though it is strongly encouraged).
 
 ## Index
 
-| # | Title | Status |
-|---|-------|--------|
-| [0001](0001-x402-middleware-api.md) | x402 Express middleware: `paymentMiddlewareFromConfig` | Accepted |
-| [0002](0002-freighter-signauthentry-base64.md) | Freighter `signAuthEntry` buffer → base64 conversion | Accepted |
-| [0003](0003-shared-constants-package.md) | Shared constants module across frontend and Node | Accepted |
+| #                                              | Title                                                  | Status   |
+| ---------------------------------------------- | ------------------------------------------------------ | -------- |
+| [0001](0001-x402-middleware-api.md)            | x402 Express middleware: `paymentMiddlewareFromConfig` | Accepted |
+| [0002](0002-freighter-signauthentry-base64.md) | Freighter `signAuthEntry` buffer → base64 conversion   | Accepted |
+| [0003](0003-shared-constants-package.md)       | Shared constants module across frontend and Node       | Accepted |

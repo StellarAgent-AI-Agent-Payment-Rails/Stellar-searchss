@@ -14,7 +14,12 @@ interface Props {
 }
 
 export function SearchBar({
-  onSearch, isSearching, walletConnected, usdcBalance, walletNetwork, defaultQuery = '',
+  onSearch,
+  isSearching,
+  walletConnected,
+  usdcBalance,
+  walletNetwork,
+  defaultQuery = '',
 }: Props) {
   const inputRef = useRef<HTMLInputElement>(null)
 
@@ -79,20 +84,33 @@ export function SearchBar({
             :focus-visible outline on the input/button below. */}
         <div
           aria-hidden="true"
-          className={`pointer-events-none absolute -inset-px rounded-2xl opacity-0 group-focus-within:opacity-100 transition-opacity blur-sm ${isWrongNetwork ? 'bg-red-500/20' : ''
-            }`}
-          style={!isWrongNetwork ? { background: 'linear-gradient(135deg, rgba(0,245,255,0.2), rgba(14,165,233,0.2), rgba(0,245,255,0.2))' } : {}}
+          className={`pointer-events-none absolute -inset-px rounded-2xl opacity-0 group-focus-within:opacity-100 transition-opacity blur-sm ${
+            isWrongNetwork ? 'bg-red-500/20' : ''
+          }`}
+          style={
+            !isWrongNetwork
+              ? {
+                  background:
+                    'linear-gradient(135deg, rgba(0,245,255,0.2), rgba(14,165,233,0.2), rgba(0,245,255,0.2))',
+                }
+              : {}
+          }
         />
 
         <div
           className="relative flex flex-col sm:flex-row items-stretch sm:items-center gap-3 px-3 sm:px-5 py-3 sm:py-4 rounded-2xl"
           style={{
             background: 'rgba(6,13,20,0.85)',
-            border: isWrongNetwork ? '1px solid rgba(239,68,68,0.3)' : '1px solid rgba(0,245,255,0.15)',
+            border: isWrongNetwork
+              ? '1px solid rgba(239,68,68,0.3)'
+              : '1px solid rgba(0,245,255,0.15)',
             backdropFilter: 'blur(16px)',
           }}
         >
-          <Search className="w-5 h-5 flex-shrink-0" style={{ color: isWrongNetwork ? 'rgba(239,68,68,0.5)' : 'rgba(0,245,255,0.5)' }} />
+          <Search
+            className="w-5 h-5 flex-shrink-0"
+            style={{ color: isWrongNetwork ? 'rgba(239,68,68,0.5)' : 'rgba(0,245,255,0.5)' }}
+          />
 
           <input
             ref={inputRef}
@@ -100,7 +118,11 @@ export function SearchBar({
             type="text"
             aria-label="Search query"
             defaultValue={defaultQuery}
-            placeholder={isWrongNetwork ? 'Switch network to search...' : "Search anything — pay per query, not per month..."}
+            placeholder={
+              isWrongNetwork
+                ? 'Switch network to search...'
+                : 'Search anything — pay per query, not per month...'
+            }
             disabled={isSearching || isWrongNetwork}
             className="flex-1 min-w-0 bg-transparent text-white placeholder:text-white/20 text-sm rounded-md disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#00f5ff]"
             style={{ caretColor: isWrongNetwork ? '#ef4444' : '#00f5ff' }}
@@ -119,7 +141,8 @@ export function SearchBar({
             style={{
               background: isSearching || isWrongNetwork ? 'transparent' : 'rgba(0,245,255,0.12)',
               border: '1px solid',
-              borderColor: isSearching || isWrongNetwork ? 'rgba(255,255,255,0.1)' : 'rgba(0,245,255,0.4)',
+              borderColor:
+                isSearching || isWrongNetwork ? 'rgba(255,255,255,0.1)' : 'rgba(0,245,255,0.4)',
               color: isSearching || isWrongNetwork ? 'rgba(255,255,255,0.3)' : '#00f5ff',
             }}
             whileTap={{ scale: 0.96 }}
@@ -131,7 +154,9 @@ export function SearchBar({
                 transition={{ duration: 0.8, repeat: Infinity, ease: 'linear' }}
               />
             ) : (
-              <><Zap className="w-3.5 h-3.5" /> {AMOUNT_USDC} USDC</>
+              <>
+                <Zap className="w-3.5 h-3.5" /> {AMOUNT_USDC} USDC
+              </>
             )}
           </motion.button>
         </div>

@@ -6,7 +6,7 @@
 
 ## Context
 
-StellarSearch has two runtimes that need *identical* network facts:
+StellarSearch has two runtimes that need _identical_ network facts:
 
 - **`src/`** — React app in the browser, built by Vite. Env vars come from
   `import.meta.env` and must be prefixed `VITE_`.
@@ -16,7 +16,7 @@ Both sides need the same values: network identifier (`stellar:testnet` vs
 `stellar:mainnet`), Horizon URL, USDC issuer and Soroban contract addresses, and the
 payment amount. If these drift, the failure modes are nasty and silent — the client
 signs for `USDC@testnet` while the server expects mainnet, or amounts mismatch and
-settlement fails mid-flow. A duplicated constants file *will* drift eventually,
+settlement fails mid-flow. A duplicated constants file _will_ drift eventually,
 usually right after someone updates one side only.
 
 `src/lib/constants.ts` is therefore imported by both the frontend (via

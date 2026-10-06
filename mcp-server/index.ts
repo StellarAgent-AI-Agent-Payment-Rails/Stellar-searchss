@@ -36,13 +36,13 @@ import { fileURLToPath } from 'url'
 import { pathToFileURL } from 'node:url'
 import { StrKey } from '@stellar/stellar-sdk'
 import http from 'node:http'
-import { 
-  HORIZON_URL, 
-  USDC_ISSUER, 
+import {
+  HORIZON_URL,
+  USDC_ISSUER,
   STELLAR_NETWORK,
   STELLAR_EXPERT_URL,
   AMOUNT_USDC,
-  IS_MAINNET
+  IS_MAINNET,
 } from '../src/lib/constants'
 import { wrapFetchWithPayment, x402Client, type Network } from '@x402/fetch'
 import { ExactStellarScheme } from '@x402/stellar/exact/client'
@@ -65,7 +65,12 @@ const HTTP_AUTH_TOKEN = process.env.MCP_HTTP_AUTH_TOKEN
 
 const groq = new Groq({ apiKey: GROQ_API_KEY })
 
-type ErrorCategory = 'authentication/configuration' | 'network/request' | 'upstream service' | 'invalid request' | 'unexpected internal'
+type ErrorCategory =
+  | 'authentication/configuration'
+  | 'network/request'
+  | 'upstream service'
+  | 'invalid request'
+  | 'unexpected internal'
 
 function errorText(error: unknown): string {
   if (error instanceof Error) return error.message
@@ -110,17 +115,17 @@ const HEALTH_RESOURCE_MIME_TYPE = 'application/json'
 const RESOURCE_NOT_FOUND = -32002
 
 interface ServerStats {
-  status:                     string
-  network:                    string
-  pricePerQuery:              string
-  protocol:                   string
-  facilitator:                string
-  totalQueries:               number
-  totalUsdcSettled:           string
-  avgLatencyMs:               number
-  uptime:                     string
-  serperApiConfigured:        boolean
-  groqApiConfigured:          boolean
+  status: string
+  network: string
+  pricePerQuery: string
+  protocol: string
+  facilitator: string
+  totalQueries: number
+  totalUsdcSettled: string
+  avgLatencyMs: number
+  uptime: string
+  serperApiConfigured: boolean
+  groqApiConfigured: boolean
   receivingAddressConfigured: boolean
 }
 
@@ -175,9 +180,10 @@ interface HorizonAccount {
 function validateStellarAddress(input: unknown): { address: string } | { error: string } {
   if (typeof input !== 'string' || input.trim() === '') {
     return {
-      error: input === undefined || input === null || input === ''
-        ? 'No address provided. Pass a Stellar account ID — 56 characters starting with "G".'
-        : `Expected a Stellar account ID string, received ${typeof input}. Pass a Stellar account ID — 56 characters starting with "G".`,
+      error:
+        input === undefined || input === null || input === ''
+          ? 'No address provided. Pass a Stellar account ID — 56 characters starting with "G".'
+          : `Expected a Stellar account ID string, received ${typeof input}. Pass a Stellar account ID — 56 characters starting with "G".`,
     }
   }
 
@@ -222,8 +228,10 @@ function unfundedAccountMessage(address: string): string {
     `   To activate it:`,
     `   1. Give it XLM so it can pay network fees:`,
     ...(IS_MAINNET
-      ? [`      Buy XLM on an exchange, or use Stellar Laboratory:`,
-         `      https://laboratory.stellar.org/#account-creator?network=public`]
+      ? [
+          `      Buy XLM on an exchange, or use Stellar Laboratory:`,
+          `      https://laboratory.stellar.org/#account-creator?network=public`,
+        ]
       : [`      ${FRIENDBOT_URL}${address}`]),
     `   2. Add a USDC trustline to issuer ${USDC_ISSUER}`,
     `      ${TRUSTLINE_GUIDE_URL}`,
@@ -269,7 +277,9 @@ function balanceMessage(address: string, account: HorizonAccount): string {
     lines.push(`   Guide:  ${TRUSTLINE_GUIDE_URL}`)
     if (otherIssuers.length) {
       lines.push(``)
-      lines.push(`Note: this account holds USDC from a different issuer, which cannot pay for searches:`)
+      lines.push(
+        `Note: this account holds USDC from a different issuer, which cannot pay for searches:`,
+      )
       for (const issuer of otherIssuers) lines.push(`   ${issuer}`)
     }
   } else if (usdcTrustline.is_authorized === false) {
@@ -299,7 +309,8 @@ function balanceMessage(address: string, account: HorizonAccount): string {
   lines.push(`   Network: ${NETWORK_NAME}`)
   lines.push(`   Explorer: ${STELLAR_EXPERT_URL}/account/${address}`)
 
-  return lines.join('\n')}
+  return lines.join('\n')
+}
 
 // ─── MCP server ───────────────────────────────────────────────────────────
 const server = new Server(
@@ -319,7 +330,11 @@ Use for current events, documentation, research, or anything needing up-to-date 
         properties: {
           query: { type: 'string', description: 'Search query' },
           count: { type: 'number', description: 'Results count (1–10, default 5)', default: 5 },
-          freshness: { type: 'string', enum: ['pd', 'pw', 'pm'], description: 'Age: pd=day, pw=week, pm=month' },
+          freshness: {
+            type: 'string',
+            enum: ['pd', 'pw', 'pm'],
+            description: 'Age: pd=day, pw=week, pm=month',
+          },
         },
         required: ['query'],
       },
@@ -334,7 +349,11 @@ Use for visual references, photos, diagrams, or anything where you need image re
         properties: {
           query: { type: 'string', description: 'Image search query' },
           count: { type: 'number', description: 'Results count (1–10, default 5)', default: 5 },
-          freshness: { type: 'string', enum: ['pd', 'pw', 'pm'], description: 'Age: pd=day, pw=week, pm=month' },
+          freshness: {
+            type: 'string',
+            enum: ['pd', 'pw', 'pm'],
+            description: 'Age: pd=day, pw=week, pm=month',
+          },
         },
         required: ['query'],
       },
@@ -349,7 +368,11 @@ Use for breaking stories, current events, and time-sensitive reporting.`,
         properties: {
           query: { type: 'string', description: 'News search query' },
           count: { type: 'number', description: 'Results count (1–20, default 10)', default: 10 },
-          freshness: { type: 'string', enum: ['pd', 'pw', 'pm'], description: 'Age: pd=day, pw=week, pm=month' },
+          freshness: {
+            type: 'string',
+            enum: ['pd', 'pw', 'pm'],
+            description: 'Age: pd=day, pw=week, pm=month',
+          },
         },
         required: ['query'],
       },
@@ -361,7 +384,11 @@ Use for breaking stories, current events, and time-sensitive reporting.`,
         type: 'object',
         properties: {
           text: { type: 'string', description: 'Text to summarise or analyse' },
-          instruction: { type: 'string', description: 'What to do with the text (e.g. "summarise", "extract key points")', default: 'summarise' },
+          instruction: {
+            type: 'string',
+            description: 'What to do with the text (e.g. "summarise", "extract key points")',
+            default: 'summarise',
+          },
         },
         required: ['text'],
       },
@@ -377,7 +404,8 @@ private, loopback and link-local addresses are refused. Large pages are truncate
           url: { type: 'string', description: 'Public http(s) URL to read' },
           instruction: {
             type: 'string',
-            description: 'Optional: what to do with the page (e.g. "extract the pricing table"). Defaults to a summary with key points.',
+            description:
+              'Optional: what to do with the page (e.g. "extract the pricing table"). Defaults to a summary with key points.',
           },
         },
         required: ['url'],
@@ -422,7 +450,8 @@ Use this tool when an agent needs to audit or report its own spending.`,
           },
           limit: {
             type: 'number',
-            description: 'Maximum number of receipts to return (default: all within range, max 500)',
+            description:
+              'Maximum number of receipts to return (default: all within range, max 500)',
           },
         },
       },
@@ -438,16 +467,29 @@ server.setRequestHandler(ListPromptsRequestSchema, async () => ({
       description: 'Research a topic on the web and produce a cited summary with sources.',
       arguments: [
         { name: 'topic', description: 'The topic or question to research', required: true },
-        { name: 'depth', description: 'Number of sources to gather (1–10, default 5)', required: false },
+        {
+          name: 'depth',
+          description: 'Number of sources to gather (1–10, default 5)',
+          required: false,
+        },
       ],
     },
     {
       name: 'competitive_comparison',
-      description: 'Compare two or more companies, products, or technologies using fresh web results.',
+      description:
+        'Compare two or more companies, products, or technologies using fresh web results.',
       arguments: [
         { name: 'subject_a', description: 'First company, product, or technology', required: true },
-        { name: 'subject_b', description: 'Second company, product, or technology', required: true },
-        { name: 'criteria', description: 'Comparison criteria (e.g. pricing, features, performance)', required: false },
+        {
+          name: 'subject_b',
+          description: 'Second company, product, or technology',
+          required: true,
+        },
+        {
+          name: 'criteria',
+          description: 'Comparison criteria (e.g. pricing, features, performance)',
+          required: false,
+        },
       ],
     },
     {
@@ -455,7 +497,11 @@ server.setRequestHandler(ListPromptsRequestSchema, async () => ({
       description: 'Summarise the latest news on a topic from the past week with sources.',
       arguments: [
         { name: 'topic', description: 'Topic or beat to round up', required: true },
-        { name: 'count', description: 'Number of articles to gather (1–20, default 10)', required: false },
+        {
+          name: 'count',
+          description: 'Number of articles to gather (1–20, default 10)',
+          required: false,
+        },
       ],
     },
   ],
@@ -551,7 +597,11 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
   // ── web_search ────────────────────────────────────────────────────────
   if (name === 'web_search') {
-    const { query, count = 5, freshness } = (args || {}) as { query: string; count?: number; freshness?: string }
+    const {
+      query,
+      count = 5,
+      freshness,
+    } = (args || {}) as { query: string; count?: number; freshness?: string }
 
     try {
       const params = new URLSearchParams({ q: query, count: String(count) })
@@ -572,16 +622,18 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         .join('\n\n')
 
       return {
-        content: [{
-          type: 'text' as const,
-          text: [
-            `🔍 Results for: "${query}"`,
-            `💰 Paid: ${data.paidAmount} ${data.currency} on ${data.network}`,
-            `⚡ Latency: ${data.latencyMs}ms`,
-            `📊 ${data.count} results\n`,
-            formatted,
-          ].join('\n'),
-        }],
+        content: [
+          {
+            type: 'text' as const,
+            text: [
+              `🔍 Results for: "${query}"`,
+              `💰 Paid: ${data.paidAmount} ${data.currency} on ${data.network}`,
+              `⚡ Latency: ${data.latencyMs}ms`,
+              `📊 ${data.count} results\n`,
+              formatted,
+            ].join('\n'),
+          },
+        ],
       }
     } catch (err: any) {
       return reportToolError('Search', err)
@@ -590,7 +642,11 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
   // ── image_search ──────────────────────────────────────────────────────
   if (name === 'image_search') {
-    const { query, count = 5, freshness } = args as { query: string; count?: number; freshness?: string }
+    const {
+      query,
+      count = 5,
+      freshness,
+    } = args as { query: string; count?: number; freshness?: string }
 
     try {
       const safeCount = Math.min(Math.max(parseInt(String(count)) || 5, 1), 10)
@@ -606,20 +662,25 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
       const data: any = await res.json()
       const formatted = (data.results || [])
-        .map((r: any, i: number) => `${i + 1}. **${r.title}**\n   Image: ${r.imageUrl}\n   Source: ${r.sourceUrl} (${r.source})`)
+        .map(
+          (r: any, i: number) =>
+            `${i + 1}. **${r.title}**\n   Image: ${r.imageUrl}\n   Source: ${r.sourceUrl} (${r.source})`,
+        )
         .join('\n\n')
 
       return {
-        content: [{
-          type: 'text' as const,
-          text: [
-            `🖼️  Image results for: "${query}"`,
-            `💰 Paid: ${data.paidAmount} ${data.currency} on ${data.network}`,
-            `⚡ Latency: ${data.latencyMs}ms`,
-            `📊 ${data.count} results\n`,
-            formatted,
-          ].join('\n'),
-        }],
+        content: [
+          {
+            type: 'text' as const,
+            text: [
+              `🖼️  Image results for: "${query}"`,
+              `💰 Paid: ${data.paidAmount} ${data.currency} on ${data.network}`,
+              `⚡ Latency: ${data.latencyMs}ms`,
+              `📊 ${data.count} results\n`,
+              formatted,
+            ].join('\n'),
+          },
+        ],
       }
     } catch (err: any) {
       return reportToolError('Image search', err)
@@ -628,8 +689,14 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
   // ── news_search ───────────────────────────────────────────────────────
   if (name === 'news_search') {
-    const { query, count = 10, freshness } = (args || {}) as {
-      query: string; count?: number; freshness?: string
+    const {
+      query,
+      count = 10,
+      freshness,
+    } = (args || {}) as {
+      query: string
+      count?: number
+      freshness?: string
     }
 
     try {
@@ -653,16 +720,18 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         .join('\n\n')
 
       return {
-        content: [{
-          type: 'text' as const,
-          text: [
-            `📰 News results for: "${query}"`,
-            `💰 Paid: ${data.paidAmount} ${data.currency} on ${data.network}`,
-            `⚡ Latency: ${data.latencyMs}ms`,
-            `📊 ${data.count} results\n`,
-            formatted,
-          ].join('\n'),
-        }],
+        content: [
+          {
+            type: 'text' as const,
+            text: [
+              `📰 News results for: "${query}"`,
+              `💰 Paid: ${data.paidAmount} ${data.currency} on ${data.network}`,
+              `⚡ Latency: ${data.latencyMs}ms`,
+              `📊 ${data.count} results\n`,
+              formatted,
+            ].join('\n'),
+          },
+        ],
       }
     } catch (err: any) {
       return reportToolError('News search', err)
@@ -671,13 +740,19 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
   // ── ai_summarize ──────────────────────────────────────────────────────
   if (name === 'ai_summarize') {
-    const { text, instruction = 'summarise' } = (args || {}) as { text: string; instruction?: string }
+    const { text, instruction = 'summarise' } = (args || {}) as {
+      text: string
+      instruction?: string
+    }
 
     try {
       const completion = await groq.chat.completions.create({
         model: 'llama-3.3-70b-versatile',
         messages: [
-          { role: 'system', content: 'You are a concise research assistant. Be brief and accurate.' },
+          {
+            role: 'system',
+            content: 'You are a concise research assistant. Be brief and accurate.',
+          },
           { role: 'user', content: `Please ${instruction} the following:\n\n${text}` },
         ],
         max_tokens: 512,
@@ -714,18 +789,25 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       if (!res.ok) throw new Error(data.error || `Server returned ${res.status}`)
 
       return {
-        content: [{
-          type: 'text',
-          text: [
-            `🔗 ${data.title ? `${data.title}\n   ` : ''}${data.url}`,
-            data.truncated ? '✂️ Page was long; summarised the first part only.' : '',
-            '',
-            data.summary,
-          ].filter((line, i) => line !== '' || i === 2).join('\n'),
-        }],
+        content: [
+          {
+            type: 'text',
+            text: [
+              `🔗 ${data.title ? `${data.title}\n   ` : ''}${data.url}`,
+              data.truncated ? '✂️ Page was long; summarised the first part only.' : '',
+              '',
+              data.summary,
+            ]
+              .filter((line, i) => line !== '' || i === 2)
+              .join('\n'),
+          },
+        ],
       }
     } catch (err: any) {
-      return { content: [{ type: 'text', text: `summarize_url failed: ${err.message}` }], isError: true }
+      return {
+        content: [{ type: 'text', text: `summarize_url failed: ${err.message}` }],
+        isError: true,
+      }
     }
   }
 
@@ -755,17 +837,24 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       // Reachable if Horizon rejects something StrKey accepted (or is the wrong network).
       if (res.status === 400) {
         return {
-          content: [{
-            type: 'text',
-            text: `❌ Horizon rejected ${address} as a malformed account ID. If it should be valid, note that ${NETWORK_NAME} accounts cannot be looked up on another network.`,
-          }],
+          content: [
+            {
+              type: 'text',
+              text: `❌ Horizon rejected ${address} as a malformed account ID. If it should be valid, note that ${NETWORK_NAME} accounts cannot be looked up on another network.`,
+            },
+          ],
           isError: true,
         }
       }
 
       if (res.status === 429) {
         return {
-          content: [{ type: 'text', text: `Balance check failed: Horizon rate limit reached — retry in a few seconds.` }],
+          content: [
+            {
+              type: 'text',
+              text: `Balance check failed: Horizon rate limit reached — retry in a few seconds.`,
+            },
+          ],
           isError: true,
         }
       }
@@ -795,19 +884,19 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
     try {
       const params = new URLSearchParams()
-      if (from)  params.set('from',  from)
-      if (to)    params.set('to',    to)
+      if (from) params.set('from', from)
+      if (to) params.set('to', to)
       if (limit) params.set('limit', String(Math.floor(limit)))
 
       const url = `${SERVER_URL}/receipts${params.toString() ? `?${params}` : ''}`
       const res = await fetch(url)
 
       if (!res.ok) {
-        const e = await res.json().catch(() => ({})) as { error?: string }
+        const e = (await res.json().catch(() => ({}))) as { error?: string }
         throw new Error(e.error || `HTTP ${res.status}`)
       }
 
-      const data = await res.json() as {
+      const data = (await res.json()) as {
         receipts: Array<{
           id: string
           timestamp: string
@@ -825,31 +914,30 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       }
 
       if (data.count === 0) {
-        const rangeNote = from || to
-          ? ` in the specified date range${from ? ` from ${from}` : ''}${to ? ` to ${to}` : ''}`
-          : ''
+        const rangeNote =
+          from || to
+            ? ` in the specified date range${from ? ` from ${from}` : ''}${to ? ` to ${to}` : ''}`
+            : ''
         return {
-          content: [{
-            type: 'text',
-            text: `📋 No paid-query receipts found${rangeNote}.\nThe server records receipts in memory while it is running; they reset on restart.`,
-          }],
+          content: [
+            {
+              type: 'text',
+              text: `📋 No paid-query receipts found${rangeNote}.\nThe server records receipts in memory while it is running; they reset on restart.`,
+            },
+          ],
         }
       }
 
       const lines: string[] = [
         `📋 Paid-Query Receipts (${data.count} shown)`,
         `💸 Total spent: ${data.totalSpentUsdc} ${data.currency}`,
-        ...(from || to
-          ? [`📅 Date range: ${from ?? '(start)'}  →  ${to ?? '(now)'}`]
-          : []),
+        ...(from || to ? [`📅 Date range: ${from ?? '(start)'}  →  ${to ?? '(now)'}`] : []),
         '',
       ]
 
       for (const r of data.receipts) {
         const typeIcon = r.type === 'images' ? '🖼️' : r.type === 'news' ? '📰' : '🔍'
-        const txLine = r.txHash
-          ? `   Tx:        ${r.txHash}`
-          : `   Tx:        (not available)`
+        const txLine = r.txHash ? `   Tx:        ${r.txHash}` : `   Tx:        (not available)`
         lines.push(
           `${typeIcon} [${r.timestamp}] ${r.type.toUpperCase()}`,
           `   Query:     "${r.query}"`,
@@ -867,7 +955,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
   }
 
   return { content: [{ type: 'text' as const, text: `Unknown tool: ${name}` }], isError: true }
-}
+})
 
 // ─── Resources ────────────────────────────────────────────────────────────
 // Server stats are reference data, so a client can list and read them directly
@@ -891,7 +979,10 @@ server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
   const { uri } = request.params
 
   if (uri !== HEALTH_RESOURCE_URI) {
-    throw new McpError(RESOURCE_NOT_FOUND, `Unknown resource: ${uri}. Available: ${HEALTH_RESOURCE_URI}`)
+    throw new McpError(
+      RESOURCE_NOT_FOUND,
+      `Unknown resource: ${uri}. Available: ${HEALTH_RESOURCE_URI}`,
+    )
   }
 
   try {
@@ -962,10 +1053,14 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
     })
 
     httpServer.listen(HTTP_PORT, HTTP_HOST, () => {
-      console.error(`StellarSearch MCP server started (HTTP+SSE) on http://${HTTP_HOST}:${HTTP_PORT}`)
+      console.error(
+        `StellarSearch MCP server started (HTTP+SSE) on http://${HTTP_HOST}:${HTTP_PORT}`,
+      )
       console.error(`  SSE endpoint:      GET  /sse`)
       console.error(`  Messages endpoint: POST /messages?sessionId=<id>`)
-      console.error(`  Auth:              ${HTTP_AUTH_TOKEN ? 'bearer token required' : 'disabled'}`)
+      console.error(
+        `  Auth:              ${HTTP_AUTH_TOKEN ? 'bearer token required' : 'disabled'}`,
+      )
     })
   } else {
     const transport = new StdioServerTransport()

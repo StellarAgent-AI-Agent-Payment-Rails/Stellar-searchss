@@ -33,7 +33,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     avgLatencyMs: null,
     invocationType: invocation.invocationType,
     coldStartLatencyMs: invocation.coldStartLatencyMs,
-    warmHandlerLatencyMs: invocation.invocationType === 'warm' ? handlerElapsedMs(invocation) : null,
+    warmHandlerLatencyMs:
+      invocation.invocationType === 'warm' ? handlerElapsedMs(invocation) : null,
     timestamp: new Date().toISOString(),
   }
 

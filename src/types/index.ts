@@ -46,9 +46,8 @@ export function parseHealthResponse(data: any): HealthResponse {
     avgLatencyMs: latency(data.avgLatencyMs),
     coldStartLatencyMs: latency(data.coldStartLatencyMs),
     warmHandlerLatencyMs: latency(data.warmHandlerLatencyMs),
-    invocationType: data.invocationType === 'cold' || data.invocationType === 'warm'
-      ? data.invocationType
-      : null,
+    invocationType:
+      data.invocationType === 'cold' || data.invocationType === 'warm' ? data.invocationType : null,
     uptime: data.uptime ?? '100%',
     serperApiConfigured: Boolean(data.serperApiConfigured),
     groqApiConfigured: Boolean(data.groqApiConfigured),

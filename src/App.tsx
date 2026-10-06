@@ -1,14 +1,15 @@
 import { useState, useEffect, useMemo, lazy, Suspense } from 'react'
 import { motion, AnimatePresence, MotionConfig } from 'framer-motion'
 import { AnimatedBackground, Navbar, LiveTicker, Footer } from './components/layout'
-import { GroqAssistant }                       from './components/ai'
-import { useFreighterWallet, useSearch }       from './hooks'
-import { clearReceipts }                       from './lib/receipts'
-import { Toaster }                             from 'sonner'
+import { GroqAssistant } from './components/ai'
+import { useFreighterWallet, useSearch } from './hooks'
+import { Toaster } from 'sonner'
 
-const SearchPage = lazy(() => import('./pages/SearchPage').then(m => ({ default: m.SearchPage })))
-const DocsPage = lazy(() => import('./pages/DocsPage').then(m => ({ default: m.DocsPage })))
-const DashboardPage = lazy(() => import('./pages/DashboardPage').then(m => ({ default: m.DashboardPage })))
+const SearchPage = lazy(() => import('./pages/SearchPage').then((m) => ({ default: m.SearchPage })))
+const DocsPage = lazy(() => import('./pages/DocsPage').then((m) => ({ default: m.DocsPage })))
+const DashboardPage = lazy(() =>
+  import('./pages/DashboardPage').then((m) => ({ default: m.DashboardPage })),
+)
 
 type Page = 'search' | 'docs' | 'dashboard'
 
@@ -54,14 +55,10 @@ export default function App() {
     return () => window.removeEventListener('popstate', onPopState)
   }, [])
 
-  const {
-    wallet, transactions, txLoading,
-    connect, disconnect, refresh,
-  } = useFreighterWallet()
+  const { wallet, transactions, txLoading, connect, disconnect, refresh, clearStoredReceipts } =
+    useFreighterWallet()
 
-  const { session, search, reset, retry } = useSearch(
-    wallet.connected ? wallet.publicKey : null
-  )
+  const { session, search, reset, retry } = useSearch(wallet.connected ? wallet.publicKey : null)
 
   const prefetchPage = (p: Page) => {
     if (p === 'search') import('./pages/SearchPage')
@@ -70,9 +67,10 @@ export default function App() {
   }
 
   const lastSearch = useMemo(
-    () => session.status === 'complete' && session.results.length
-      ? { query: session.query, results: session.results }
-      : null,
+    () =>
+      session.status === 'complete' && session.results.length
+        ? { query: session.query, results: session.results }
+        : null,
     [session.status, session.query, session.results],
   )
 
@@ -83,91 +81,88 @@ export default function App() {
   const handleDisconnect = () => {
     reset()
     disconnect()
-    const shouldClear = window.confirm(
-      'Also clear stored payment receipts from this device?'
-    )
+    const shouldClear = window.confirm('Also clear stored payment receipts from this device?')
     if (shouldClear) {
-      clearReceipts()
+      clearStoredReceipts()
     }
   }
 
   return (
     <MotionConfig reducedMotion="user">
-    <div className="min-h-screen relative text-white">
-      <a href="#main-content" className="skip-link">
-        Skip to main content
-      </a>
-      <AnimatedBackground />
+      <div className="min-h-screen relative text-white">
+        <a href="#main-content" className="skip-link">
+          Skip to main content
+        </a>
+        <AnimatedBackground />
 
-      <div className="relative z-10 flex flex-col min-h-screen">
+        <div className="relative z-10 flex flex-col min-h-screen">
+          <Navbar
+            page={page}
+            onNavigate={navigate}
+            onPrefetch={prefetchPage}
+            wallet={wallet}
+            transactions={transactions}
+            txLoading={txLoading}
+            onConnect={connect}
+            onDisconnect={handleDisconnect}
+            onRefresh={refresh}
+          />
 
-        <Navbar
-          page={page}
-          onNavigate={navigate}
-          onPrefetch={prefetchPage}
-          wallet={wallet}
-          transactions={transactions}
-          txLoading={txLoading}
-          onConnect={connect}
-          onDisconnect={handleDisconnect}
-          onRefresh={refresh}
-        />
+          <LiveTicker walletConnected={wallet.connected} />
 
-        <LiveTicker walletConnected={wallet.connected} />
+          <main id="main-content" className="flex-1" tabIndex={-1}>
+            <Suspense fallback={<PageSkeleton />}>
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={page}
+                  initial={{ opacity: 0, y: 12 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -8 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  {page === 'search' && (
+                    <SearchPage
+                      wallet={wallet}
+                      onConnectWallet={connect}
+                      session={session}
+                      search={search}
+                      reset={reset}
+                      retry={retry}
+                      onNavigateFundingGuide={() => navigate('docs', 'get-testnet-usdc')}
+                    />
+                  )}
+                  {page === 'docs' && <DocsPage />}
+                  {page === 'dashboard' && (
+                    <DashboardPage
+                      transactions={transactions}
+                      txLoading={txLoading}
+                      publicKey={wallet.publicKey}
+                      usdcBalance={wallet.usdcBalance}
+                      xlmBalance={wallet.xlmBalance}
+                      onRefresh={refresh}
+                    />
+                  )}
+                </motion.div>
+              </AnimatePresence>
+            </Suspense>
+          </main>
 
-        <main id="main-content" className="flex-1" tabIndex={-1}>
-          <Suspense fallback={<PageSkeleton />}>
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={page}
-                initial={{ opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -8 }}
-                transition={{ duration: 0.2 }}
-              >
-                {page === 'search' && (
-                  <SearchPage
-                    wallet={wallet}
-                    onConnectWallet={connect}
-                    session={session}
-                    search={search}
-                    reset={reset}
-                    retry={retry}
-                    onNavigateFundingGuide={() => navigate('docs', 'get-testnet-usdc')}
-                  />
-                )}
-                {page === 'docs' && <DocsPage />}
-                {page === 'dashboard' && (
-                  <DashboardPage
-                    transactions={transactions}
-                    txLoading={txLoading}
-                    publicKey={wallet.publicKey}
-                    usdcBalance={wallet.usdcBalance}
-                    xlmBalance={wallet.xlmBalance}
-                    onRefresh={refresh}
-                  />
-                )}
-              </motion.div>
-            </AnimatePresence>
-          </Suspense>
-        </main>
+          <Footer />
+        </div>
 
-        <Footer />
+        <GroqAssistant lastSearch={lastSearch} />
+
+        <div className="sr-only" aria-live="assertive" role="alert">
+          {session.status === 'error' ? `Error: ${session.error}` : ''}
+        </div>
+        <div className="sr-only" aria-live="polite" role="status">
+          {session.status === 'complete' && session.txHash
+            ? `Payment settled: ${session.paidAmount || '0.001'} USDC`
+            : ''}
+        </div>
+
+        <Toaster position="bottom-right" theme="dark" duration={4000} richColors />
       </div>
-
-      <GroqAssistant lastSearch={lastSearch} />
-
-      <div className="sr-only" aria-live="assertive" role="alert">
-        {session.status === 'error' ? `Error: ${session.error}` : ''}
-      </div>
-      <div className="sr-only" aria-live="polite" role="status">
-        {session.status === 'complete' && session.txHash 
-          ? `Payment settled: ${session.paidAmount || '0.001'} USDC` 
-          : ''}
-      </div>
-
-      <Toaster position="bottom-right" theme="dark" duration={4000} richColors />
-    </div>
     </MotionConfig>
   )
 }
