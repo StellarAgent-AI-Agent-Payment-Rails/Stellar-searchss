@@ -27,6 +27,12 @@ import {
   AMOUNT_STROOPS,
   AMOUNT_USDC,
 } from '../shared/constants.js'
+import {
+  buildErrorResponse,
+  buildUpstreamUnavailableResponse,
+  redactSecrets,
+  resolveRequestId,
+} from '../src/lib/apiError'
 
 // ─── Generic result shape ─────────────────────────────────────────────────
 
@@ -122,6 +128,7 @@ export function validateQuery(
   }
   // Strip null bytes and ASCII control characters (C0 + DEL) to prevent
   // log injection and odd Serper behavior.
+  // eslint-disable-next-line no-control-regex
   const cleanQ = q.replace(/[\x00-\x1F\x7F]/g, '').trim()
   if (!cleanQ) {
     return { ok: false, error: 'Query contains no valid characters.' }
@@ -143,6 +150,8 @@ export interface SearchHandlerInput {
   /** Full URL of the protected resource, used in the 402 challenge. */
   resourceUrl?: string
   env?: NodeJS.ProcessEnv
+  /** Inbound `x-request-id` value, reused when safe. */
+  requestIdHeader?: string | null
 }
 
 const SERPER_ENDPOINT = 'https://google.serper.dev/search'
@@ -184,6 +193,8 @@ export function buildPaymentRequired(opts: {
 
 export async function handleSearch(input: SearchHandlerInput): Promise<HandlerResult> {
   const env = input.env ?? process.env
+  const requestId = resolveRequestId(input.requestIdHeader)
+  const requestHeaders = { 'X-Request-Id': requestId }
   const network = networkFromEnv(env)
   // Canonical address/amount source: shared constants + env.
   const usdcContract = env.USDC_CONTRACT || USDC_CONTRACT
@@ -203,11 +214,12 @@ export async function handleSearch(input: SearchHandlerInput): Promise<HandlerRe
     return jsonResult(402, { error: 'Payment required' }, {
       'PAYMENT-REQUIRED': Buffer.from(JSON.stringify(requirements)).toString('base64'),
       'Content-Type': 'application/json',
+      ...requestHeaders,
     })
   }
 
   const v = validateQuery(input.query)
-  if (!v.ok) return jsonResult(400, { error: v.error })
+  if (!v.ok) return jsonResult(400, { error: v.error }, requestHeaders)
   const cleanQ = v.cleanQ
 
   const count = input.count ?? '5'
@@ -235,8 +247,15 @@ export async function handleSearch(input: SearchHandlerInput): Promise<HandlerRe
 
     if (!serperRes.ok) {
       const errText = await serperRes.text()
-      console.error('[serper]', serperRes.status, errText)
-      return jsonResult(502, { error: `Serper.dev API error: ${serperRes.status}` })
+      const upstream = buildUpstreamUnavailableResponse({
+        error: new Error(`Serper.dev responded ${serperRes.status}: ${errText}`),
+        requestId,
+        operation: 'serper.search',
+        provider: 'serper',
+        publicMessage: 'Search is temporarily unavailable. Please try again later.',
+        meta: { status: serperRes.status },
+      })
+      return jsonResult(upstream.status, upstream.body, requestHeaders)
     }
 
     const data = (await serperRes.json()) as { organic?: Array<Record<string, any>> }
@@ -273,10 +292,18 @@ export async function handleSearch(input: SearchHandlerInput): Promise<HandlerRe
       txHash: input.txHash ?? null,
       latencyMs,
       suggestions,
-    })
+    }, requestHeaders)
   } catch (err: any) {
-    console.error('[search error]', err?.message)
-    return jsonResult(500, { error: 'Search failed. Check server logs.' })
+    const failure = buildErrorResponse({
+      error: err,
+      requestId,
+      operation: 'serper.search',
+      provider: 'serper',
+      publicMessage: 'An error occurred while processing your request. Please try again later.',
+      code: 'search_failed',
+      status: 500,
+    })
+    return jsonResult(failure.status, failure.body, requestHeaders)
   }
 }
 
@@ -309,6 +336,7 @@ export function parseSuggestions(raw: string): string[] {
   const cleaned: string[] = []
   for (const item of parsed) {
     if (typeof item !== 'string') return []
+    // eslint-disable-next-line no-control-regex
     const trimmed = item.replace(/[\x00-\x1F\x7F]/g, '').trim()
     if (!trimmed) return []
     cleaned.push(trimmed.slice(0, MAX_SUGGESTION_LENGTH))
@@ -328,7 +356,7 @@ async function buildSuggestions(
       .slice(0, MAX_SNIPPETS_FED)
       .map((r) =>
         String(r.description || '')
-          .replace(/[\x00-\x1F\x7F]/g, ' ')
+          .replace(/[\x00-\x1F\x7F]/g, ' ') // eslint-disable-line no-control-regex
           .slice(0, MAX_SNIPPET_LENGTH),
       )
       .join('\n---\n')
@@ -356,7 +384,7 @@ async function buildSuggestions(
     const raw = completion.choices[0]?.message?.content || '[]'
     return parseSuggestions(raw)
   } catch (err: any) {
-    console.warn('[suggestions] Groq error:', err?.message)
+    console.warn('[suggestions] Groq error:', redactSecrets(err?.message ?? ''))
     return []
   }
 }
@@ -451,6 +479,8 @@ const SYSTEM_PROMPT =
 export interface ChatHandlerInput {
   messages?: ChatMessage[] | null
   env?: NodeJS.ProcessEnv
+  /** Inbound `x-request-id` value, reused when safe. */
+  requestIdHeader?: string | null
 }
 
 /**
@@ -488,9 +518,11 @@ export function getGroq(env: NodeJS.ProcessEnv = process.env): Groq {
 
 export async function handleChat(input: ChatHandlerInput): Promise<HandlerResult> {
   const env = input.env ?? process.env
+  const requestId = resolveRequestId(input.requestIdHeader)
+  const requestHeaders = { 'X-Request-Id': requestId }
   const messages = input.messages
   if (!messages?.length) {
-    return jsonResult(400, { error: 'messages array required' })
+    return jsonResult(400, { error: 'messages array required' }, requestHeaders)
   }
 
   try {
@@ -502,10 +534,18 @@ export async function handleChat(input: ChatHandlerInput): Promise<HandlerResult
     })
 
     const content = completion.choices[0]?.message?.content || 'No response.'
-    return jsonResult(200, { content, model: completion.model })
+    return jsonResult(200, { content, model: completion.model }, requestHeaders)
   } catch (err: any) {
-    console.error('[groq error]', err?.message)
-    return jsonResult(500, { error: `Groq AI error: ${err.message}` })
+    const failure = buildErrorResponse({
+      error: err,
+      requestId,
+      operation: 'groq.chat.completions',
+      provider: 'groq',
+      publicMessage: 'The AI assistant is temporarily unavailable. Please try again shortly.',
+      code: 'ai_unavailable',
+      status: 500,
+    })
+    return jsonResult(failure.status, failure.body, requestHeaders)
   }
 }
 
@@ -529,11 +569,14 @@ export async function pipeChatStream(
   res: StreamResponseLike,
   messages: ChatMessage[],
   env: NodeJS.ProcessEnv = process.env,
+  requestIdHeader?: string | null,
 ): Promise<void> {
+  const requestId = resolveRequestId(requestIdHeader)
   res.setHeader('Content-Type', 'text/event-stream')
   res.setHeader('Cache-Control', 'no-cache, no-transform')
   res.setHeader('Connection', 'keep-alive')
   res.setHeader('X-Accel-Buffering', 'no')
+  res.setHeader('X-Request-Id', requestId)
   res.flushHeaders?.()
 
   // Swallow EPIPE-style errors when the client vanishes mid-stream.
@@ -580,8 +623,19 @@ export async function pipeChatStream(
       res.end()
       return
     }
-    console.error('[groq stream error]', err?.message)
-    sendEvent('error', { error: `Groq AI error: ${err.message}` })
+    buildErrorResponse({
+      error: err,
+      requestId,
+      operation: 'groq.chat.completions.stream',
+      provider: 'groq',
+      publicMessage: 'The AI assistant is temporarily unavailable. Please try again shortly.',
+      code: 'ai_unavailable',
+      status: 500,
+    })
+    sendEvent('error', {
+      error: 'The AI assistant is temporarily unavailable. Please try again shortly.',
+      requestId,
+    })
     res.end()
   }
 }

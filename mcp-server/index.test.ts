@@ -13,7 +13,7 @@ import {
   STELLAR_NETWORK, 
   STELLAR_EXPERT_URL, 
   USDC_ISSUER 
-} from '../src/lib/constants.js'
+} from '../shared/constants.js'
 
 describe('MCP Server - ListTools', () => {
   it('returns all expected tools with proper schemas', async () => {
@@ -129,7 +129,8 @@ describe('MCP Server - CallTool Handlers', () => {
       })
 
       assert.strictEqual(res.isError, true)
-      assert.ok(res.content[0].text.includes('Search failed: Payment required: insufficient funds'))
+      assert.match(res.content[0].text, /Search failed: .* error\./)
+      assert.ok(!res.content[0].text.includes('insufficient funds'))
     })
   })
 
@@ -187,7 +188,7 @@ describe('MCP Server - CallTool Handlers', () => {
       })
 
       assert.strictEqual(res.isError, true)
-      assert.ok(res.content[0].text.includes('Image search failed: HTTP 500'))
+      assert.match(res.content[0].text, /Image search failed: .* error\./)
     })
   })
 
@@ -254,7 +255,7 @@ describe('MCP Server - CallTool Handlers', () => {
       })
 
       assert.strictEqual(res.isError, true)
-      assert.ok(res.content[0].text.includes('News search failed: News service unavailable'))
+      assert.match(res.content[0].text, /News search failed: .* error\./)
     })
   })
 
@@ -314,7 +315,7 @@ describe('MCP Server - CallTool Handlers', () => {
       })
 
       assert.strictEqual(res.isError, true)
-      assert.ok(res.content[0].text.includes('Groq error:'))
+      assert.match(res.content[0].text, /AI summary failed: .* error\./)
     })
   })
 
@@ -371,7 +372,7 @@ describe('MCP Server - CallTool Handlers', () => {
       })
 
       assert.strictEqual(res.isError, true)
-      assert.ok(res.content[0].text.includes('Account not found on Stellar testnet'))
+      assert.ok(res.content[0].text.includes('Invalid Stellar address'))
     })
 
     it('returns error when Horizon returns other status codes', async () => {
@@ -387,7 +388,7 @@ describe('MCP Server - CallTool Handlers', () => {
       })
 
       assert.strictEqual(res.isError, true)
-      assert.ok(res.content[0].text.includes('Horizon returned 500'))
+      assert.match(res.content[0].text, /Balance check failed: .* error\./)
     })
   })
 
@@ -443,7 +444,7 @@ describe('MCP Server - CallTool Handlers', () => {
       })
 
       assert.strictEqual(res.isError, true)
-      assert.ok(res.content[0].text.includes('Failed to fetch server stats: Server health check returned 502'))
+      assert.match(res.content[0].text, /Server stats failed: .* error\./)
     })
   })
 
