@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion'
 import { useState, useEffect, useMemo } from 'react'
-import { ExternalLink, Activity, BarChart2, RefreshCw, History, Search, ChevronDown } from 'lucide-react'
+import { ExternalLink, Activity, AlertTriangle, BarChart2, RefreshCw, History, Search, ChevronDown } from 'lucide-react'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts'
 import { IS_MAINNET, STELLAR_NETWORK, AMOUNT_USDC, STELLAR_EXPERT_URL, truncateHash, formatTimeAgo, explorerTxUrl, explorerAccountUrl } from '../lib/stellar'
 import type { StellarTransaction } from '../hooks/useFreighterWallet'
@@ -159,8 +159,9 @@ export function DashboardPage({ transactions, txLoading, publicKey, usdcBalance,
       )}
 
       {/* USDC Spent Chart */}
-      {publicKey && chartData.length > 0 && (
-        <motion.div
+      {publicKey && (
+        <motion.section
+          aria-labelledby="usdc-chart-heading"
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.15 }}
@@ -168,52 +169,83 @@ export function DashboardPage({ transactions, txLoading, publicKey, usdcBalance,
           style={{ background: 'rgba(6,13,20,0.7)', border: '1px solid rgba(255,184,0,0.15)' }}
         >
           <div className="flex items-center gap-2 mb-6">
-            <BarChart2 className="w-4 h-4 text-neon-amber/40" />
-            <span className="font-display text-xs text-white/30 tracking-widest">USDC SPENT OVER TIME</span>
+            <BarChart2 className="w-4 h-4 text-neon-amber/40" aria-hidden="true" />
+            <h2 id="usdc-chart-heading" className="font-display text-xs text-white/30 tracking-widest">USDC SPENT OVER TIME</h2>
           </div>
           <div className="h-64 w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={chartData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
-                <XAxis 
-                  dataKey="date" 
-                  stroke="rgba(255,255,255,0.2)" 
-                  fontSize={10} 
-                  tickLine={false} 
-                  axisLine={false} 
-                  fontFamily="monospace"
-                />
-                <YAxis 
-                  stroke="rgba(255,255,255,0.2)" 
-                  fontSize={10} 
-                  tickLine={false} 
-                  axisLine={false} 
-                  tickFormatter={(val: number) => `$${val}`}
-                  fontFamily="monospace"
-                />
-                <Tooltip 
-                  cursor={{ fill: 'rgba(255,184,0,0.05)' }}
-                  contentStyle={{ 
-                    backgroundColor: 'rgba(6,13,20,0.9)', 
-                    border: '1px solid rgba(255,184,0,0.2)',
-                    borderRadius: '8px',
-                    fontFamily: 'monospace',
-                    fontSize: '12px'
-                  }}
-                  itemStyle={{ color: '#ffb800' }}
-                  labelStyle={{ color: 'rgba(255,255,255,0.5)', marginBottom: '4px' }}
-                />
-                <Bar 
-                  dataKey="amount" 
-                  fill="#ffb800" 
-                  radius={[4, 4, 0, 0]} 
-                  maxBarSize={40}
-                  animationDuration={1500}
-                />
-              </BarChart>
-            </ResponsiveContainer>
+            {txLoading ? (
+              <div role="status" aria-label="Loading USDC activity" className="flex h-full flex-col items-center justify-center gap-5">
+                <div aria-hidden="true" className="flex h-40 w-full items-end gap-3 border-b border-white/10 px-3 animate-pulse motion-reduce:animate-none">
+                  {['h-10', 'h-20', 'h-14', 'h-32', 'h-24', 'h-16'].map((height, i) => (
+                    <div key={i} className={`min-w-0 flex-1 rounded-t bg-neon-amber/15 ${height}`} />
+                  ))}
+                </div>
+                <p className="font-display text-xs text-white/60 tracking-widest">LOADING USDC ACTIVITY</p>
+              </div>
+            ) : transactionError ? (
+              <div className="flex h-full flex-col items-center justify-center gap-3 px-3 text-center">
+                <AlertTriangle className="h-8 w-8 text-red-300" aria-hidden="true" />
+                <p className="font-display text-xs text-red-300 tracking-widest">USDC ACTIVITY UNAVAILABLE</p>
+                <p className="max-w-md text-sm text-white/60">Your transactions could not be loaded. Try again to view this chart.</p>
+                <button
+                  type="button"
+                  onClick={onRetryTransactions ?? onRefresh}
+                  aria-label="Retry loading USDC activity"
+                  className="mt-1 rounded-lg border border-neon-cyan/25 px-4 py-2 font-display text-xs text-neon-cyan/80 tracking-widest hover:text-neon-cyan"
+                >
+                  TRY AGAIN
+                </button>
+              </div>
+            ) : chartData.length === 0 ? (
+              <div role="status" aria-label="No USDC activity" className="flex h-full flex-col items-center justify-center gap-3 px-3 text-center">
+                <BarChart2 className="h-8 w-8 text-neon-amber/60" aria-hidden="true" />
+                <p className="font-display text-xs text-white/70 tracking-widest">NO USDC ACTIVITY YET</p>
+                <p className="max-w-md text-sm text-white/60">Confirmed USDC transactions will appear here. XLM transactions are not included in this chart.</p>
+              </div>
+            ) : (
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={chartData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
+                  <XAxis
+                    dataKey="date"
+                    stroke="rgba(255,255,255,0.2)"
+                    fontSize={10}
+                    tickLine={false}
+                    axisLine={false}
+                    fontFamily="monospace"
+                  />
+                  <YAxis
+                    stroke="rgba(255,255,255,0.2)"
+                    fontSize={10}
+                    tickLine={false}
+                    axisLine={false}
+                    tickFormatter={(val: number) => `$${val}`}
+                    fontFamily="monospace"
+                  />
+                  <Tooltip
+                    cursor={{ fill: 'rgba(255,184,0,0.05)' }}
+                    contentStyle={{
+                      backgroundColor: 'rgba(6,13,20,0.9)',
+                      border: '1px solid rgba(255,184,0,0.2)',
+                      borderRadius: '8px',
+                      fontFamily: 'monospace',
+                      fontSize: '12px'
+                    }}
+                    itemStyle={{ color: '#ffb800' }}
+                    labelStyle={{ color: 'rgba(255,255,255,0.5)', marginBottom: '4px' }}
+                  />
+                  <Bar
+                    dataKey="amount"
+                    fill="#ffb800"
+                    radius={[4, 4, 0, 0]}
+                    maxBarSize={40}
+                    animationDuration={1500}
+                  />
+                </BarChart>
+              </ResponsiveContainer>
+            )}
           </div>
-        </motion.div>
+        </motion.section>
       )}
 
       {/* Live transactions from Horizon */}

@@ -38,6 +38,16 @@ package), that decision will be noted here and a new section added.
 
 ---
 
+## [Unreleased]
+
+### Fixed
+
+- Dashboard USDC charts now distinguish loading, no activity, and failed requests,
+  with a retry action instead of disappearing when there is nothing to plot
+  ([#71](../../issues/71)).
+
+---
+
 ## [1.1.0] — 2026-09-30
 
 ### Added
