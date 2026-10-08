@@ -13,26 +13,13 @@ const { version } = JSON.parse(
 )
 
 export default defineConfig({
-test: {
-    environment: 'node',
-    globals: true,
-    include: ['**/*.{test,spec}.{ts,tsx,js,jsx}'],
-    environmentMatchGlobs: [
-      ['**/*.dom.{test,spec}.{ts,tsx,js,jsx}', 'jsdom'],
-      ['src/**/*.{test,spec}.{ts,tsx,js,jsx}', 'jsdom'],
-    ],
-    coverage: {
-      provider: 'v8',
-      reporter: ['text', 'html'],
-    },
-  },
   plugins: [
     react(),
     analyze &&
       visualizer({
         filename: 'dist/stats.html',
-        gzip: true,
-        broli: true,
+        gzipSize: true,
+        brotliSize: true,
         template: 'treemap',
       }),
   ],
@@ -61,20 +48,17 @@ test: {
       output: {
         manualChunks(id) {
           if (!id) return
-          if (id.includes('node_modules')) {
-            if (id.match(/[\\/]node_modules[\\/](react|react-dom|scheduler)[\\/]/)) {
-              return 'vendor-react'
-            }
-            if (id.includes('node_modules/framer-motion')) {
-              return 'vendor-framer-motion'
-            }
-            if (id.includes('node_modules/lucide-react')) {
-              return 'vendor-lucide'
-            }
-            if (id.includes('node_modules/@stellar')) {
-              return 'vendor-stellar'
-            }
-            return 'vendor'
+          if (id.includes('node_modules/recharts') || id.includes('node_modules/d3-')) {
+            return 'vendor-charts'
+          }
+          if (id.includes('node_modules/@stellar')) {
+            return 'vendor-stellar'
+          }
+          if (id.includes('node_modules/framer-motion')) {
+            return 'vendor-framer-motion'
+          }
+          if (id.includes('node_modules/lucide-react')) {
+            return 'vendor-lucide'
           }
         },
       },
@@ -98,7 +82,9 @@ test: {
       },
     },
   },
-  // Vitest configuration lives in vitest.config.ts, which takes precedence over
-  // this file. Keeping it there lets server tests run in the node environment
-  // while component tests run in jsdom within a single `npm test` invocation.
+  test: {
+    environment: 'jsdom',
+    setupFiles: ['./src/test/setup.ts'],
+    clearMocks: true,
+  },
 })

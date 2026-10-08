@@ -359,8 +359,11 @@ Claude Code / any MCP client
 6. Server receives confirmation and forwards the query to Serper.dev
 7. Results are returned with the `txHash` from the `X-Payment-Response` header
 
-The MCP server sits in front of the same Express routes, so an agent using Claude Code
-pays through the identical x402 flow.
+The MCP server forwards calls to the same Express routes, but it does **not**
+configure an x402 payer/signer, so it cannot settle a payment itself. A paid tool
+returns results only when the StellarSearch API settles the request, and it reports
+a payment only when the response carries a confirmed settlement transaction (a
+`txHash`); otherwise the tool output says the payment was not confirmed.
 
 > **Security:** payment *is* authentication in this project — there are no accounts, sessions, or API
 > keys, so the security of the payment flow is the security of the product. The trust boundaries
@@ -407,15 +410,17 @@ stellar-search/
 │   │   ├── DocsPage.tsx
 │   │   └── DashboardPage.tsx           # Live Horizon tx history
 │   └── types/index.ts
-├── server/                             # Express + x402 backend (npm run server)
-│   ├── index.ts                        # /search, /images, /news, /ai/chat, /health
-│   ├── corsConfig.ts                   # CORS allow-list from env
+├── server/
+│   ├── handlers.ts                     # Shared framework-free /search, /health, /ai/chat logic
+│   ├── app.ts                          # Express app factory (createApp)
+│   ├── index.ts                        # Starts the Express app (npm run server)
+│   ├── corsConfig.ts                   # CORS allow-list from env (single source for both targets)
 │   └── logger.ts                       # Winston payment logging
-├── api/                                # Vercel serverless mirror of the paid routes
+├── api/                                # Vercel serverless functions (thin adapters)
 │   ├── index.ts                        # Service metadata
-│   ├── search.ts                       # GET /api/search — x402 protected
-│   ├── health.ts                       # GET /api/health
-│   └── ai/chat.ts                      # POST /api/ai/chat — Groq
+│   ├── search.ts                       # GET /api/search — calls server/handlers.ts
+│   ├── health.ts                       # GET /api/health — calls server/handlers.ts
+│   └── ai/chat.ts                      # POST /api/ai/chat — calls server/handlers.ts
 ├── mcp-server/
 │   └── index.ts                        # MCP tools (see below)
 ├── scripts/
@@ -429,18 +434,49 @@ stellar-search/
 └── README.md
 ```
 
+### Single source of truth for the API
+
+`server/handlers.ts` holds the framework-free implementations of `/search`,
+`/health` and `/ai/chat`. Handlers take already-parsed inputs and return a
+plain `{ status, headers, body }` result — they never see an Express `Request`
+or a Vercel `VercelRequest`.
+
+Both deployment targets are thin adapters over that module:
+
+- `server/app.ts` wires the handlers into the Express routes (and keeps the
+  Express-only `/images`, `/news`, `/summarize-url` and `/receipts` routes).
+- `api/search.ts`, `api/health.ts` and `api/ai/chat.ts` adapt Vercel's
+  req/res to the same handlers.
+
+Validation, search execution, Groq suggestions, the x402 payment-required
+challenge, the SSE framing and the health payload/ETag therefore exist in
+exactly one place. CORS comes from `server/corsConfig.ts`: Express uses
+`buildCorsOptions()` and the serverless functions use `buildCorsHeaders()`,
+both derived from the same constant allow-list.
+
+`tests/parity.test.ts` boots the Express app and invokes the Vercel handlers
+with the same inputs, asserting identical `{ status, body }` (Serper and Groq
+are mocked by MSW). Run it with `npm run test:parity`.
+
 ### MCP tools
 
-`mcp-server/index.ts` exposes six tools to any MCP client:
+`mcp-server/index.ts` exposes these tools to any MCP client:
 
-| Tool | Backing route | Price |
+| Tool | Backing route | Upstream price |
 |---|---|---|
 | `web_search` | `GET /search` | 0.001 USDC |
 | `image_search` | `GET /images` | 0.001 USDC |
 | `news_search` | `GET /news` | 0.001 USDC |
 | `ai_summarize` | Groq API directly | Free |
+| `summarize_url` | `POST /summarize-url` | Free |
 | `check_balance` | Stellar Horizon REST | Free |
 | `get_search_stats` | `GET /health` | Free |
+| `list_receipts` | `GET /receipts` | Free |
+
+The three paid tools call x402-priced routes, but the MCP server itself does not
+configure a payment signer, so it does not pay on the caller's behalf. It reports
+a payment only when the upstream response includes a confirmed settlement
+transaction; otherwise the tool output states that the payment was not confirmed.
 
 ---
 
@@ -459,7 +495,7 @@ The MCP server reads these environment variables:
 
 The local entry expects the API server to be running on port 3001. The hosted entry connects to the deployed API and does not require a local API server. Both still require a Groq key for the MCP process to start.
 
-Then tell Claude Code: `"Search for the latest Stellar x402 examples"` — it calls `web_search`, the server pays via x402, and Claude gets real results.
+Then tell Claude Code: `"Search for the latest Stellar x402 examples"` — it calls `web_search`; results come back when the StellarSearch API settles the x402 payment.
 
 ### `summarize_url` (free)
 
@@ -519,7 +555,7 @@ Server stats are reference data, so they fit the resource model better than a to
 }
 ```
 
-Then tell Claude Code: `"Search for the latest Stellar x402 examples"` — it calls `web_search`, the server pays via x402, and Claude gets real results. The same client can call `image_search` and `news_search` for visual and current-events lookups.
+Then tell Claude Code: `"Search for the latest Stellar x402 examples"` — it calls `web_search`; results come back when the StellarSearch API settles the x402 payment. The same client can call `image_search` and `news_search` for visual and current-events lookups.
 
 ---
 

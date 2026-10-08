@@ -59,15 +59,15 @@ src/pages/DocsPage.tsx             # fix wording in the docs copy
 That is a real, PR-able contribution. Confirm it still typechecks before opening a PR:
 
 ```bash
-npx tsc --noEmit
+npm run typecheck
 ```
 
 ### 5. What you can (and cannot) do without a wallet
 
 | ✅ Works with no wallet | ⛔ Needs Freighter + funded testnet USDC |
 |---|---|
-| Everything in `src/` — pages, components, styling, copy, layout | `/search` (the 0.001 USDC paid route) and anything that calls it |
-| `npm run setup`, `npm run dev`, `npm run build`, `npx tsc --noEmit` | `src/hooks/useSearch.ts`, `src/hooks/useFreighterWallet.ts`, `src/components/wallet/WalletPanel.tsx` |
+| Everything in `src/` — pages, components, hooks, styling, copy, layout | `/search` (the 0.001 USDC paid route) and anything that calls it |
+| `npm run setup`, `npm run dev`, `npm run build`, `npm run typecheck` | `src/hooks/useSearch.ts`, `src/hooks/useFreighterWallet.ts`, `src/components/wallet/WalletPanel.tsx` |
 | `npm run test:search` — it signs no payment, it asserts the `402` | MCP tools — `web_search` pays via x402 |
 | `GET /health`, `GET /ai/chat`, docs, README, CONTRIBUTING, issue triage | `src/pages/DashboardPage.tsx` (reads live Horizon tx history) |
 
@@ -330,7 +330,7 @@ git checkout -b fix/freighter-rejection-loop
 
 - Keep changes focused — one concern per PR.
 - Follow the [coding standards](#coding-standards) below.
-- Run the typecheck frequently: `npx tsc --noEmit`.
+- Run the typecheck frequently: `npm run typecheck`.
 
 ### Commit messages
 
@@ -346,19 +346,18 @@ Use the [Conventional Commits](https://www.conventionalcommits.org/) format:
 
 **Types:** `feat`, `fix`, `docs`, `style`, `refactor`, `test`, `chore`
 
+The scope is optional, so both `fix: ...` and `fix(search): ...` are valid. A
+commit-msg hook checks this format when you commit. The subject may use normal
+punctuation or capitalization; focus on the type and a clear summary.
+
 **Examples:**
 
 ```
-fix(wallet): catch Freighter rejection and set session to error state
-
-Closes #1
+fix: keep search errors visible and retryable
 ```
 
 ```
-feat(search): add localStorage search history with 20-entry limit
-
-Stores { query, timestamp, txHash } entries.
-Closes #9
+feat(ui): prominent persistent network badge + mainnet page indicator (#93)
 ```
 
 ```
@@ -383,7 +382,7 @@ docs: add CONTRIBUTING.md
    - **Screenshots** — required for any UI change.
 
 4. Make sure:
-   - [ ] `npx tsc --noEmit` passes with no errors.
+   - [ ] `npm run typecheck` passes with no errors.
    - [ ] The app starts and the affected feature works manually.
    - [ ] No new `console.log` / debug statements left in.
    - [ ] No secrets or `.env` values committed.
@@ -514,12 +513,18 @@ For UI changes:
 - [ ] No horizontal scroll at any breakpoint.
 - [ ] Light and dark mode look acceptable (if theme toggle exists).
 
-### Running the TypeScript compiler
+### Running the typecheck
 
 ```bash
-# Check all TypeScript errors (does not emit files)
-npx tsc --noEmit
+# Check all TypeScript errors across the app, server, MCP server and
+# scripts (does not emit files). CI runs this on every PR.
+npm run typecheck
 ```
+
+This checks all three TypeScript projects: `tsconfig.json` (app),
+`tsconfig.server.json` (server, MCP server, scripts) and
+`tsconfig.node.json` (`vite.config.ts`). A type error in any of them
+fails CI.
 
 ### End-to-end test script
 

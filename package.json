@@ -6,16 +6,18 @@
   "type": "module",
   "scripts": {
     "setup": "bash scripts/setup.sh",
+    "prepare": "husky install",
     "dev": "vite",
     "test": "tsx --test mcp-server/index.test.ts",
     "test:watch": "vitest",
     "build": "tsc && vite build",
+    "typecheck": "tsc --noEmit && tsc -p tsconfig.server.json --noEmit && tsc -p tsconfig.node.json --noEmit",
     "analyze": "ANALYZE=1 tsc && ANALYZE=1 vite build",
     "preview": "vite preview",
     "server": "tsx server/index.ts",
     "mcp": "tsx mcp-server/index.ts",
     "dev:all": "concurrently \"npm run server\" \"npm run dev\"",
-    "test:mcp": "tsx --test mcp-server/index.test.ts",
+    "test:mcp": "node --import tsx --test mcp-server/index.test.ts",
     "test:search": "tsx scripts/test-search.ts",
     "test:suggestions": "tsx scripts/test-search.ts \"Stellar blockchain\" --count 3",
     "test:serper-schema": "tsx scripts/check-serper-schema.ts",
@@ -24,17 +26,15 @@
     "deploy": "npm run build && vercel --prod",
     "load-test": "node scripts/load-test.js",
     "test:url": "node --import tsx --test server/urlSummary.test.ts",
-    "typecheck": "tsc --noEmit",
     "test:a11y": "vitest run src/a11y.test.tsx",
     "test:e2e": "playwright test",
     "test:e2e:dev": "playwright test --project=dev",
     "test:e2e:preview": "playwright test --project=preview",
     "test:e2e:ui": "playwright test --ui",
     "mcp:http": "tsx mcp-server/index.ts --transport http",
+    "test:run": "vitest run",
     "lint": "eslint .",
-    "test:node": "tsx --test server/index.test.ts server/health.test.ts server/ratelimit.test.ts server/urlSummary.test.ts",
-    "test:vitest": "vitest run",
-    "test:parity:serverless": "tsx tests/parity.test.ts"
+    "test:node": "tsx --test server/index.test.ts server/health.test.ts server/ratelimit.node.test.ts server/urlSummary.test.ts"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.0",
@@ -58,12 +58,13 @@
     "lucide-react": "^0.344.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "react-is": "^19.3.0",
     "recharts": "^3.10.1",
     "sonner": "^2.0.8",
     "winston": "^3.19.0"
   },
   "devDependencies": {
+    "@commitlint/cli": "^19.8.1",
+    "@commitlint/config-conventional": "^19.8.1",
     "@playwright/test": "^1.63.0",
     "@testing-library/dom": "^10.4.2",
     "@testing-library/jest-dom": "^6.6.3",
@@ -76,15 +77,15 @@
     "@types/react": "^18.2.0",
     "@types/react-dom": "^18.2.0",
     "@types/supertest": "^6.0.3",
-    "@typescript-eslint/eslint-plugin": "^7.18.0",
-    "@typescript-eslint/parser": "^7.18.0",
+    "@typescript-eslint/eslint-plugin": "^8.71.0",
+    "@typescript-eslint/parser": "^8.71.0",
     "@vitejs/plugin-react": "^4.2.0",
     "@vitest/coverage-v8": "^2.1.9",
     "autoprefixer": "^10.4.17",
     "concurrently": "^8.2.2",
     "eslint": "^8.57.1",
-    "eslint-plugin-react-hooks": "^4.6.2",
-    "eslint-plugin-react-refresh": "^0.4.14",
+    "eslint-plugin-react": "^7.37.5",
+    "husky": "^8.0.3",
     "jsdom": "^26.0.0",
     "msw": "^2.15.0",
     "postcss": "^8.4.35",
@@ -99,7 +100,7 @@
   },
   "lint-staged": {
     "*.{ts,tsx}": [
-      "bash -c 'tsc --noEmit'",
+      "bash -c 'npm run typecheck'",
       "eslint --fix"
     ]
   }
