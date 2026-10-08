@@ -38,6 +38,7 @@ const CORS_ALLOWED_HEADERS = [
 const CORS_EXPOSED_HEADERS = [
   'PAYMENT-REQUIRED',
   'X-Payment-Response',
+  'X-Request-Id',
 ] as const
 
 const CORS_METHODS = ['GET', 'POST', 'OPTIONS'] as const
@@ -104,4 +105,29 @@ export function buildCorsOptions(): CorsOptions {
       callback(null, allowed.includes(origin))
     },
   }
+}
+
+/**
+ * Flat CORS response headers for the Vercel functions, which bypass the
+ * Express `cors` middleware and set headers directly.
+ */
+export function buildCorsHeaders(origin?: string): Record<string, string> {
+  const headers: Record<string, string> = {
+    'Access-Control-Allow-Methods': CORS_METHODS.join(', '),
+    'Access-Control-Allow-Headers': CORS_ALLOWED_HEADERS.join(', '),
+    'Access-Control-Expose-Headers': CORS_EXPOSED_HEADERS.join(', '),
+    'Access-Control-Max-Age': String(CORS_MAX_AGE),
+  }
+
+  if (!isProductionEnv()) {
+    headers['Access-Control-Allow-Origin'] = '*'
+    return headers
+  }
+
+  const allowed = parseAllowedOrigins(process.env.ALLOWED_ORIGINS)
+  if (origin && allowed.includes(origin)) {
+    headers['Access-Control-Allow-Origin'] = origin
+    headers['Vary'] = 'Origin'
+  }
+  return headers
 }
