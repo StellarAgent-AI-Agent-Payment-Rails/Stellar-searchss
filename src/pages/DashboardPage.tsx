@@ -18,14 +18,12 @@ interface Props {
   usdcBalance: string
   xlmBalance: string
   onRefresh: () => void
-  transactionError?: string | null
-  onRetryTransactions?: () => void
   hasMore?: boolean
   onLoadMore?: () => void
   loadingMore?: boolean
 }
 
-export function DashboardPage({ transactions, txLoading, publicKey, usdcBalance, xlmBalance, onRefresh, transactionError, onRetryTransactions, hasMore = false, onLoadMore = () => {}, loadingMore = false }: Props) {
+export function DashboardPage({ transactions, txLoading, publicKey, usdcBalance, xlmBalance, onRefresh, hasMore = false, onLoadMore = () => {}, loadingMore = false }: Props) {
   const [receipts, setReceipts] = useState<SearchReceipt[]>([])
   const [storeQueryText, setStoreQueryText] = useState(isSearchQueryStorageEnabled)
 
@@ -248,16 +246,6 @@ export function DashboardPage({ transactions, txLoading, publicKey, usdcBalance,
                 animate={{ rotate: 360 }}
                 transition={{ duration: 0.8, repeat: Infinity, ease: 'linear' }}
               />
-            </div>
-          ) : transactionError ? (
-            <div className="text-center py-10" role="alert">
-              <p className="font-display text-xs text-red-300 tracking-widest">COULD NOT LOAD TRANSACTIONS</p>
-              <p className="text-white/35 text-sm mt-2">{transactionError}</p>
-              {onRetryTransactions && (
-                <button onClick={onRetryTransactions} className="mt-4 px-4 py-2 rounded-lg border border-neon-cyan/25 text-neon-cyan/80 hover:text-neon-cyan font-display text-xs tracking-widest">
-                  RETRY
-                </button>
-              )}
             </div>
           ) : transactions.length === 0 ? (
             <div className="text-center py-10">

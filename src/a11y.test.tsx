@@ -1,4 +1,3 @@
-// @vitest-environment jsdom
 import { render } from '@testing-library/react'
 import { axe } from 'vitest-axe'
 import { describe, expect, it } from 'vitest'
@@ -33,10 +32,10 @@ const wallet: WalletState = {
   xlmBalance: '0',
   usdcBalance: '0',
   usdcTrustline: null,
+  fundingRequired: false,
   loading: false,
   refreshing: false,
   error: null,
-  fundingRequired: false,
   hint: null,
 }
 
@@ -52,15 +51,7 @@ const session: SearchSession = {
 describe('page accessibility smoke checks', () => {
   it('checks the search page', async () => {
     const { container } = render(
-      <SearchPage
-        wallet={wallet}
-        onConnectWallet={() => undefined}
-        session={session}
-        search={async () => undefined}
-        reset={() => undefined}
-        retry={async () => undefined}
-        onNavigateFundingGuide={() => undefined}
-      />,
+      <SearchPage wallet={wallet} onConnectWallet={() => undefined} session={session} search={async () => undefined} reset={() => undefined} retry={async () => undefined} onNavigateFundingGuide={() => undefined} />,
     )
     await expectNoUnlistedCriticalViolations('search', container)
   })

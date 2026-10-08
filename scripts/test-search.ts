@@ -190,6 +190,7 @@ function printResults(data: any, ms: number): void {
   })
 }
 
+
 // ─── Paid x402 client (server-side signer, no browser/Freighter) ────────────
 // Mirrors src/hooks/useSearch.ts but signs the Soroban auth entry with a
 // Stellar secret key (STELLAR_PAYER_SECRET) instead of Freighter. Dynamic

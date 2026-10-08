@@ -6,11 +6,7 @@
  * but the browser preflight `Access-Control-Request-Headers` list is matched
  * case-insensitively by spec-compliant browsers, so we keep only the canonical
  * lowercase form to avoid duplication.
- *
- * This module is runtime code: it must not import test-only dependencies.
- * Its unit tests live in `server/corsConfig.test.ts`.
  */
-
 
 import type { CorsOptions } from 'cors'
 
@@ -72,6 +68,7 @@ export function getCorsStartupMessage(): string {
   return `CORS: allowlist (${allowed.length} origin${allowed.length === 1 ? '' : 's'})`
 }
 
+// --- tests below ---
 
 export function buildCorsOptions(): CorsOptions {
   const base: CorsOptions = {

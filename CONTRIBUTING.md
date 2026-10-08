@@ -479,7 +479,15 @@ const signedAuthEntry = Buffer.from(raw as unknown as Uint8Array).toString('base
 
 ## Testing
 
-The frontend uses Vitest, React Testing Library, and jsdom for component tests. See the open [testing issues](https://github.com/StellarAgent-AI-Agent-Payment-Rails/Stellar-searchss/issues?q=is%3Aopen+label%3Atesting) for areas that still need coverage. If you add a hook, component, or server route, include focused tests where practical.
+Automated unit and integration tests run with [Vitest](https://vitest.dev). Frontend component tests use React Testing Library and jsdom.
+
+```bash
+npm test            # run once
+npm run test:watch  # re-run on change
+npm run test:a11y   # axe accessibility checks only
+```
+
+Server and API tests live next to the code they cover (`server/*.test.ts`, `api/*.test.ts`), frontend component tests live next to their component as `<Component>.test.tsx`, and cross-cutting integration tests live in `test/` and `tests/`. See the open [testing issues](https://github.com/StellarAgent-AI-Agent-Payment-Rails/Stellar-searchss/issues?q=is%3Aopen+label%3Atesting) for areas that still need coverage. If you are adding a new hook, component, or server route, please include focused tests.
 
 ### Component-test conventions
 
@@ -487,7 +495,6 @@ The frontend uses Vitest, React Testing Library, and jsdom for component tests. 
 - Render with React Testing Library and query by accessible role or label before using test IDs.
 - Test user-visible behavior (including guards and empty/loading states), not implementation details.
 - Mock network, wallet, and toast boundaries; do not make payment calls from unit tests.
-- Run `npm test` for a one-shot Vitest run or `npm run test:watch` while developing.
 
 ### Manual testing checklist
 

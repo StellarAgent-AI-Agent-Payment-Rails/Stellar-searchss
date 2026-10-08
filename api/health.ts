@@ -1,41 +1,63 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
-import { createHash } from 'node:crypto'
+import { readFileSync } from 'fs'
+import { resolve, dirname } from 'path'
+import { fileURLToPath } from 'url'
 import { handlerElapsedMs, startInvocation } from './invocationMetrics'
-import { EMPTY_HEALTH_STATS, handleHealth, sendResult } from '../server/handlers'
-import { buildCorsHeaders } from '../server/corsConfig'
 
-// GET /api/health — thin adapter over the shared health handler. The payload,
-// ETag and Cache-Control match the Express /health route exactly; a serverless
-// process has no live counters, so it reports a zeroed stats snapshot.
+import { loadRateLimitConfig } from '../server/rateLimitConfig.js'
+import { rateLimitGuard } from './rateLimit.js'
+
+const CACHE_SECONDS = 5
+
+const __dirname = dirname(fileURLToPath(import.meta.url))
+const { version: APP_VERSION } = JSON.parse(
+  readFileSync(resolve(__dirname, '../package.json'), 'utf-8'),
+)
+
+const rateLimitConfig = loadRateLimitConfig()
+const limited = rateLimitGuard('GET /api/health', rateLimitConfig.health, rateLimitConfig)
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
+  if (await limited(req, res)) return
   const invocation = startInvocation()
-  for (const [name, value] of Object.entries(
-    buildCorsHeaders(req.headers.origin as string | undefined),
-  )) {
-    res.setHeader(name, value)
+
+  const NETWORK = process.env.STELLAR_NETWORK || 'stellar:testnet'
+  const FACILITATOR_URL = process.env.FACILITATOR_URL || 'https://www.x402.org/facilitator'
+  const SERPER_API_KEY = process.env.SERPER_API_KEY
+  const GROQ_API_KEY = process.env.GROQ_API_KEY
+  const RECEIVING_ADDRESS = process.env.STELLAR_RECEIVING_ADDRESS
+
+  const body = {
+    status: 'ok',
+    version: APP_VERSION,
+    network: NETWORK,
+    pricePerQuery: '0.001 USDC',
+    protocol: 'x402',
+    facilitator: FACILITATOR_URL,
+    serperApiConfigured: !!SERPER_API_KEY,
+    groqApiConfigured: !!GROQ_API_KEY,
+    receivingAddressConfigured: !!RECEIVING_ADDRESS,
+    stats: await getStats(),
+    avgLatencyMs: null,
+    invocationType: invocation.invocationType,
+    coldStartLatencyMs: invocation.coldStartLatencyMs,
+    warmHandlerLatencyMs: invocation.invocationType === 'warm' ? handlerElapsedMs(invocation) : null,
+    timestamp: new Date().toISOString(),
   }
 
-  if (req.method === 'OPTIONS') return res.status(200).end()
-  if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' })
+  const etag = `"${Buffer.from(JSON.stringify(body)).toString('base64url')}"`
 
-  const ifNoneMatch = req.headers['if-none-match']
+  res.setHeader('Cache-Control', `public, max-age=${CACHE_SECONDS}`)
+  res.setHeader('ETag', etag)
 
-  const result = handleHealth({
-    ifNoneMatch: Array.isArray(ifNoneMatch) ? ifNoneMatch[0] : ifNoneMatch,
-    stats: EMPTY_HEALTH_STATS,
-  })
-
-  if (result.body && typeof result.body === 'object') {
-    const body = {
-      ...result.body,
-      invocationType: invocation.invocationType,
-      coldStartLatencyMs: invocation.coldStartLatencyMs,
-      warmHandlerLatencyMs:
-        invocation.invocationType === 'warm' ? handlerElapsedMs(invocation) : null,
-    }
-    result.body = body
-    result.headers.ETag = `W/\"${createHash('sha1').update(JSON.stringify(body)).digest('hex')}\"`
+  if (req.headers['if-none-match'] === etag) {
+    res.status(304).end()
+    return
   }
 
-  return sendResult(res, result)
+  res.json(body)
+}
+
+async function getStats(): Promise<{ searches: number; payments: number } | null> {
+  return null
 }

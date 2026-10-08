@@ -8,23 +8,23 @@ export interface ApiStat {
   uptime: string
 }
 
-// Shared contract for `GET /health` (see server/index.ts and server/health.test.ts).
+/**
+ * Response contract for `GET /health`, shared by the Express route
+ * (server/index.ts) and the serverless handler (api/health.ts).
+ */
 export interface HealthResponse {
-  status: 'ok'
+  status: string
   version: string
   network: string
   pricePerQuery: string
-  protocol: 'x402'
+  protocol: string
   facilitator: string
   totalQueries: number
-  totalUsdcSettled: string | number
-  /** Mean upstream Serper request latency, when the server exposes it. */
-  avgLatencyMs: number | null
-  /** Runtime initialization-to-first-handler-entry measurement for this instance. */
-  coldStartLatencyMs?: number | null
-  /** Handler execution duration on a warm instance. */
-  warmHandlerLatencyMs?: number | null
-  invocationType?: 'cold' | 'warm' | null
+  totalUsdcSettled: string
+  avgLatencyMs: number
+  coldStartLatencyMs: number | null
+  warmHandlerLatencyMs: number | null
+  invocationType: 'cold' | 'warm' | null
   cacheHitRate: string
   uptime: string
   serperApiConfigured: boolean
@@ -32,39 +32,89 @@ export interface HealthResponse {
   receivingAddressConfigured: boolean
 }
 
+/** Thrown when a /health payload does not satisfy {@link HealthResponse}. */
 export class HealthResponseValidationError extends Error {
-  constructor(message: string) {
-    super(message)
+  readonly issues: string[]
+
+  constructor(issues: string[]) {
+    super(`Invalid /health response: ${issues.join('; ')}`)
     this.name = 'HealthResponseValidationError'
+    this.issues = issues
   }
 }
 
-export function parseHealthResponse(data: any): HealthResponse {
-  if (!data || typeof data !== 'object') {
-    throw new HealthResponseValidationError('Invalid health response format')
-  }
-  const latency = (value: unknown): number | null =>
-    typeof value === 'number' && Number.isFinite(value) && value >= 0 ? value : null
+const HEALTH_STRING_FIELDS = [
+  'status',
+  'version',
+  'network',
+  'pricePerQuery',
+  'protocol',
+  'facilitator',
+  'totalUsdcSettled',
+  'cacheHitRate',
+  'uptime',
+] as const satisfies ReadonlyArray<keyof HealthResponse>
 
-  return {
-    status: data.status ?? 'ok',
-    version: typeof data.version === 'string' ? data.version : 'unknown',
-    network: typeof data.network === 'string' ? data.network : 'unknown',
-    pricePerQuery: typeof data.pricePerQuery === 'string' ? data.pricePerQuery : 'unknown',
-    protocol: data.protocol ?? 'x402',
-    facilitator: typeof data.facilitator === 'string' ? data.facilitator : '',
-    totalQueries: data.totalQueries ?? 0,
-    totalUsdcSettled: data.totalUsdcSettled ?? '0.000',
-    avgLatencyMs: latency(data.avgLatencyMs),
-    coldStartLatencyMs: latency(data.coldStartLatencyMs),
-    warmHandlerLatencyMs: latency(data.warmHandlerLatencyMs),
-    invocationType: data.invocationType === 'cold' || data.invocationType === 'warm'
-      ? data.invocationType
-      : null,
-    cacheHitRate: typeof data.cacheHitRate === 'string' ? data.cacheHitRate : '0.00',
-    uptime: data.uptime ?? '100%',
-    serperApiConfigured: Boolean(data.serperApiConfigured),
-    groqApiConfigured: Boolean(data.groqApiConfigured),
-    receivingAddressConfigured: Boolean(data.receivingAddressConfigured),
+const HEALTH_NUMBER_FIELDS = ['totalQueries', 'avgLatencyMs'] as const satisfies ReadonlyArray<
+  keyof HealthResponse
+>
+
+const HEALTH_BOOLEAN_FIELDS = [
+  'serperApiConfigured',
+  'groqApiConfigured',
+  'receivingAddressConfigured',
+] as const satisfies ReadonlyArray<keyof HealthResponse>
+
+const HEALTH_NULLABLE_LATENCY_FIELDS = [
+  'coldStartLatencyMs',
+  'warmHandlerLatencyMs',
+] as const satisfies ReadonlyArray<keyof HealthResponse>
+
+/**
+ * Validates an unknown payload as a {@link HealthResponse}. Returns the typed
+ * value on success, or throws {@link HealthResponseValidationError} listing
+ * every field that failed so a contract break is obvious rather than silently
+ * rendering as `undefined` in the UI.
+ */
+export function parseHealthResponse(input: unknown): HealthResponse {
+  if (typeof input !== 'object' || input === null) {
+    throw new HealthResponseValidationError(['response is not an object'])
   }
+
+  const record = input as Record<string, unknown>
+  const issues: string[] = []
+
+  for (const field of HEALTH_STRING_FIELDS) {
+    if (typeof record[field] !== 'string') issues.push(`${field} must be a string`)
+  }
+  for (const field of HEALTH_NUMBER_FIELDS) {
+    if (typeof record[field] !== 'number' || !Number.isFinite(record[field])) {
+      issues.push(`${field} must be a finite number`)
+    }
+  }
+  for (const field of HEALTH_BOOLEAN_FIELDS) {
+    if (typeof record[field] !== 'boolean') issues.push(`${field} must be a boolean`)
+  }
+  for (const field of HEALTH_NULLABLE_LATENCY_FIELDS) {
+    const value = record[field]
+    if (value !== null && (typeof value !== 'number' || !Number.isFinite(value) || value < 0)) {
+      issues.push(`${field} must be a non-negative finite number or null`)
+    }
+  }
+  if (
+    record.invocationType !== null &&
+    record.invocationType !== 'cold' &&
+    record.invocationType !== 'warm'
+  ) {
+    issues.push(`invocationType must be 'cold', 'warm', or null`)
+  }
+
+  if (issues.length > 0) throw new HealthResponseValidationError(issues)
+
+  return record as unknown as HealthResponse
 }
+
+// Injected by Vite at build time from package.json → version.
+// See vite.config.ts `define: { __APP_VERSION__ }`.
+declare const __APP_VERSION__: string
+
