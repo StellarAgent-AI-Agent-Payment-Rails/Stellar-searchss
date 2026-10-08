@@ -108,7 +108,7 @@ describe('rateLimitGuard', () => {
     expect(state.statusCode).toBe(429)
     expect(state.headers['retry-after']).toBeDefined()
     expect(state.body).toMatchObject({
-      error: 'Too many requests',
+      error: 'Too many requests, please try again later.',
       code: 'RATE_LIMITED',
       scope: 'GET /api/search',
       limit: 2,

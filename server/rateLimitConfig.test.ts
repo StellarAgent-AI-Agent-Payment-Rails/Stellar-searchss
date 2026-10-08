@@ -156,7 +156,7 @@ describe('loadRateLimitConfig', () => {
 describe('rateLimitPayload', () => {
   it('produces a stable JSON 429 body', () => {
     expect(rateLimitPayload('GET /health', 30, 60_000, 42)).toEqual({
-      error: 'Too many requests',
+      error: 'Too many requests, please try again later.',
       code: 'RATE_LIMITED',
       message: 'Rate limit exceeded for GET /health. Retry in 42s.',
       scope: 'GET /health',

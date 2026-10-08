@@ -40,7 +40,7 @@ describe('server rate limiting (integration)', () => {
     expect(blocked.status).toBe(429)
     expect(blocked.type).toBe('application/json')
     expect(blocked.body).toMatchObject({
-      error: 'Too many requests',
+      error: 'Too many requests, please try again later.',
       code: 'RATE_LIMITED',
       scope: 'GET /health',
       limit: max,

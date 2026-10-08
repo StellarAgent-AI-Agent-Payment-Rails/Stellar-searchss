@@ -167,7 +167,7 @@ export function rateLimitPayload(
   retryAfterSeconds: number,
 ): Record<string, unknown> {
   return {
-    error: 'Too many requests',
+    error: 'Too many requests, please try again later.',
     code: 'RATE_LIMITED',
     message: `Rate limit exceeded for ${scope}. Retry in ${retryAfterSeconds}s.`,
     scope,

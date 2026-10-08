@@ -74,7 +74,7 @@ describe('installRateLimiting', () => {
     expect(res.status).toBe(429)
     expect(res.type).toBe('application/json')
     expect(res.body).toMatchObject({
-      error: 'Too many requests',
+      error: 'Too many requests, please try again later.',
       code: 'RATE_LIMITED',
       scope: 'GET /health',
       limit: 2,
