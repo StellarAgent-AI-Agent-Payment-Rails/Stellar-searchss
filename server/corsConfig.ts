@@ -11,7 +11,6 @@
  * Its unit tests live in `server/corsConfig.test.ts`.
  */
 
-
 import type { CorsOptions } from 'cors'
 
 /**
@@ -37,6 +36,7 @@ const CORS_ALLOWED_HEADERS = [
  */
 const CORS_EXPOSED_HEADERS = [
   'PAYMENT-REQUIRED',
+  'PAYMENT-RESPONSE',
   'X-Payment-Response',
 ] as const
 
