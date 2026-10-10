@@ -1,4 +1,5 @@
+export { useWallet } from './useWallet'
 export { useFreighterWallet } from './useFreighterWallet'
-export { useSearch }          from './useSearch'
-export type { WalletState, StellarTransaction } from './useFreighterWallet'
-export type { SearchResult, SearchSession }     from './useSearch'
+export { useSearch } from './useSearch'
+export type { WalletState, StellarTransaction } from './useWallet'
+export type { SearchResult, SearchSession } from './useSearch'
