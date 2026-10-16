@@ -5,7 +5,7 @@ process.env.NODE_ENV = 'production'
 process.env.GROQ_API_KEY ??= 'test-key'
 process.env.STELLAR_RECEIVING_ADDRESS ??= 'GAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWHF'
 
-const { validateQuery } = await import('./index')
+const { validateQuery } = await import('./index.js')
 
 describe('validateQuery', () => {
   it('rejects empty, whitespace-only, and non-string queries', () => {

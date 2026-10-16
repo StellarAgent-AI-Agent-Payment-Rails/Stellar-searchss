@@ -1,7 +1,7 @@
 import { m, AnimatePresence } from 'framer-motion'
-import { ExternalLink } from 'lucide-react'
 import type { SearchSession } from '../../hooks/useSearch'
 import { explorerTxUrl, truncateHash } from '../../lib/stellar'
+import { ExternalLink } from 'lucide-react'
 
 // 6 steps of the x402 flow per the official x402 quickstart:
 //   request → 402 → sign → retry → facilitate → result

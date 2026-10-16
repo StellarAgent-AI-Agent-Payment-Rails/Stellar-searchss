@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import type { Request, Response } from 'express'
-import { createRateLimiter } from './ratelimit'
+import { createRateLimiter } from './rateLimit.js'
 
 function makeReq(ip: string): Request {
   return { ip, socket: { remoteAddress: ip } } as unknown as Request

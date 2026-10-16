@@ -1,11 +1,12 @@
-import { RECEIPTS_STORAGE_KEY as WALLET_RECEIPTS_STORAGE_KEY } from '../hooks/useFreighterWallet'
-import { RECEIPTS_STORAGE_KEY as SEARCH_RECEIPTS_STORAGE_KEY } from './searchPrivacy'
+import { RECEIPTS_STORAGE_KEY as PRIVACY_RECEIPTS_KEY } from './searchPrivacy'
+
+const LEGACY_RECEIPTS_STORAGE_KEY = 'stellar-receipts'
 
 export function clearReceipts(): void {
   try {
-    window.localStorage.removeItem(SEARCH_RECEIPTS_STORAGE_KEY)
-    window.localStorage.removeItem(WALLET_RECEIPTS_STORAGE_KEY)
+    localStorage.removeItem(PRIVACY_RECEIPTS_KEY)
+    localStorage.removeItem(LEGACY_RECEIPTS_STORAGE_KEY)
   } catch {
-    // localStorage unavailable
+    // Storage unavailable (private mode, quota); nothing to clear.
   }
 }

@@ -63,7 +63,6 @@ export interface Receipt {
 export const RECEIPTS_STORAGE_KEY = 'stellar-receipts'
 
 export const DEFAULT_TX_PAGE_SIZE = 15
-
 const horizon = new Horizon.Server(HORIZON_URL)
 
 function loadReceipts(): Receipt[] {
@@ -92,6 +91,7 @@ function clearReceipts() {
     // localStorage unavailable
   }
 }
+
 
 const MAX_RETRIES = 4
 const BASE_DELAY_MS = 1000

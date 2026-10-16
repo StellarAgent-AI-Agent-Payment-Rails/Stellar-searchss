@@ -1,4 +1,16 @@
-import { afterEach, describe, expect, it, vi } from 'vitest'
+/**
+ * Tests for corsConfig.ts.
+ *
+ * These were previously written inline in the production module, which meant
+ * importing `corsConfig.js` from the running server pulled in vitest and
+ * crashed on start. They now live here so `server/corsConfig.ts` stays a pure
+ * runtime module.
+ */
+
+import { describe, expect, it, vi, afterEach } from 'vitest'
+
+import type { CorsOptions } from 'cors'
+
 import {
   buildCorsOptions,
   getCorsStartupMessage,
@@ -59,6 +71,18 @@ describe('isProductionEnv', () => {
   })
 })
 
+/**
+ * `origin` is typed by the `cors` package as a union that includes the
+ * `(origin, callback)` function form, but TypeScript cannot narrow it. This
+ * helper asserts the callable form and gives the rule a concrete signature
+ * instead of the banned bare `Function` type.
+ */
+type CorsOriginCallback = (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => void
+
+function originCallback(options: CorsOptions): CorsOriginCallback {
+  return options.origin as CorsOriginCallback
+}
+
 describe('buildCorsOptions', () => {
   const originalNodeEnv = process.env.NODE_ENV
   const originalAllowed = process.env.ALLOWED_ORIGINS
@@ -103,7 +127,7 @@ describe('buildCorsOptions', () => {
     process.env.ALLOWED_ORIGINS = 'https://allowed.com,https://other.com'
     const options = buildCorsOptions()
     const callback = vi.fn()
-    ;(options.origin as Function)('https://allowed.com', callback)
+    originCallback(options)('https://allowed.com', callback)
     expect(callback).toHaveBeenCalledWith(null, true)
   })
 
@@ -112,7 +136,7 @@ describe('buildCorsOptions', () => {
     process.env.ALLOWED_ORIGINS = 'https://allowed.com'
     const options = buildCorsOptions()
     const callback = vi.fn()
-    ;(options.origin as Function)('https://evil.com', callback)
+    originCallback(options)('https://evil.com', callback)
     expect(callback).toHaveBeenCalledWith(null, false)
   })
 
@@ -121,7 +145,7 @@ describe('buildCorsOptions', () => {
     process.env.ALLOWED_ORIGINS = 'https://allowed.com'
     const options = buildCorsOptions()
     const callback = vi.fn()
-    ;(options.origin as Function)(undefined, callback)
+    originCallback(options)(undefined, callback)
     expect(callback).toHaveBeenCalledWith(null, true)
   })
 
@@ -131,7 +155,7 @@ describe('buildCorsOptions', () => {
     vi.spyOn(console, 'warn').mockImplementation(() => {})
     const options = buildCorsOptions()
     const callback = vi.fn()
-    ;(options.origin as Function)('https://anything.com', callback)
+    originCallback(options)('https://anything.com', callback)
     expect(callback).toHaveBeenCalledWith(null, false)
   })
 })

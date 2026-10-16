@@ -224,7 +224,7 @@ export function SearchResults({ results, query, isLoading, isImageSearch }: Prop
         const reader  = res.body.getReader()
         const decoder = new TextDecoder('utf-8')
         let   buffer  = ''
-        while (true) {
+        for (;;) {
           const { value, done } = await reader.read()
           if (done) break
           buffer += decoder.decode(value, { stream: true })

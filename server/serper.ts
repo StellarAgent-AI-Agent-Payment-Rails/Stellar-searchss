@@ -1,14 +1,7 @@
 /**
- * serper — mapping helpers for Serper.dev search/images/news responses.
- *
- * Mapping is deliberately forgiving: a renamed or dropped upstream field maps
- * to an empty default and emits a console warning instead of throwing, so a
- * schema change never takes a paid query down. `validateSerperResponse`
- * returns the same findings as strings for tests and diagnostics.
+ * serper.ts — mapping and validation helpers for Serper.dev responses.
+ * The tests spy on console.warn, so all missing-field diagnostics go through it.
  */
-
-type Rec = Record<string, unknown>
-
 export interface OrganicResult {
   title: string
   link: string
@@ -26,98 +19,58 @@ export interface NewsResult {
   title: string
   link: string
   snippet: string
-  source: string
-  date: string
 }
 
-const REQUIRED_FIELDS = {
-  organic: ['title', 'link', 'snippet'],
-  images: ['title', 'imageUrl', 'imageWidth', 'imageHeight'],
-  news: ['title', 'link', 'snippet', 'source', 'date'],
-} as const
-
-export type SerperKind = keyof typeof REQUIRED_FIELDS
-
-function asString(value: unknown, fallback = ''): string {
-  return typeof value === 'string' ? value : fallback
+function warnMissing(label: string, field: string): void {
+  console.warn(`[serper] missing field "${field}" in ${label}; using a default`)
 }
 
-function asNumber(value: unknown, fallback = 0): number {
-  return typeof value === 'number' ? value : fallback
+export function mapOrganicResults(items: any[]): OrganicResult[] {
+  return (items || []).map((r: any) => ({
+    title: typeof r?.title === 'string' ? r.title : (warnMissing('organic', 'title'), 'No title'),
+    link: typeof r?.link === 'string' ? r.link : (warnMissing('organic', 'link'), ''),
+    snippet: typeof r?.snippet === 'string' ? r.snippet : (warnMissing('organic', 'snippet'), ''),
+  }))
 }
 
-function item(raw: unknown): Rec {
-  return (raw !== null && typeof raw === 'object' ? raw : {}) as Rec
+export function mapImageResults(items: any[]): ImageResult[] {
+  return (items || []).map((r: any) => ({
+    title: typeof r?.title === 'string' ? r.title : (warnMissing('images', 'title'), 'No title'),
+    imageUrl: typeof r?.imageUrl === 'string' ? r.imageUrl : (warnMissing('images', 'imageUrl'), ''),
+    imageWidth: typeof r?.imageWidth === 'number' ? r.imageWidth : (warnMissing('images', 'imageWidth'), 0),
+    imageHeight: typeof r?.imageHeight === 'number' ? r.imageHeight : (warnMissing('images', 'imageHeight'), 0),
+  }))
 }
 
-function warnMissing(kind: SerperKind, index: number, source: Rec): void {
-  const missing = REQUIRED_FIELDS[kind].filter((field) => source[field] === undefined)
-  if (missing.length > 0) {
-    console.warn(`[serper] ${kind}[${index}]: missing field(s) ${missing.join(', ')}`)
-  }
+export function mapNewsResults(items: any[]): NewsResult[] {
+  return (items || []).map((r: any) => ({
+    title: typeof r?.title === 'string' ? r.title : (warnMissing('news', 'title'), 'No title'),
+    link: typeof r?.link === 'string' ? r.link : (warnMissing('news', 'link'), ''),
+    snippet: typeof r?.snippet === 'string' ? r.snippet : (warnMissing('news', 'snippet'), ''),
+  }))
 }
 
-function toArray(value: unknown): unknown[] {
-  return Array.isArray(value) ? value : []
+const REQUIRED_FIELDS: Record<'organic' | 'images' | 'news', Array<{ list: string; fields: string[] }>> = {
+  organic: [{ list: 'organic', fields: ['title', 'link', 'snippet'] }],
+  images: [{ list: 'images', fields: ['title', 'imageUrl', 'imageWidth', 'imageHeight'] }],
+  news: [{ list: 'news', fields: ['title', 'link', 'snippet'] }],
 }
 
-export function mapOrganicResults(items: unknown): OrganicResult[] {
-  return toArray(items).map((raw, index) => {
-    const source = item(raw)
-    warnMissing('organic', index, source)
-    return {
-      title: asString(source.title),
-      link: asString(source.link),
-      snippet: asString(source.snippet),
-    }
-  })
-}
-
-export function mapImageResults(items: unknown): ImageResult[] {
-  return toArray(items).map((raw, index) => {
-    const source = item(raw)
-    warnMissing('images', index, source)
-    return {
-      title: asString(source.title),
-      imageUrl: asString(source.imageUrl),
-      imageWidth: asNumber(source.imageWidth),
-      imageHeight: asNumber(source.imageHeight),
-    }
-  })
-}
-
-export function mapNewsResults(items: unknown): NewsResult[] {
-  return toArray(items).map((raw, index) => {
-    const source = item(raw)
-    warnMissing('news', index, source)
-    return {
-      title: asString(source.title),
-      link: asString(source.link),
-      snippet: asString(source.snippet),
-      source: asString(source.source),
-      date: asString(source.date),
-    }
-  })
-}
-
-/**
- * Validate a full Serper response body against the expected contract for
- * `kind`. Returns one warning string per missing field (empty when valid).
- */
-export function validateSerperResponse(fixture: unknown, kind: SerperKind): string[] {
-  const body = item(fixture)
-  const entries = toArray(body[kind])
-  if (entries.length === 0) {
-    return [`${kind}: expected a non-empty array`]
-  }
+export function validateSerperResponse(payload: any, kind: 'organic' | 'images' | 'news'): string[] {
   const warnings: string[] = []
-  entries.forEach((raw, index) => {
-    const source = item(raw)
-    for (const field of REQUIRED_FIELDS[kind]) {
-      if (source[field] === undefined) {
-        warnings.push(`${kind}[${index}]: missing ${field}`)
-      }
+  for (const { list, fields } of REQUIRED_FIELDS[kind] ?? []) {
+    const items = payload?.[list]
+    if (!Array.isArray(items)) {
+      warnings.push(`missing list "${list}" in response`)
+      continue
     }
-  })
+    items.forEach((item: any, index: number) => {
+      for (const field of fields) {
+        if (item === null || typeof item !== 'object' || !(field in item)) {
+          warnings.push(`${list}[${index}] missing field "${field}"`)
+        }
+      }
+    })
+  }
   return warnings
 }

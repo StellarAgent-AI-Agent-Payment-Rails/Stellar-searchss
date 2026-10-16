@@ -1,35 +1,23 @@
 /**
- * serperSchema — shape-drift warnings for Serper.dev responses.
- *
- * Serper occasionally renames or drops fields. The response is still usable
- * (mapping helpers fall back to empty values), but every missing field is
- * logged so drift is visible in server logs before users report it.
+ * serperSchema.ts — soft validation of Serper.dev response payloads.
+ * Logs warnings when expected fields are missing; never throws, so a
+ * partial upstream schema change degrades gracefully instead of 500ing.
  */
-
-function warnFields(label: string, data: unknown, fields: string[]): void {
-  if (data === null || typeof data !== 'object') {
-    console.warn(`[serper] ${label}: expected an object, got ${data === undefined ? 'undefined' : typeof data}`)
+export function warnOnMissingFields(label: string, payload: unknown, fields: string[]): void {
+  if (payload === null || payload === undefined) {
+    console.warn(`[serper-schema] ${label}: payload is ${payload === null ? 'null' : 'undefined'}; expected fields: ${fields.join(', ')}`)
     return
   }
-  const record = data as Record<string, unknown>
-  const missing = fields.filter((field) => record[field] === undefined)
-  if (missing.length > 0) {
-    console.warn(`[serper] ${label}: missing field(s) ${missing.join(', ')}`)
-  }
-}
-
-/**
- * Warn when `fields` are absent from `data`. If `data` is an array, each
- * element is checked and warnings are prefixed with its index.
- */
-export function warnOnMissingFields(label: string, data: unknown, fields: string[]): void {
-  if (Array.isArray(data)) {
-    if (data.length === 0) {
-      console.warn(`[serper] ${label}: array is empty`)
+  const items = Array.isArray(payload) ? payload : [payload]
+  items.forEach((item, index) => {
+    if (typeof item !== 'object' || item === null) {
+      console.warn(`[serper-schema] ${label}[${index}]: expected an object, got ${typeof item}`)
       return
     }
-    data.forEach((item, index) => warnFields(`${label}[${index}]`, item, fields))
-    return
-  }
-  warnFields(label, data, fields)
+    for (const field of fields) {
+      if (!(field in (item as Record<string, unknown>))) {
+        console.warn(`[serper-schema] ${label}[${index}]: missing field "${field}"`)
+      }
+    }
+  })
 }

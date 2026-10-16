@@ -105,7 +105,7 @@ describe('mapping functions against fixtures', () => {
 
 describe('field rename detection', () => {
   it('fails when organic.snippet is renamed', () => {
-    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const warnSpy = vi.spyOn(console, 'warn');
     const renamed = JSON.parse(JSON.stringify(organicFixture));
     for (const r of renamed.organic) {
       r.description = r.snippet;
@@ -114,11 +114,10 @@ describe('field rename detection', () => {
     const mapped = mapOrganicResults(renamed.organic);
     expect(mapped[0].snippet).toBe('');
     expect(warnSpy).toHaveBeenCalled();
-    warnSpy.mockRestore();
   });
 
   it('fails when images.imageWidth is renamed', () => {
-    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const warnSpy = vi.spyOn(console, 'warn');
     const renamed = JSON.parse(JSON.stringify(imagesFixture));
     for (const r of renamed.images) {
       r.width = r.imageWidth;
@@ -127,11 +126,10 @@ describe('field rename detection', () => {
     const mapped = mapImageResults(renamed.images);
     expect(mapped[0].imageWidth).toBe(0);
     expect(warnSpy).toHaveBeenCalled();
-    warnSpy.mockRestore();
   });
 
   it('fails when news.snippet is renamed', () => {
-    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const warnSpy = vi.spyOn(console, 'warn');
     const renamed = JSON.parse(JSON.stringify(newsFixture));
     for (const r of renamed.news) {
       r.description = r.snippet;
@@ -140,7 +138,6 @@ describe('field rename detection', () => {
     const mapped = mapNewsResults(renamed.news);
     expect(mapped[0].snippet).toBe('');
     expect(warnSpy).toHaveBeenCalled();
-    warnSpy.mockRestore();
   });
 });
 

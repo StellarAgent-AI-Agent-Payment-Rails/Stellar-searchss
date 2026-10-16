@@ -1,6 +1,14 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
 
-export default function handler(req: VercelRequest, res: VercelResponse) {
+import { loadRateLimitConfig } from '../server/rateLimitConfig.js'
+import { rateLimitGuard } from './rateLimit.js'
+
+const config = loadRateLimitConfig()
+const limited = rateLimitGuard('GET /api', config.global, config)
+
+export default async function handler(req: VercelRequest, res: VercelResponse) {
+  if (await limited(req, res)) return
+
   res.json({
     name: 'StellarSearch',
     version: '1.0.0',

@@ -1,5 +1,5 @@
 // Simple test to verify Serper.dev API integration and validate the response schema.
-const fetch = require('node-fetch');
+import fetch from 'node-fetch';
 
 // Expected Serper response fields. If Serper renames a field, the contract test below fails.
 const SERPER_SCHEMA = {

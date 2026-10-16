@@ -149,8 +149,8 @@ async function runSseProtocol(base: string): Promise<void> {
     const reader = res.body.getReader()
     const decoder = new TextDecoder('utf-8')
     let buffer = ''
-    while (true) {
-      const { value, done } = await reader.read()
+for (;;) {
+    const { value, done } = await reader.read()
       if (done) break
       buffer += decoder.decode(value, { stream: true })
       let blank: number
@@ -294,5 +294,3 @@ main().catch(err => {
   console.error('\n✗ Unhandled error:', err.message)
   process.exit(1)
 })
-
-export {}

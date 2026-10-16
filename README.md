@@ -152,12 +152,8 @@ Default mode is **free** — it asserts request validation, `/health`, and that
 non-zero if any check fails:
 
 ```bash
-# The server answers even with no keys configured
-curl http://localhost:3001/health
-# → {"status":"ok","network":"stellar:testnet",...}
-
-# End-to-end check of the x402 gate (server must be running)
-npm run test:search "Stellar blockchain"
+npm test                            # unit + integration tests
+npm run test:search "Stellar blockchain"   # live end-to-end check
 ```
 
 Full paid flow (**spends testnet USDC**, ~0.001 USDC per search, up to ~0.003
