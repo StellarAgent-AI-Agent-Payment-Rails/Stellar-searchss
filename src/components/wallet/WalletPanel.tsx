@@ -157,7 +157,15 @@ export function WalletPanel({
               <div className="grid grid-cols-2 gap-2">
                 <div className="py-2 px-3 rounded-lg bg-white/5">
                   <p className="font-display text-white/30" style={{ fontSize: '9px' }}>USDC BALANCE</p>
-                  <p className="font-display text-lg text-neon-amber mt-0.5">{wallet.usdcBalance}</p>
+                  <motion.p
+                    key={wallet.usdcBalance}
+                    initial={{ scale: 1.08, color: '#00f5ff' }}
+                    animate={{ scale: 1, color: '#ffb800' }}
+                    transition={{ duration: 0.4 }}
+                    className="font-display text-lg text-neon-amber mt-0.5"
+                  >
+                    {wallet.usdcBalance}
+                  </motion.p>
                   <p className="font-display text-white/25 mt-0.5" style={{ fontSize: '9px' }}>
                     ~{Math.floor(parseFloat(wallet.usdcBalance) / parseFloat(AMOUNT_USDC)).toLocaleString()} queries
                   </p>

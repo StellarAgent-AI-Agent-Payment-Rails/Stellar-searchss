@@ -68,7 +68,23 @@ export interface SearchSession {
   isLoadingSuggestions?: boolean
 }
 
-export function useSearch(walletAddress: string | null = null) {
+export interface SearchPaymentReceipt {
+  txHash: string
+  paidAmount: string | null
+  network: string
+  query: string
+}
+
+export type OnPaymentSuccessCallback = (receipt: SearchPaymentReceipt) => void | Promise<void>
+
+export interface UseSearchOptions {
+  onPaymentSuccess?: OnPaymentSuccessCallback
+}
+
+export function useSearch(
+  walletAddress: string | null = null,
+  optionsOrOnSuccess?: OnPaymentSuccessCallback | UseSearchOptions
+) {
   const [session, setSession] = useState<SearchSession>({
     query: '', results: [], txHash: null, paidAmount: null, status: 'idle', suggestions: [], isLoadingSuggestions: false,
   })
@@ -235,7 +251,7 @@ export function useSearch(walletAddress: string | null = null) {
         )
       }
 
-      // Persist receipt
+      // Persist receipt and notify payment success
       if (data.txHash) {
         try {
           const receiptsRaw = localStorage.getItem(RECEIPTS_STORAGE_KEY)
@@ -256,6 +272,23 @@ export function useSearch(walletAddress: string | null = null) {
         } catch (e) {
           console.warn('Failed to persist receipt:', e)
         }
+
+        const callback = typeof optionsOrOnSuccess === 'function'
+          ? optionsOrOnSuccess
+          : optionsOrOnSuccess?.onPaymentSuccess
+
+        if (callback) {
+          try {
+            await callback({
+              txHash: data.txHash,
+              paidAmount: data.paidAmount ?? null,
+              network: data.network || 'stellar:testnet',
+              query: query.trim(),
+            })
+          } catch (callbackErr) {
+            console.warn('Failed to execute onPaymentSuccess callback:', callbackErr)
+          }
+        }
       }
 
     } catch (err: any) {
@@ -271,7 +304,7 @@ export function useSearch(walletAddress: string | null = null) {
         error:  msg,
       }))
     }
-  }, [walletAddress])
+  }, [walletAddress, optionsOrOnSuccess])
 
   const reset = useCallback(() => {
     setSession({ query: '', results: [], txHash: null, paidAmount: null, status: 'idle', suggestions: [] })

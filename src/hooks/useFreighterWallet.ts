@@ -4,7 +4,7 @@
  * Fetches live balances from Stellar Horizon
  */
 
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback, useEffect, useRef } from 'react'
 import {
   isConnected,
   requestAccess,
@@ -14,6 +14,14 @@ import {
 import { Horizon } from '@stellar/stellar-sdk'
 import { toast } from 'sonner'
 import { HORIZON_URL, USDC_ISSUER } from '../lib/stellar'
+
+export interface RefreshOptions {
+  targetTxHash?: string
+  txHash?: string
+  expectedPreviousBalance?: string
+  maxAttempts?: number
+  delayMs?: number
+}
 
 export interface WalletState {
   publicKey: string | null
@@ -228,6 +236,7 @@ const [receipts, setReceipts] = useState<Receipt[]>(loadReceipts)
         error: null,
         fundingRequired: false,
       }))
+      return { xlm, usdc }
     } catch (err: any) {
 console.error('Failed to load account from Horizon:', err)
       if (isHorizon404(err)) {
@@ -252,6 +261,7 @@ console.error('Failed to load account from Horizon:', err)
         error: err.message || 'Failed to load account',
         fundingRequired: false,
       }))
+      return null
     }
   }, [])
 
@@ -388,7 +398,8 @@ hint: err.message || 'Connection failed. Please check Freighter and try again.',
     }
   }, [fetchWalletData])
 
-  const disconnect = useCallback((clearStoredReceipts = false) => {
+  const disconnect = useCallback(() => {
+    pollSessionRef.current++
     setWallet({
       publicKey: null,
       connected: false,
