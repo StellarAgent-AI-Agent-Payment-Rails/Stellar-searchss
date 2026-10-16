@@ -139,10 +139,11 @@ describe('POST /ai/chat SSE and fallback', () => {
 
     assert.equal(res.status, 200)
     const text = await res.text()
-    assert.equal(
+    assert.match(
       text,
-      'event: error\ndata: {"error":"Groq AI error: Groq service unavailable"}\n\n',
+      /^event: error\ndata: \{"error":"The AI assistant is temporarily unavailable\. Please try again shortly\.","requestId":"[0-9a-f-]{36}"\}\n\n$/,
     )
+    assert.ok(!text.includes('Groq'))
   })
 
   it('aborts the upstream Groq stream when client disconnects mid-stream', async () => {

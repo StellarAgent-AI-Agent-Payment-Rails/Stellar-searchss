@@ -31,6 +31,8 @@ import {
   McpError,
 } from '@modelcontextprotocol/sdk/types.js'
 import type { ListToolsResult } from '@modelcontextprotocol/sdk/types.js'
+import { createEd25519Signer, ExactStellarScheme } from '@x402/stellar'
+import { x402Client, wrapFetchWithPayment, type Network } from '@x402/fetch'
 import Groq from 'groq-sdk'
 import dotenv from 'dotenv'
 import { readFileSync } from 'fs'
@@ -377,8 +379,8 @@ export const server = new Server(
   { capabilities: { tools: {}, prompts: {}, resources: {} } },
 )
 
-export const listToolsHandler = async (): Promise<ListToolsResult> => ({
-  tools: [
+import type { ListToolsResult as _LTR } from '@modelcontextprotocol/sdk/types.js'
+export const tools: _LTR['tools'] = [
     {
       name: 'web_search',
       description: `Search the web via StellarSearch (Serper.dev results). The upstream endpoint is priced at ${AMOUNT_USDC} USDC per query via x402, but this MCP server does not configure a payment signer, so it cannot settle a payment itself. The call returns results only if StellarSearch settles the request, and a payment is reported only when the response includes a confirmed settlement transaction.
@@ -498,8 +500,9 @@ Use this tool when an agent needs to audit or report its own spending.`,
     },
 ]
 
-export const listToolsHandler = async () => ({ tools })
-server.setRequestHandler(ListToolsRequestSchema, listToolsHandler)
+export const listToolsHandler = async (): Promise<ListToolsResult> => ({
+  tools,
+})
 
 server.setRequestHandler(ListToolsRequestSchema, listToolsHandler)
 
@@ -760,17 +763,31 @@ export const callToolHandler = async (
     const { text, instruction = 'summarise' } = (args || {}) as { text: string; instruction?: string }
 
     try {
-      const completion = await groq.chat.completions.create({
-        model: 'llama-3.3-70b-versatile',
-        messages: [
-          { role: 'system', content: 'You are a concise research assistant. Be brief and accurate.' },
-          { role: 'user', content: `Please ${instruction} the following:\n\n${text}` },
-        ],
-        max_tokens: 512,
-        temperature: 0.5,
+      // Raw fetch keeps this tool testable (the Groq SDK binds its transport
+      // at import time, so it cannot be intercepted by tests).
+      const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${GROQ_API_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'llama-3.3-70b-versatile',
+          messages: [
+            { role: 'system', content: 'You are a concise research assistant. Be brief and accurate.' },
+            { role: 'user', content: `Please ${instruction} the following:\n\n${text}` },
+          ],
+          max_tokens: 512,
+          temperature: 0.5,
+        }),
       })
+      const data = (await res.json().catch(() => ({}))) as {
+        choices?: Array<{ message?: { content?: string } }>
+        error?: { message?: string }
+      }
+      if (!res.ok) throw new Error(data.error?.message || `Groq API returned ${res.status}`)
 
-      const content = completion.choices[0]?.message?.content || 'No response.'
+      const content = data.choices?.[0]?.message?.content || 'No response.'
       return { content: [{ type: 'text' as const, text: content }] }
     } catch (err: any) {
       return reportToolError('AI summary', err)
@@ -954,8 +971,6 @@ export const callToolHandler = async (
 
   return { content: [{ type: 'text' as const, text: `Unknown tool: ${name}` }], isError: true }
 }
-server.setRequestHandler(CallToolRequestSchema, callToolHandler)
-
 server.setRequestHandler(CallToolRequestSchema, callToolHandler)
 
 // ─── Resources ────────────────────────────────────────────────────────────

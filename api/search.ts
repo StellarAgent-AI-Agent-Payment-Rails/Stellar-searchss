@@ -31,6 +31,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     paymentSignature: header('payment-signature') || header('x-payment') || null,
     txHash: header('x-payment-response') || null,
     resourceUrl: `${header('x-forwarded-proto') || 'http'}://${header('host') || ''}${req.url || ''}`,
+    requestIdHeader: header('x-request-id') ?? null,
   })
 
   if (result.status === 200 && result.body && typeof result.body === 'object') {

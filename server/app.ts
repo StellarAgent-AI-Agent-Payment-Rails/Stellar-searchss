@@ -15,6 +15,12 @@ import {
   AMOUNT_STROOPS,
 } from '../shared/constants.js'
 import {
+  buildErrorResponse,
+  buildUpstreamUnavailableResponse,
+  redactSecrets,
+  resolveRequestId,
+} from '../src/lib/apiError'
+import {
   handleSearch,
   handleHealth,
   handleChat,
@@ -131,6 +137,16 @@ export function createApp() {
   }))
   app.use(express.json())
 
+  // Correlation token per request: reused when the client supplies a safe
+  // inbound value, minted otherwise. Set on every response so a user report
+  // maps to a single server log entry carrying the same id.
+  app.use((req, res, next) => {
+    const requestId = resolveRequestId(req.headers['x-request-id'])
+    res.locals.requestId = requestId
+    res.setHeader('X-Request-Id', requestId)
+    next()
+  })
+
   // ─── Payment Logging Middleware ────────────────────────────────────────
   app.use((req, res, next) => {
     if (req.path === '/search') {
@@ -220,6 +236,7 @@ export function createApp() {
       paymentSignature: (req.headers['payment-signature'] || req.headers['x-payment']) as string | undefined,
       txHash,
       resourceUrl: `${req.protocol}://${req.headers.host}${req.originalUrl}`,
+      requestIdHeader: req.headers['x-request-id'] as string | undefined,
     })
 
     if (result.status === 200) {
@@ -299,7 +316,15 @@ export function createApp() {
       if (!serperRes.ok) {
         const err = await serperRes.text()
         console.error('[serper images]', serperRes.status, err)
-        return res.status(502).json({ error: `Serper.dev API error: ${serperRes.status}` })
+        const upstream = buildUpstreamUnavailableResponse({
+          error: new Error(`Serper.dev responded ${serperRes.status}: ${err}`),
+          requestId: (res.locals.requestId as string) ?? resolveRequestId(req.headers['x-request-id']),
+          operation: 'serper.images',
+          provider: 'serper',
+          publicMessage: 'Search is temporarily unavailable. Please try again later.',
+          meta: { status: serperRes.status },
+        })
+        return res.status(upstream.status).json(upstream.body)
       }
 
       const data: any = await serperRes.json()
@@ -350,8 +375,16 @@ export function createApp() {
 
       return res.json(responseData)
     } catch (err: any) {
-      console.error('[images error]', err.message)
-      return res.status(500).json({ error: 'Image search failed. Check server logs.' })
+      const failure = buildErrorResponse({
+        error: err,
+        requestId: (res.locals.requestId as string) ?? resolveRequestId(req.headers['x-request-id']),
+        operation: 'serper.images',
+        provider: 'serper',
+        publicMessage: 'An error occurred while processing your request. Please try again later.',
+        code: 'images_failed',
+        status: 500,
+      })
+      return res.status(failure.status).json(failure.body)
     }
   })
 
@@ -407,7 +440,15 @@ export function createApp() {
       if (!serperRes.ok) {
         const err = await serperRes.text()
         console.error('[serper news]', serperRes.status, err)
-        return res.status(502).json({ error: `Serper.dev API error: ${serperRes.status}` })
+        const upstream = buildUpstreamUnavailableResponse({
+          error: new Error(`Serper.dev responded ${serperRes.status}: ${err}`),
+          requestId: (res.locals.requestId as string) ?? resolveRequestId(req.headers['x-request-id']),
+          operation: 'serper.news',
+          provider: 'serper',
+          publicMessage: 'Search is temporarily unavailable. Please try again later.',
+          meta: { status: serperRes.status },
+        })
+        return res.status(upstream.status).json(upstream.body)
       }
 
       const data: any = await serperRes.json()
@@ -457,8 +498,16 @@ export function createApp() {
 
       return res.json(responseData)
     } catch (err: any) {
-      console.error('[news error]', err.message)
-      return res.status(500).json({ error: 'News search failed. Check server logs.' })
+      const failure = buildErrorResponse({
+        error: err,
+        requestId: (res.locals.requestId as string) ?? resolveRequestId(req.headers['x-request-id']),
+        operation: 'serper.news',
+        provider: 'serper',
+        publicMessage: 'An error occurred while processing your request. Please try again later.',
+        code: 'news_failed',
+        status: 500,
+      })
+      return res.status(failure.status).json(failure.body)
     }
   })
 
@@ -472,10 +521,10 @@ export function createApp() {
     }
 
     if (!wantsStream(req.headers.accept, req.query.stream)) {
-      return sendResult(res, await handleChat({ messages }))
+      return sendResult(res, await handleChat({ messages, requestIdHeader: req.headers['x-request-id'] as string | undefined }))
     }
 
-    await pipeChatStream(res, messages)
+    await pipeChatStream(res, messages, process.env, req.headers['x-request-id'] as string | undefined)
   })
 
   // ─── POST /summarize-url ─────────────────────────────────────────────────
@@ -535,7 +584,7 @@ export function createApp() {
       if (err instanceof UrlSummaryError) {
         return res.status(err.status).json({ error: err.message, code: err.code })
       }
-      console.error('[summarize-url error]', err.message)
+      console.error('[summarize-url error]', redactSecrets(err.message ?? ''))
       return res.status(502).json({ error: 'Could not fetch or summarise the URL.' })
     }
   })

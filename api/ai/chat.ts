@@ -22,12 +22,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method === 'OPTIONS') return res.status(200).end()
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' })
 
+  const header = (name: string): string | undefined => {
+    const value = req.headers?.[name]
+    return Array.isArray(value) ? value[0] : value
+  }
   const messages = parseChatMessages(req.body)
   if (!messages) return res.status(400).json({ error: 'messages array required' })
 
   if (!wantsStream(req.headers.accept, req.query.stream)) {
-    return sendResult(res, await handleChat({ messages }))
+    return sendResult(res, await handleChat({ messages, requestIdHeader: header('x-request-id') }))
   }
 
-  await pipeChatStream(res, messages)
+  await pipeChatStream(res, messages, process.env, header('x-request-id'))
 }
