@@ -377,6 +377,48 @@ a payment only when the response carries a confirmed settlement transaction (a
 
 ---
 
+## Payment verification in both deployment targets
+
+The Express server (`server/index.ts`) and the Vercel search function (`api/search.ts`)
+both use `server/payment.ts`, which configures `paymentMiddlewareFromConfig` with
+`ExactStellarScheme` and `HTTPFacilitatorClient`. The Vercel function exports an
+Express app without starting a listener, so it uses the same SDK request and
+response handling as the standalone server.
+
+The SDK decodes the payment header, checks that its accepted requirements match
+an advertised price, asset, network and recipient, and sends the payment payload
+and requirements to the configured facilitator's `/verify` endpoint. A header's
+presence alone does not authorize a search. Malformed, mismatched and rejected
+payments receive HTTP 402 without calling Serper. Verification errors also fail
+closed. Signature/payment validity is delegated to the facilitator; the search
+handler does not independently verify Stellar signatures.
+
+For local load testing, the Vercel function retains the upstream
+`PAYMENTS_DISABLED=true` switch when `NODE_ENV=development` and
+`VERCEL_ENV` is not `production`. Production requests always use the SDK gate.
+
+After successful verification, the SDK buffers a successful search response and
+calls the facilitator's `/settle` endpoint before releasing it. Failed settlement
+returns HTTP 402 instead of search results. Failed search responses are not settled.
+The SDK-generated `PAYMENT-RESPONSE` header contains the settlement result and
+transaction reference; the serverless JSON `txHash` remains `null` rather than
+trusting a hash supplied by the client. The header is exposed for browser clients.
+See the [x402 HTTP transport specification](https://github.com/x402-foundation/x402/blob/main/specs/transports-v2/http.md).
+
+Run the payment regression suite without real credentials:
+
+```bash
+npm run test:payments
+```
+
+These tests run the real x402 SDK and serverless app over local HTTP, with mocked
+facilitator and Serper responses. They cover forged headers, altered requirements,
+verification outages, settlement failures and successful settlement, but do not
+prove live Stellar settlement. Live wallet testing still requires the configured
+facilitator, funded wallet and API credentials.
+
+---
+
 ## Project structure
 
 ```
