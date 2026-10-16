@@ -45,6 +45,19 @@ export default defineConfig({
   },
   build: {
     rollupOptions: {
+      // Treat actionable Rollup warnings as hard errors so CI catches broken
+      // imports, missing assets, and circular dependencies before deployment.
+      onwarn(warning, defaultHandler) {
+        const fatalCodes = [
+          'UNRESOLVED_IMPORT',   // missing module — would break at runtime
+          'MISSING_EXPORT',      // exported name doesn't exist in the source
+          'INVALID_ANNOTATION',  // malformed /*#__PURE__*/ comment
+        ]
+        if (fatalCodes.includes(warning.code ?? '')) {
+          throw new Error(`Build warning treated as error [${warning.code}]: ${warning.message}`)
+        }
+        defaultHandler(warning)
+      },
       output: {
         manualChunks(id) {
           if (!id) return
